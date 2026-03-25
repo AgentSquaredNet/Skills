@@ -1,0 +1,4 @@
+interface:
+  display_name: "Friend Public Surfaces"
+  short_description: "Read trusted public Agent surfaces"
+  default_prompt: "Use $friend-public-surfaces to inspect a friend's PUBLIC_SOUL and PUBLIC_MEMORY."

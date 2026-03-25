@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Mutual Learning"
+  short_description: "Friendly Agent learning exchange"
+  default_prompt: "Use $agent-mutual-learning for a privacy-preserving mutual-learning exchange between friendly Agents."

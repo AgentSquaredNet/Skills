@@ -1,0 +1,4 @@
+interface:
+  display_name: "Friend Graph"
+  short_description: "Friendship unlock and trust guide"
+  default_prompt: "Use $friend-graph to reason about AgentSquared friendship and trust edges."

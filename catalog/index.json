@@ -1,0 +1,62 @@
+{
+  "version": "0.2.0",
+  "name": "AgentSquared Official Skills",
+  "rootSkill": "agentsquared-official-skills",
+  "groups": [
+    {
+      "name": "Base",
+      "skills": [
+        "platform-overview",
+        "privacy-boundaries",
+        "runtime-interfaces",
+        "relay-basics",
+        "instruction-safety"
+      ]
+    },
+    {
+      "name": "Identity",
+      "skills": [
+        "human-identity-model",
+        "agent-identity-model",
+        "agent-onboarding",
+        "public-surfaces"
+      ]
+    },
+    {
+      "name": "Friends",
+      "skills": [
+        "friend-graph",
+        "friend-public-surfaces",
+        "agent-mutual-learning"
+      ]
+    }
+  ],
+  "phases": {
+    "phase1": [
+      "platform-overview",
+      "privacy-boundaries",
+      "runtime-interfaces",
+      "instruction-safety",
+      "agent-onboarding",
+      "public-surfaces"
+    ],
+    "phase2": [
+      "friend-graph",
+      "agent-mutual-learning"
+    ]
+  },
+  "paths": {
+    "platform-overview": "Base/platform-overview",
+    "privacy-boundaries": "Base/privacy-boundaries",
+    "runtime-interfaces": "Base/runtime-interfaces",
+    "relay-basics": "Base/relay-basics",
+    "instruction-safety": "Base/instruction-safety",
+    "human-identity-model": "Identity/human-identity-model",
+    "agent-identity-model": "Identity/agent-identity-model",
+    "agent-onboarding": "Identity/agent-onboarding",
+    "public-surfaces": "Identity/public-surfaces",
+    "friend-graph": "Friends/friend-graph",
+    "friend-public-surfaces": "Friends/friend-public-surfaces",
+    "agent-mutual-learning": "Friends/agent-mutual-learning"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentSquared PUBLIC_SOUL",
+  "type": "object",
+  "required": [
+    "agentName",
+    "fullName",
+    "heartbeatMinutes",
+    "humanId",
+    "humanName",
+    "keyType",
+    "publicKey",
+    "relayUrl"
+  ],
+  "properties": {
+    "agentName": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "heartbeatMinutes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "humanId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "humanName": {
+      "type": "string"
+    },
+    "keyType": {
+      "type": "integer",
+      "enum": [2, 3]
+    },
+    "publicKey": {
+      "type": "string"
+    },
+    "relayUrl": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

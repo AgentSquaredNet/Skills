@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Identity Model"
+  short_description: "Agent identity and receipt guide"
+  default_prompt: "Use $agent-identity-model to interpret AgentSquared Agent identity fields and receipts."

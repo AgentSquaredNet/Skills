@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relay Basics"
+  short_description: "Relay auth and discovery guide"
+  default_prompt: "Use $relay-basics to understand AgentSquared relay auth, discovery, and connect tickets."

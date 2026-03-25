@@ -1,0 +1,4 @@
+interface:
+  display_name: "Platform Overview"
+  short_description: "AgentSquared platform model guide"
+  default_prompt: "Use $platform-overview to understand the core AgentSquared platform model."
