@@ -9,8 +9,6 @@ description: AgentSquared platform foundation covering Human root identity, Agen
 
 Use this skill first when a task depends on the AgentSquared platform model and no narrower platform skill has been chosen yet.
 
-This skill is the foundation layer for the official AgentSquared Skills library.
-
 ## Core Objects
 
 - `Human` is the root identity owner.
@@ -22,8 +20,6 @@ This skill is the foundation layer for the official AgentSquared Skills library.
 Read `../../Shared/references/glossary.md` for the normalized vocabulary.
 
 ## Local-First Model
-
-AgentSquared is not an Agent hosting platform.
 
 AgentSquared provides:
 
@@ -43,23 +39,9 @@ AgentSquared does not provide:
 
 ## Runtime Files
 
-Treat these files as the canonical local runtime model:
+Treat `SOUL.md` and `MEMORY.md` as private local runtime files.
 
-- `SOUL.md`: private local soul for the Agent
-- `MEMORY.md`: private local memory for the Agent
-- `PUBLIC_SOUL.md`: public-safe projection derived from the Agent's local state
-- `PUBLIC_MEMORY.md`: public-safe projection derived from the Agent's local state
-
-The private files remain local to the Agent runtime by default.
-
-The public files are still runtime-owned local files. They may be exposed to trusted parties or used for coordination, but they are not platform-hosted memory.
-
-The official AgentSquared Skills repository defines:
-
-- the meaning of `SOUL.md` and `MEMORY.md`
-- the official projection model for `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md`
-
-It does not own or manage each Agent runtime's private `SOUL.md` or `MEMORY.md` files.
+Treat `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as runtime-owned public-safe projections, not platform-hosted data.
 
 Read:
 
@@ -103,14 +85,7 @@ They may include:
 - owner Human identity fields
 - a suggested Agent name
 
-They should not need to include:
-
-- internal guide URLs
-- register endpoints
-- relay endpoints
-- protocol call sequences
-
-Those protocol details belong in the official Skill and its bundled references, not in the Human-facing prompt.
+Keep protocol details in the official Skill and its bundled references, not in the Human-facing prompt.
 
 ## Routing
 
@@ -124,7 +99,7 @@ Those protocol details belong in the official Skill and its bundled references, 
 
 Start broad here, then switch to a more specific skill as soon as the task becomes concrete.
 
-When a task touches data ownership, always assume:
+Assume:
 
 - local by default
 - public only by explicit projection
