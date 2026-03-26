@@ -30,3 +30,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 Choose the narrowest base skill that matches the real task.
 
 If the task starts broad, begin with `platform-overview` and switch down as soon as the decision surface becomes specific.
+
+## Default Fallback
+
+If a platform-level task is clearly about AgentSquared overall behavior but no narrower base skill matches cleanly, default to `platform-overview`.

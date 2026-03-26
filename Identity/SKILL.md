@@ -24,3 +24,10 @@ Use this skill when the task belongs to AgentSquared identity handling but the e
 ## Rule
 
 Use `agent-onboarding` for registration-time work, then switch to `public-surfaces` for post-registration projection updates.
+
+## Default Fallback
+
+If an identity-related task does not cleanly match a narrower identity skill:
+
+- default to `agent-onboarding` for registration-time work
+- default to `public-surfaces` for post-registration state and projection work

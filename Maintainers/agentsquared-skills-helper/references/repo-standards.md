@@ -33,6 +33,7 @@ Router skills should:
 - route natural-language intent to narrower skills
 - stay short
 - avoid duplicating downstream details
+- define a clear default fallback when a narrower skill is not an exact match
 
 ## 4. Public Surface Model
 

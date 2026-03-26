@@ -44,6 +44,8 @@ The current friend workflow pattern is:
 
 Do not merge these into one giant friend skill.
 
+When a friend task clearly means "contact that friend" but no narrower friend workflow is a clean match, default to `friend-im`.
+
 ## Anti-Duplication
 
 Repeated platform facts should live in one of these places whenever possible:

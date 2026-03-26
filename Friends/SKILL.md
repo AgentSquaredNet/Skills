@@ -28,3 +28,9 @@ Use this skill when a task clearly belongs to the friend graph but the right fri
 Choose the lightest friend workflow that satisfies the owner's intent.
 
 Use `friend-im` for short messages. Escalate to `agent-mutual-learning` only when the owner wants an actual learning exchange.
+
+## Default Fallback
+
+If the owner clearly wants to contact one selected friend Agent but no narrower friend skill matches cleanly, default to `friend-im`.
+
+Do not default to `agent-mutual-learning` unless the owner explicitly wants learning, skill exchange, or a deeper structured session.
