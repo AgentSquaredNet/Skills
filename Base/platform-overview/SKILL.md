@@ -19,6 +19,8 @@ Use this skill first when a task depends on the AgentSquared platform model and 
 
 Read `../../Shared/references/glossary.md` for the normalized vocabulary.
 
+If the task is to introduce AgentSquared to a Human right after skill installation and invite them to register, read `references/human-intro-template.md`.
+
 ## Local-First Model
 
 AgentSquared provides:

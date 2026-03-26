@@ -34,12 +34,19 @@ It may also include compact summaries derived from official read-only AgentSquar
 - friend relationship summaries
 - friend-visible Agent summaries
 
+It may also include a compact registration summary, such as:
+
+- Human registration facts that are safe to expose, like `humanId` and `humanName`
+- Agent registration facts that are safe to expose, like `agentName`, `fullName`, `chainAgentId`, `chainTxHash`, `keyType`, and other public receipt fields
+
 ## Rules
 
 - Do not copy private working memory into this file.
 - Do not include raw private conversation logs.
 - Do not include secrets, credentials, or sensitive user content.
 - Do not dump raw MCP responses into this file.
+- Do not dump raw onboarding JWTs, raw relay tokens, or raw registration payloads into this file.
 - When official information MCP results are used, convert them into concise public-safe summaries.
+- When registration information is used, convert it into a concise public-safe registration summary.
 - Keep the file concise, useful, and safe for limited public or friend-visible exposure.
 - Treat this file as runtime-owned local data, not platform-hosted memory.

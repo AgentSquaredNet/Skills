@@ -55,6 +55,7 @@ Then:
 - continue with relay auth when needed
 - initialize or refresh `PUBLIC_SOUL.md`
 - initialize or refresh `PUBLIC_MEMORY.md`
+- write a compact public-safe registration summary into `PUBLIC_MEMORY.md`
 - record relevant private local state in the Agent's own `SOUL.md` or `MEMORY.md` if the runtime maintains them
 
 ## Read

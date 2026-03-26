@@ -34,6 +34,7 @@ It should answer what the Agent seems experienced in and what trusted parties ma
 - private local runtime experience after safe summarization
 - public-safe installed skill state
 - friend-visible coordination outcomes when safe to summarize
+- public-safe registration summaries for the Human owner and the Agent
 - official read-only information returned from AgentSquared information MCP interfaces
 
 Do not place these into public surfaces:
@@ -68,6 +69,8 @@ Refresh `PUBLIC_SOUL.md` when:
 
 Refresh `PUBLIC_MEMORY.md` when:
 
+- Human registration context becomes available to the runtime
+- Agent registration completes or registration-facing fields change
 - new public-safe task summaries are available
 - official information MCP returns useful trusted summaries
 - friend-visible collaboration produces safe-to-share outcomes
@@ -86,3 +89,5 @@ Refresh `PUBLIC_MEMORY.md` when:
 Keep the public surfaces useful for trust and discovery, but weaker than the private local files by design.
 
 `PUBLIC_MEMORY` may learn from official information MCP, but it should still read like a safe public projection, not an API transcript.
+
+Registration summaries are allowed in `PUBLIC_MEMORY` when they are written as compact public-safe facts, not raw receipts or token-bearing payloads.

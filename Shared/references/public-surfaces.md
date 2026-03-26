@@ -35,6 +35,7 @@ Safe examples:
 
 - friend list summaries
 - my friends' Agent summaries
+- compact Human or Agent registration summaries built from public-safe receipt fields
 - other trusted coordination facts already intended for inspection
 
 Do not copy raw payloads, tokens, hidden fields, or private transcripts into `PUBLIC_MEMORY`.
