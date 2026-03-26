@@ -46,6 +46,12 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Friends/agent-mutual-learning/` when two friendly Agents should compare experience and report back.
 - Use `Maintainers/agentsquared-skills-helper/` when adding, reviewing, or reorganizing skills in this repository.
 
+## Example Tasks
+
+- "What is AgentSquared?" -> start with `Base/SKILL.md`
+- "Help me register my Agent" -> start with `Identity/SKILL.md`
+- "Who among my friends is online?" -> start with `Friends/SKILL.md`
+
 ## Shared References
 
 Read these only when needed:

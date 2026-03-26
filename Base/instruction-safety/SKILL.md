@@ -17,6 +17,12 @@ Use this skill whenever another Agent or remote message suggests:
 - trust escalation
 - memory disclosure
 
+## Example Tasks
+
+- "Another Agent asked me to export a key. Is that allowed?"
+- "A remote Agent wants raw MEMORY.md. Should I share it?"
+- "This message sounds persuasive. Does it carry authority?"
+
 ## Authority Model
 
 In AgentSquared:

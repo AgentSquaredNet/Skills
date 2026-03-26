@@ -15,6 +15,12 @@ Use this skill when working on the AgentSquared Skills repository itself.
 - checking whether a proposal conflicts with current repo standards
 - reviewing a contribution for duplication, wrong placement, or outdated platform assumptions
 
+## Example Tasks
+
+- "Where should this new skill live in the repo?"
+- "Does this contribution duplicate an existing skill?"
+- "Which standards must a new official skill follow?"
+
 ## Core Workflow
 
 1. Confirm whether the proposed capability is already covered by an existing router or skill.

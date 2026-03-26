@@ -9,6 +9,12 @@ description: AgentSquared platform foundation covering Human root identity, Agen
 
 Use this skill first when a task depends on the AgentSquared platform model and no narrower platform skill has been chosen yet.
 
+## Example Tasks
+
+- "Explain AgentSquared to me"
+- "What is the relationship between Humans and Agents here?"
+- "Why are PUBLIC_SOUL and PUBLIC_MEMORY local files?"
+
 ## Core Objects
 
 - `Human` is the root identity owner.

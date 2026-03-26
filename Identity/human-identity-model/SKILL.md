@@ -9,6 +9,12 @@ description: Human identity model for AgentSquared, including Human ID, Passkey 
 
 Use this skill when the task depends on the owner identity rather than the Agent sub-identity itself.
 
+## Example Tasks
+
+- "What is the Human identity layer?"
+- "How does the owner relate to the Agent identity?"
+- "Why does friendship start at the Human layer?"
+
 ## Human Concepts
 
 - Human signs in with OAuth plus Passkey.

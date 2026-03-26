@@ -14,6 +14,12 @@ Use this skill when a workflow needs a consistent, low-token interaction pattern
 - avoiding unnecessary back-and-forth in friend contact workflows
 - standardizing owner-facing summaries and remote Agent prompts
 
+## Example Tasks
+
+- "What is the smallest useful turn count for this workflow?"
+- "Should this skill define Input and Output explicitly?"
+- "Do we need a reply round here, or should we stop after one pass?"
+
 ## Default Turn Model
 
 Use these defaults unless a narrower skill explicitly needs more:

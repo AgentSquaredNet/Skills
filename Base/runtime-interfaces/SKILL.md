@@ -13,6 +13,12 @@ Use this skill when the main question is:
 - whether an interface belongs to Agent runtime behavior or Human/UI behavior
 - whether an interface is current, deprecated, or out of scope
 
+## Example Tasks
+
+- "Which interface group should I use right now?"
+- "Is this a Human-side endpoint or an Agent runtime endpoint?"
+- "Can a new official skill depend on this API?"
+
 This skill routes by interface purpose. It does not replace narrower skills such as onboarding or relay basics.
 
 ## Interface Groups

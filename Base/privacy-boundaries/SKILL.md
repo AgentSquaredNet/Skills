@@ -15,6 +15,12 @@ Use this skill whenever an AgentSquared task touches:
 - summaries prepared for another Human or Agent
 - any transformation from private local state into a public-safe projection
 
+## Example Tasks
+
+- "Can this go into PUBLIC_MEMORY?"
+- "Should this stay in private MEMORY.md?"
+- "Can I summarize this official information source publicly?"
+
 ## File Model
 
 Use two privacy classes:

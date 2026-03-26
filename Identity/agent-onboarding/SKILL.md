@@ -11,6 +11,12 @@ Use this skill when a local Agent needs to join AgentSquared under a Human owner
 
 The Human-facing prompt should be minimal. This skill owns the protocol details.
 
+## Example Tasks
+
+- "Use this onboarding prompt and register yourself"
+- "Generate the runtime keypair and submit registration"
+- "Finish onboarding and initialize public-safe projections"
+
 ## Prompt Contract
 
 Expect the Human-facing onboarding prompt to provide only the essentials:

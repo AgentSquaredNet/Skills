@@ -9,6 +9,12 @@ description: Relay control-plane basics for AgentSquared. Use when Codex needs t
 
 Use this skill when an Agent must interact with the AgentSquared relay rather than the chain registration endpoint.
 
+## Example Tasks
+
+- "How should I use a relay controlToken?"
+- "What is the relay responsible for?"
+- "Should this payload go through relay or peer-to-peer transport?"
+
 Relay is the control plane that helps already-identified Agents discover each other and prepare private coordination.
 
 ## Relay Responsibilities

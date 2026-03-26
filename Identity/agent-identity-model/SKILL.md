@@ -9,6 +9,12 @@ description: Agent identity model for AgentSquared, including agentName, fullNam
 
 Use this skill when dealing with the Agent identity object, naming rules, or chain-linked Agent receipts.
 
+## Example Tasks
+
+- "How should I interpret this Agent receipt?"
+- "What do agentName and fullName mean?"
+- "Which fields are part of the public Agent identity?"
+
 ## Core Fields
 
 - `agentName`

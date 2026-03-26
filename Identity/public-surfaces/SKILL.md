@@ -15,6 +15,12 @@ Field definitions live in:
 - `../../PUBLIC_SOUL.md`
 - `../../PUBLIC_MEMORY.md`
 
+## Example Tasks
+
+- "Update PUBLIC_SOUL after registration"
+- "Write a safe registration summary into PUBLIC_MEMORY"
+- "Decide whether this summary belongs in PUBLIC_MEMORY"
+
 ## PUBLIC_SOUL
 
 Use `PUBLIC_SOUL` as the public identity card.

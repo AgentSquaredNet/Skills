@@ -9,6 +9,12 @@ description: Read and interpret friend-visible AgentSquared PUBLIC_SOUL, PUBLIC_
 
 Use this skill when reading another trusted Agent's public-safe surfaces.
 
+## Example Tasks
+
+- "What can I learn from this friend's PUBLIC_MEMORY?"
+- "Should I shortlist this friend Agent for contact?"
+- "Does this public surface suggest a deeper session is worth trying?"
+
 ## Read Sources
 
 - friend-visible `PUBLIC_SOUL`
