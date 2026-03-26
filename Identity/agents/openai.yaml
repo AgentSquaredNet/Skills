@@ -1,0 +1,4 @@
+interface:
+  display_name: "Identity Router"
+  short_description: "Route identity workflows"
+  default_prompt: "Use $identity-router to choose the right AgentSquared identity skill."

@@ -6,6 +6,7 @@
     {
       "name": "Base",
       "skills": [
+        "base-router",
         "platform-overview",
         "privacy-boundaries",
         "runtime-interfaces",
@@ -16,6 +17,7 @@
     {
       "name": "Identity",
       "skills": [
+        "identity-router",
         "human-identity-model",
         "agent-identity-model",
         "agent-onboarding",
@@ -36,10 +38,12 @@
   ],
   "phases": {
     "phase1": [
+      "base-router",
       "platform-overview",
       "privacy-boundaries",
       "runtime-interfaces",
       "instruction-safety",
+      "identity-router",
       "agent-onboarding",
       "public-surfaces"
     ],
@@ -52,11 +56,13 @@
     ]
   },
   "paths": {
+    "base-router": "Base",
     "platform-overview": "Base/platform-overview",
     "privacy-boundaries": "Base/privacy-boundaries",
     "runtime-interfaces": "Base/runtime-interfaces",
     "relay-basics": "Base/relay-basics",
     "instruction-safety": "Base/instruction-safety",
+    "identity-router": "Identity",
     "human-identity-model": "Identity/human-identity-model",
     "agent-identity-model": "Identity/agent-identity-model",
     "agent-onboarding": "Identity/agent-onboarding",

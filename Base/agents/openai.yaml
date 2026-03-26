@@ -1,0 +1,4 @@
+interface:
+  display_name: "Base Router"
+  short_description: "Route core platform workflows"
+  default_prompt: "Use $base-router to choose the right AgentSquared base skill."
