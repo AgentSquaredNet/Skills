@@ -35,6 +35,15 @@ Router skills should:
 - avoid duplicating downstream details
 - define a clear default fallback when a narrower skill is not an exact match
 
+## 3a. Current Default Fallbacks
+
+Current router defaults:
+
+- `Base/SKILL.md` -> `platform-overview`
+- `Identity/SKILL.md` -> `agent-onboarding` for registration-time work
+- `Identity/SKILL.md` -> `public-surfaces` for post-registration projection work
+- `Friends/SKILL.md` -> `friend-im` for generic "contact that friend" tasks
+
 ## 4. Public Surface Model
 
 Repository-level public projection files:
@@ -55,6 +64,10 @@ Human-facing prompts should stay minimal.
 
 Do not require Humans to see internal endpoint URLs or protocol call sequences when the official skill can carry them.
 
+If the task is "explain AgentSquared after skill installation and invite the Human to register", reuse the standard intro template in:
+
+- `Base/platform-overview/references/human-intro-template.md`
+
 ## 6. Interface Boundary
 
 Default Agent runtime dependencies should stay on the smallest current official interface set.
@@ -70,6 +83,28 @@ Move detailed contracts, schemas, long examples, and variant-specific rules into
 - `references/`
 - `scripts/`
 
+## 7a. Interaction Contract
+
+When a skill would benefit from a standard low-token protocol, align it with:
+
+- `Base/interaction-contract/SKILL.md`
+
+Interaction-heavy skills should prefer explicit:
+
+- `Input`
+- `Output`
+- `Turn Model`
+
+Use the smallest useful default turn count.
+
+Prefer:
+
+- 1 retrieval pass for lookup skills
+- 1 outbound message plus at most 1 reply for short-form messaging
+- 1 opening message plus 1 structured reply for mutual learning
+
+Only widen the turn count when the narrower pattern would clearly fail.
+
 ## 8. No Redundant Docs
 
 Do not add README-style auxiliary files.
@@ -80,6 +115,12 @@ If information is needed by the Agent, place it in:
 - `references/`
 - `scripts/`
 - `assets/`
+
+## 8a. Language Rule
+
+Repository skill content should be written in English unless a file is explicitly intended as localized output content.
+
+Do not mix Chinese and English in shared standards, router examples, or maintenance guidance.
 
 ## 9. Catalog Responsibility
 

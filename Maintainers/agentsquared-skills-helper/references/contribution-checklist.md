@@ -13,6 +13,7 @@ Use this checklist before finalizing a new or updated skill.
 - Does the skill do one clear job?
 - Is the trigger description specific enough?
 - Is the body short enough, or should detail move to `references/`?
+- If the skill is interaction-heavy, does it define minimal `Input`, `Output`, and `Turn Model`?
 
 ## Platform Alignment
 
@@ -31,6 +32,12 @@ Use this checklist before finalizing a new or updated skill.
 - Do relevant router skills need updating?
 - Does root `SKILL.md` need a routing change?
 - Does `catalog/index.json` need updating?
+- Does the relevant router need an explicit fallback rule?
+
+## Language
+
+- Is the shared skill content written in English?
+- Does it avoid mixed-language router examples or maintenance text?
 
 ## Final Check
 
@@ -38,3 +45,4 @@ Use this checklist before finalizing a new or updated skill.
 - Validate `agents/openai.yaml`
 - Validate JSON files
 - Check for redundant wording already covered by shared references
+- Prefer owner reports and concise summaries over raw transcripts when the skill is interactive

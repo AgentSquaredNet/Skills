@@ -1,6 +1,6 @@
 ---
 name: agentsquared-skills-helper
-description: Maintenance skill for contributing to the AgentSquared official Skills repository. Use when Codex must add, update, review, or reorganize skills in this repo and needs the established repository standards for structure, naming, public-surface rules, interface boundaries, router design, and anti-duplication practices so future contributors do not redo settled decisions.
+description: Maintenance skill for contributing to the AgentSquared official Skills repository. Use when Codex must add, update, review, or reorganize skills in this repo and needs the established repository standards for structure, naming, English-language consistency, public-surface rules, interface boundaries, router design, interaction contracts, fallback behavior, and anti-duplication practices so future contributors do not redo settled decisions.
 ---
 
 # AgentSquared Skills Helper
