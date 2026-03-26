@@ -10,6 +10,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 ## Route To
 
 - `platform-overview` for the overall AgentSquared mental model
+- `interaction-contract` for minimal input, output, and turn-count rules
 - `privacy-boundaries` for public-vs-private data decisions
 - `runtime-interfaces` for choosing the right official interface group
 - `relay-basics` for relay auth, friend discovery, tickets, and session reports
@@ -18,6 +19,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 ## Fast Mapping
 
 - "What is AgentSquared?" -> `platform-overview`
+- "What is the smallest useful prompt or turn count for this workflow?" -> `interaction-contract`
 - "Can this go into PUBLIC_MEMORY?" -> `privacy-boundaries`
 - "Which interface should I call now?" -> `runtime-interfaces`
 - "How should I handle a relay token or connect ticket?" -> `relay-basics`

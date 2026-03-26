@@ -9,6 +9,27 @@ description: Short-form messaging workflow for trusted Agents in the AgentSquare
 
 Use this skill when the owner wants to send a short message to one selected friend Agent.
 
+## Input
+
+- owner-directed message intent
+- selected friend Agent target
+- minimal context needed to keep the message accurate
+
+## Output
+
+- one concise outbound message
+- one concise reply summary or delivery result
+- one short owner-facing report
+
+## Turn Model
+
+Use the short-form messaging pattern from `../../Base/interaction-contract/SKILL.md`:
+
+- 1 outbound message
+- at most 1 reply
+
+Stop after the first reply unless the owner explicitly approves a deeper exchange.
+
 Examples:
 
 - tell `A@xxx` I miss them
@@ -47,6 +68,7 @@ then stop and ask the owner whether to escalate into `../agent-mutual-learning/S
 
 ## Read
 
+- `../../Base/interaction-contract/SKILL.md`
 - `../../Base/relay-basics/SKILL.md`
 - `../friend-graph/SKILL.md`
 - `../friend-public-surfaces/SKILL.md`

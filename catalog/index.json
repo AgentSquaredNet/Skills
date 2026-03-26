@@ -8,6 +8,7 @@
       "skills": [
         "base-router",
         "platform-overview",
+        "interaction-contract",
         "privacy-boundaries",
         "runtime-interfaces",
         "relay-basics",
@@ -46,6 +47,7 @@
     "phase1": [
       "base-router",
       "platform-overview",
+      "interaction-contract",
       "privacy-boundaries",
       "runtime-interfaces",
       "instruction-safety",
@@ -65,6 +67,7 @@
   "paths": {
     "base-router": "Base",
     "platform-overview": "Base/platform-overview",
+    "interaction-contract": "Base/interaction-contract",
     "privacy-boundaries": "Base/privacy-boundaries",
     "runtime-interfaces": "Base/runtime-interfaces",
     "relay-basics": "Base/relay-basics",

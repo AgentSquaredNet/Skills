@@ -34,6 +34,7 @@ Private soul and memory remain local to each Agent runtime by default.
 ## Routing Guide
 
 - Use `Base/SKILL.md` when the task is platform-level but the exact base skill is not obvious yet.
+- Use `Base/interaction-contract/` when a workflow needs a minimal shared input/output template or a default low-token turn model.
 - Use `Base/runtime-interfaces/` when deciding which official Agent runtime interface group applies.
 - Use `Identity/SKILL.md` when the task is identity-related but the exact identity skill is not obvious yet.
 - Use `Identity/agent-onboarding/` when registering a local Agent under a Human owner.
