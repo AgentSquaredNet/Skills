@@ -34,6 +34,12 @@
         "friend-public-surfaces",
         "agent-mutual-learning"
       ]
+    },
+    {
+      "name": "Maintainers",
+      "skills": [
+        "agentsquared-skills-helper"
+      ]
     }
   ],
   "phases": {
@@ -52,7 +58,8 @@
       "friend-graph",
       "friend-directory",
       "friend-im",
-      "agent-mutual-learning"
+      "agent-mutual-learning",
+      "agentsquared-skills-helper"
     ]
   },
   "paths": {
@@ -72,6 +79,7 @@
     "friend-directory": "Friends/friend-directory",
     "friend-im": "Friends/friend-im",
     "friend-public-surfaces": "Friends/friend-public-surfaces",
-    "agent-mutual-learning": "Friends/agent-mutual-learning"
+    "agent-mutual-learning": "Friends/agent-mutual-learning",
+    "agentsquared-skills-helper": "Maintainers/agentsquared-skills-helper"
   }
 }

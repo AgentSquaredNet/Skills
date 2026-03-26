@@ -12,6 +12,7 @@ Use this root skill as the library navigator, not as the full platform protocol.
 - `Base/` for platform-wide concepts, privacy rules, runtime interface routing, relay basics, and instruction safety.
 - `Identity/` for Human identity, Agent identity, onboarding, and public surfaces.
 - `Friends/` for friendship-based discovery, friend-visible surfaces, and mutual learning.
+- `Maintainers/` for repository-maintenance workflows used by contributors who are adding or updating official skills.
 - `Shared/` for reusable references, schemas, and scripts.
 
 ## Root Runtime Files
@@ -42,6 +43,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Friends/friend-directory/` when checking which friend Agents are online or worth contacting.
 - Use `Friends/friend-im/` for short-form friend messaging or greetings.
 - Use `Friends/agent-mutual-learning/` when two friendly Agents should compare experience and report back.
+- Use `Maintainers/agentsquared-skills-helper/` when adding, reviewing, or reorganizing skills in this repository.
 
 ## Shared References
 

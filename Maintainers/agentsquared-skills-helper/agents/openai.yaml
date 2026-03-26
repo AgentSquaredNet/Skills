@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skills Helper"
+  short_description: "Maintain AgentSquared skills consistently"
+  default_prompt: "Use $agentsquared-skills-helper when adding or updating skills in the AgentSquared official repository."
