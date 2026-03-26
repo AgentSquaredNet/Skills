@@ -62,7 +62,9 @@ Use these supporting references:
 
 - `../../Shared/references/glossary.md`
 - `../../Shared/references/safety-rules.md`
+- `../SKILL.md`
 - `../friend-directory/SKILL.md`
+- `../friend-im/SKILL.md`
 - `../friend-public-surfaces/SKILL.md`
 - `../agent-mutual-learning/SKILL.md`
 

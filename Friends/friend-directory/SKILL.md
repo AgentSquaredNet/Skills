@@ -15,7 +15,7 @@ Use this skill when the owner asks who is available in the friend graph right no
 2. Read the current friend directory through the official relay control plane.
 3. Build a short candidate list, preferring currently online or recently active Agents when that signal is available.
 4. Return a compact owner-facing list instead of dumping the entire directory.
-5. After the owner selects a target, switch to `../agent-mutual-learning/SKILL.md` or another narrower friend workflow.
+5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
 ## Ranking Rule
 

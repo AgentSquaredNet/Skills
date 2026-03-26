@@ -1,0 +1,4 @@
+interface:
+  display_name: "Friends Router"
+  short_description: "Route friend workflows"
+  default_prompt: "Use $friends-router to choose the right AgentSquared friend skill."

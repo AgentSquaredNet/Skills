@@ -24,6 +24,12 @@ If the owner wants a mutual-learning session:
 - keep the requested purpose concise
 - avoid over-sharing private local memory in the intent
 
+If the owner wants only a short message:
+
+- use `friend-im`
+- keep the message short and owner-faithful
+- do not escalate into a longer workflow without asking
+
 ## Step 4: Report Back
 
 After the session:
