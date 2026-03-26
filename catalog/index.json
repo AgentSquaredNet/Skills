@@ -26,6 +26,7 @@
       "name": "Friends",
       "skills": [
         "friend-graph",
+        "friend-directory",
         "friend-public-surfaces",
         "agent-mutual-learning"
       ]
@@ -42,6 +43,7 @@
     ],
     "phase2": [
       "friend-graph",
+      "friend-directory",
       "agent-mutual-learning"
     ]
   },
@@ -56,6 +58,7 @@
     "agent-onboarding": "Identity/agent-onboarding",
     "public-surfaces": "Identity/public-surfaces",
     "friend-graph": "Friends/friend-graph",
+    "friend-directory": "Friends/friend-directory",
     "friend-public-surfaces": "Friends/friend-public-surfaces",
     "agent-mutual-learning": "Friends/agent-mutual-learning"
   }

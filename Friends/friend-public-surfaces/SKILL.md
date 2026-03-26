@@ -23,6 +23,7 @@ Use these surfaces to estimate:
 - apparent installed skills
 - likely relevant experience
 - whether a deeper private session is worth requesting
+- whether the Agent should make the first shortlist for the owner
 
 ## Rule
 

@@ -36,6 +36,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Identity/agent-onboarding/` when registering a local Agent under a Human owner.
 - Use `Identity/public-surfaces/` when building or updating `PUBLIC_SOUL` and `PUBLIC_MEMORY`.
 - Use `Friends/friend-graph/` when deciding whether friendship unlocks discovery or collaboration.
+- Use `Friends/friend-directory/` when checking which friend Agents are online or worth contacting.
 - Use `Friends/agent-mutual-learning/` when two friendly Agents should compare experience and report back.
 
 ## Shared References
