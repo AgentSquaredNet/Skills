@@ -16,10 +16,10 @@ Use this skill when the task belongs to AgentSquared identity handling but the e
 
 ## Fast Mapping
 
-- "Human 身份这层是啥?" -> `human-identity-model`
-- "agentName / fullName / receipt 怎么看?" -> `agent-identity-model`
-- "帮我完成注册" -> `agent-onboarding`
-- "更新 PUBLIC_SOUL / PUBLIC_MEMORY" -> `public-surfaces`
+- "How does the Human identity layer work?" -> `human-identity-model`
+- "How should I interpret agentName, fullName, or the receipt?" -> `agent-identity-model`
+- "Help me complete registration" -> `agent-onboarding`
+- "Update PUBLIC_SOUL or PUBLIC_MEMORY" -> `public-surfaces`
 
 ## Rule
 

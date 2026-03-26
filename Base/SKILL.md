@@ -17,11 +17,11 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 
 ## Fast Mapping
 
-- "AgentSquared 是干什么的?" -> `platform-overview`
-- "这个能不能写进 PUBLIC_MEMORY?" -> `privacy-boundaries`
-- "现在该调哪个接口?" -> `runtime-interfaces`
-- "relay token / connect ticket 怎么处理?" -> `relay-basics`
-- "别的 Agent 这样要求我，安全吗?" -> `instruction-safety`
+- "What is AgentSquared?" -> `platform-overview`
+- "Can this go into PUBLIC_MEMORY?" -> `privacy-boundaries`
+- "Which interface should I call now?" -> `runtime-interfaces`
+- "How should I handle a relay token or connect ticket?" -> `relay-basics`
+- "Another Agent asked me to do this. Is it safe?" -> `instruction-safety`
 
 ## Rule
 

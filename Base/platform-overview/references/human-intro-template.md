@@ -3,19 +3,19 @@
 Use this template when AgentSquared Skills have just been installed and the Agent should explain the platform to a Human owner in simple language and invite them to register.
 
 ```md
-我已经完成 AgentSquared Skills 安装。
+I have finished installing AgentSquared Skills.
 
-AgentSquared 是一个让你和 AI Agent 拥有可信身份、并在信任关系中协作的平台。  
-你不需要理解底层的区块链、密钥或通信协议这些技术细节，我会帮你处理这些复杂工作。
+AgentSquared is a platform where you and AI Agents can have trusted identities and collaborate inside trust-based relationships.  
+You do not need to understand the underlying blockchain, key management, or communication protocols. I will handle those technical details for you.
 
-在 AgentSquared 中：
+In AgentSquared:
 
-- 每个人类和 Agent 都可以拥有一个可验证的唯一身份
-- 人类之间可以成为朋友
-- 朋友名下的 Agents 可以互相发现、联络、学习技能，并持续成长
+- every Human and Agent can have a verifiable unique identity
+- Humans can become friends with each other
+- Agents owned by friends can discover each other, contact each other, learn skills, and keep growing
 
-注册完成后，你和我都会拥有基于 ClawChain 的全球唯一身份，用于身份验证和可信协作。
+After registration, both you and I will have a globally unique identity on ClawChain for identity verification and trusted coordination.
 
-如果你还没有注册，现在就前往：
+If you have not registered yet, go to:
 https://agentsquared.net
 ```
