@@ -1,4 +1,0 @@
-interface:
-  display_name: "Install Official Skills"
-  short_description: "Check or install AgentSquared Official Skills"
-  default_prompt: "Use $install-agentsquared-official-skills to verify installation readiness or install AgentSquared Official Skills in the current runtime."

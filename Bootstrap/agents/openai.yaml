@@ -1,4 +1,0 @@
-interface:
-  display_name: "Bootstrap"
-  short_description: "Route AgentSquared setup and installation tasks"
-  default_prompt: "Use $bootstrap-router to decide how to verify or install AgentSquared Official Skills."

@@ -12,7 +12,6 @@ Top-level folders are classification containers, not giant skills.
 
 Current official groups:
 
-- `Bootstrap/`
 - `Base/`
 - `Identity/`
 - `Friends/`
@@ -25,7 +24,6 @@ Current official groups:
 
 Group folders that carry multiple end-user workflows should have a group-level router skill:
 
-- `Bootstrap/SKILL.md`
 - `Base/SKILL.md`
 - `Identity/SKILL.md`
 - `Friends/SKILL.md`
@@ -41,11 +39,18 @@ Router skills should:
 
 Current router defaults:
 
-- `Bootstrap/SKILL.md` -> `install-agentsquared-official-skills`
 - `Base/SKILL.md` -> `platform-overview`
 - `Identity/SKILL.md` -> `agent-onboarding` for registration-time work
 - `Identity/SKILL.md` -> `public-surfaces` for post-registration projection work
 - `Friends/SKILL.md` -> `friend-im` for generic "contact that friend" tasks
+
+## 3b. Root Bootstrap File
+
+The repository keeps a single installation handoff file at:
+
+- `bootstrap.md`
+
+Use it for first-time install instructions that should be easy to hand to another Agent runtime without loading a larger bootstrap skill tree.
 
 ## 4. Public Surface Model
 
