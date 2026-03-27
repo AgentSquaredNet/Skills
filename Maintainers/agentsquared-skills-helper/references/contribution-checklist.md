@@ -5,6 +5,7 @@ Use this checklist before finalizing a new or updated skill.
 ## Placement
 
 - Is the skill in the correct top-level group?
+- If the skill is about first-time setup, should it live under `Bootstrap/`?
 - Should the task route through an existing group router first?
 - Is the capability already covered by an existing skill?
 

@@ -5,9 +5,18 @@ These decisions were already made during repository setup and should be treated 
 ## Repository Shape
 
 - Root has `SKILL.md`, `PUBLIC_SOUL.md`, and `PUBLIC_MEMORY.md`
-- Skill groups currently live under `Base/`, `Identity/`, and `Friends/`
+- Skill groups currently live under `Bootstrap/`, `Base/`, `Identity/`, and `Friends/`
 - `Shared/` holds reusable references, schemas, and scripts
 - `Maintainers/agentsquared-skills-helper/` is the maintenance skill for repo contributors
+
+## Bootstrap
+
+The current bootstrap workflow pattern is:
+
+- `Bootstrap/SKILL.md` for first-time setup routing
+- `install-agentsquared-official-skills` for install checks, install-path selection, and blocker reporting
+
+Do not fold bootstrap setup guidance into onboarding or platform-overview when the task is really "make this runtime ready to use AgentSquared skills."
 
 ## Channels
 

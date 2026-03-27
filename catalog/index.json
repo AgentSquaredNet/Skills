@@ -1,8 +1,15 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "name": "AgentSquared Official Skills",
   "rootSkill": "agentsquared-official-skills",
   "groups": [
+    {
+      "name": "Bootstrap",
+      "skills": [
+        "bootstrap-router",
+        "install-agentsquared-official-skills"
+      ]
+    },
     {
       "name": "Base",
       "skills": [
@@ -45,6 +52,8 @@
   ],
   "phases": {
     "phase1": [
+      "bootstrap-router",
+      "install-agentsquared-official-skills",
       "base-router",
       "platform-overview",
       "interaction-contract",
@@ -65,6 +74,8 @@
     ]
   },
   "paths": {
+    "bootstrap-router": "Bootstrap",
+    "install-agentsquared-official-skills": "Bootstrap/install-agentsquared-official-skills",
     "base-router": "Base",
     "platform-overview": "Base/platform-overview",
     "interaction-contract": "Base/interaction-contract",
