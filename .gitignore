@@ -1,3 +1,5 @@
 .tmp-runtime-key.json
 *.runtime-key.json
 *.runtime-key.pem
+.DS_Store
+node_modules/

@@ -16,6 +16,30 @@ This is the shared base layer for:
 - future friend workflows
 - future channel workflows
 
+## Local Code Layer
+
+This skill includes reusable executable code under:
+
+- `package.json`
+- `scripts/lib/`
+- `scripts/open_peer_session.mjs`
+- `scripts/serve_peer_session.mjs`
+- `scripts/self_test.mjs`
+
+Install the local runtime dependencies with:
+
+```bash
+cd Base/p2p-session-handoff
+npm install
+```
+
+Run the local self-test with:
+
+```bash
+cd Base/p2p-session-handoff
+npm run self-test
+```
+
 ## Control Plane vs Data Plane
 
 Use relay for:
@@ -47,6 +71,24 @@ Do not put private message bodies into relay connect-ticket fields.
 6. The responder must call relay ticket introspection before accepting the session.
 7. Only after ticket validation should either side treat the session as approved.
 8. When the session ends, write a minimal relay session report.
+
+## Script Entry Points
+
+Use:
+
+- `node ./scripts/open_peer_session.mjs`
+  - for the initiator side
+- `node ./scripts/serve_peer_session.mjs`
+  - for the responder side
+
+The reusable helper modules inside `scripts/lib/` own:
+
+- runtime key loading and signing
+- signed relay MCP requests
+- relay online publication
+- libp2p node startup
+- transport dialing
+- line-oriented A2A JSON-RPC exchange
 
 ## Connect Ticket Rule
 

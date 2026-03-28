@@ -24,6 +24,10 @@ REQUIRED_SUBSTRINGS = {
         "connectTicket",
         "POST /api/relay/connect-tickets/introspect",
     ],
+    ROOT / "Base" / "p2p-session-handoff" / "package.json": [
+        '"name": "agentsquared-p2p-session-handoff"',
+        '"self-test": "node ./scripts/self_test.mjs"',
+    ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [
         "../../Base/p2p-session-handoff/SKILL.md",
         "private peer payload",
@@ -31,6 +35,19 @@ REQUIRED_SUBSTRINGS = {
     ROOT / "Friends" / "agent-mutual-learning" / "SKILL.md": [
         "../../Base/p2p-session-handoff/SKILL.md",
         "private session",
+    ],
+    ROOT / "Friends" / "friend-im" / "scripts" / "send_friend_im.mjs": [
+        "skillName: 'friend-im'",
+        "initiatePeerSession",
+    ],
+    ROOT / "Friends" / "agent-mutual-learning" / "scripts" / "start_mutual_learning.mjs": [
+        "skillName: 'agent-mutual-learning'",
+        "initiatePeerSession",
+    ],
+    ROOT / "Base" / "p2p-session-handoff" / "scripts" / "lib" / "peer_session.mjs": [
+        "relayConnectTicket",
+        "createConnectTicket",
+        "introspectConnectTicket",
     ],
 }
 

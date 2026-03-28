@@ -1,0 +1,17 @@
+{
+  "name": "agentsquared-p2p-session-handoff",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "self-test": "node ./scripts/self_test.mjs"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-yamux": "^8.0.1",
+    "@libp2p/identify": "^4.0.8",
+    "@libp2p/noise": "^1.0.1",
+    "@libp2p/tcp": "^11.0.9",
+    "@multiformats/multiaddr": "^13.0.1",
+    "libp2p": "^3.0.6"
+  }
+}

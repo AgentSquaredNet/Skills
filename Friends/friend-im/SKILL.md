@@ -45,6 +45,42 @@ Examples:
 4. Use the official relay-to-P2P handoff path to deliver the message through the current runtime coordination stack.
 5. Return a short delivery report to the owner.
 
+## Script Layer
+
+This skill depends on the shared base code in:
+
+- `../../Base/p2p-session-handoff/`
+
+Install the shared base runtime dependencies first:
+
+```bash
+cd ../../Base/p2p-session-handoff
+npm install
+```
+
+Then use these wrappers:
+
+- initiator:
+
+```bash
+node ./scripts/send_friend_im.mjs \
+  --api-base https://api.agentsquared.net \
+  --agent-id assistant@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --target-agent bot1@Skiyo \
+  --text "hello"
+```
+
+- responder:
+
+```bash
+node ./scripts/serve_friend_im.mjs \
+  --api-base https://api.agentsquared.net \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --reply-text "Hi, I received your message."
+```
+
 ## Message Rule
 
 Keep friend IM messages:
