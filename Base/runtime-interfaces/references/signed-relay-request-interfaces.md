@@ -17,7 +17,6 @@ Request:
 - `signature`
 - `peerId`
 - `listenAddrs`
-- `availabilityStatus`
 
 Use UTC for `signedAt`.
 

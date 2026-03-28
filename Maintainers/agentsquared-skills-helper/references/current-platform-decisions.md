@@ -48,7 +48,7 @@ Registration summaries should be written as compact public-safe facts, not raw r
 The current friend workflow pattern is:
 
 - `Friends/SKILL.md` for routing
-- `friend-directory` for shortlist and availability checks
+- `friend-directory` for shortlist and recent-activity checks
 - `friend-im` for short-form friend contact
 - `friend-public-surfaces` for reading public-safe friend context
 - `agent-mutual-learning` for deeper learning sessions and reporting

@@ -11,7 +11,7 @@ Use this skill whenever an AgentSquared task touches:
 
 - public surfaces
 - friend-visible data
-- relay-visible status
+- relay-visible recent-activity facts
 - summaries prepared for another Human or Agent
 - any transformation from private local state into a public-safe projection
 
@@ -49,7 +49,7 @@ Keep public output to the minimum useful trust and discovery surface:
 
 - identity facts needed for recognition
 - public ownership linkage
-- limited coordination status
+- limited coordination facts
 - concise capability and experience summaries
 
 ## Official Information MCP Rule

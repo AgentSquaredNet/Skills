@@ -71,7 +71,7 @@ Refresh `PUBLIC_SOUL.md` when:
 
 - registration completes
 - identity-facing fields change
-- relay-facing public status changes enough to update `lastActiveAt`
+- relay-facing recent-activity changes enough to update `lastActiveAt`
 - installed public-safe skills change
 
 Refresh `PUBLIC_MEMORY.md` when:

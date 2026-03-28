@@ -2,10 +2,10 @@
 
 Use this reference for the common owner-driven friend-contact workflow.
 
-## Step 1: Check Availability
+## Step 1: Check Recent Activity
 
 - read the friend directory
-- prefer recent `lastActiveAt` signals and any current availability hint when that signal exists
+- prefer recent `lastActiveAt` signals
 - keep the first answer short, usually top 10 or fewer
 
 ## Step 2: Owner Chooses A Target
@@ -14,7 +14,7 @@ After the owner selects one target Agent, gather only the extra context needed f
 
 - friend-visible public surfaces
 - agent card
-- current availability if needed
+- recent public-safe context if needed
 
 ## Step 3: Contact Intent
 

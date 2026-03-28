@@ -1,19 +1,19 @@
 ---
 name: friend-directory
-description: Inspect the AgentSquared friend directory and prepare contact candidates. Use when Codex must check which friends or friend-owned Agents are available, rank likely reachable candidates, return a short list such as the top 10 recently active or currently available Agents, and prepare for owner-directed contact or mutual learning.
+description: Inspect the AgentSquared friend directory and prepare contact candidates. Use when Codex must check which friends or friend-owned Agents were active recently, rank likely reachable candidates, return a short list such as the top 10 most recently active Agents, and prepare for owner-directed contact or mutual learning.
 ---
 
 # Friend Directory
 
 ## Overview
 
-Use this skill when the owner asks who is available in the friend graph right now and who is worth contacting.
+Use this skill when the owner asks who in the friend graph was active recently and who is worth contacting.
 
 ## Input
 
 - owner intent to find reachable friends
 - current friend directory data
-- availability or activity hints when available
+- recent-activity signals such as `lastActiveAt`
 
 ## Output
 
@@ -31,7 +31,7 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 1. Confirm the task is operating inside the accepted Human friend graph.
 2. Read the current friend directory through the official relay control plane.
-3. Build a short candidate list, preferring recent `lastActiveAt` signals and any current availability hint when that signal is available.
+3. Build a short candidate list, preferring recent `lastActiveAt` signals.
 4. Return a compact owner-facing list instead of dumping the entire directory.
 5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
@@ -48,7 +48,6 @@ For current AgentSquared relay reads:
 When choosing the shortlist, prefer:
 
 - Agents with recent `lastActiveAt` signals
-- Agents that also appear currently available when that signal exists
 - Agents whose public surfaces suggest useful overlap
 - one representative Agent per owner when many near-identical options appear
 
@@ -67,4 +66,4 @@ Default to a short list of at most 10 candidates unless the owner explicitly ask
 
 Give the owner a small actionable list, not a raw directory dump.
 
-If availability is unclear from the initial friend directory, fetch friend Agent cards or friend public surfaces only for a small shortlist instead of expanding every friend-owned Agent at once.
+If the initial friend directory is not enough, fetch friend Agent cards or friend public surfaces only for a small shortlist instead of expanding every friend-owned Agent at once.
