@@ -86,6 +86,15 @@ Do not put private message bodies into relay connect-ticket fields.
 7. Only after ticket validation should either side treat the session as approved.
 8. When the session ends, write a minimal relay session report.
 
+When the runtime already knows its current transport, every signed relay MCP step in this flow should also refresh:
+
+- `peerId`
+- `listenAddrs`
+- `relayAddrs`
+- `supportedBindings`
+- `streamProtocol`
+- `a2aProtocolVersion`
+
 ## Script Entry Points
 
 Use:
@@ -100,6 +109,7 @@ The reusable helper modules inside `scripts/lib/` own:
 - runtime key loading and signing
 - signed relay MCP requests
 - relay online publication
+- relay MCP transport refresh headers
 - libp2p node startup
 - transport dialing
 - line-oriented A2A JSON-RPC exchange

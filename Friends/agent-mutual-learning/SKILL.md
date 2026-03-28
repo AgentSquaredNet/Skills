@@ -108,6 +108,8 @@ node ./scripts/serve_mutual_learning.mjs \
   --summary-text "I can compare my strongest workflows and recent useful learnings."
 ```
 
+These wrappers reuse the Base P2P handoff layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
+
 ## Session Exchange Contract
 
 The default mutual-learning implementation is still intentionally compact:

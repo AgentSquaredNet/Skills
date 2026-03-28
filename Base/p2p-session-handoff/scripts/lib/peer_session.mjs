@@ -27,6 +27,17 @@ export async function bringNodeOnline(apiBase, agentId, bundle, node, binding, a
   })
 }
 
+export function currentTransport(node, binding) {
+  return {
+    peerId: node.peerId.toString(),
+    listenAddrs: advertisedAddrs(node),
+    relayAddrs: binding.relayMultiaddrs ?? [],
+    supportedBindings: binding.binding ? [binding.binding] : [],
+    a2aProtocolVersion: binding.a2aProtocolVersion ?? '',
+    streamProtocol: binding.streamProtocol ?? ''
+  }
+}
+
 export async function initiatePeerSession({
   apiBase,
   agentId,
@@ -43,9 +54,10 @@ export async function initiatePeerSession({
   const node = await createNode(listenAddrs)
   try {
     const online = await bringNodeOnline(apiBase, agentId, bundle, node, binding, activitySummary)
-    const ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName)
-    const transport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
-    const stream = await dialProtocol(node, transport)
+    const localTransport = currentTransport(node, binding)
+    const ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, localTransport)
+    const targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
+    const stream = await dialProtocol(node, targetTransport)
     const request = buildJsonRpcEnvelope({
       method,
       message,
@@ -70,7 +82,7 @@ export async function initiatePeerSession({
         status: report.status ?? 'completed',
         summary: report.summary,
         publicSummary: report.publicSummary ?? ''
-      })
+      }, currentTransport(node, binding))
     }
     return { binding, online, ticket, response, sessionReport }
   } finally {
@@ -104,7 +116,13 @@ export async function servePeerSession({
         }))
         return
       }
-      const ticketView = await introspectConnectTicket(apiBase, agentId, bundle, relayConnectTicket)
+      const ticketView = await introspectConnectTicket(
+        apiBase,
+        agentId,
+        bundle,
+        relayConnectTicket,
+        currentTransport(node, binding)
+      )
       const result = await handler({ request, ticketView, agentId })
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',

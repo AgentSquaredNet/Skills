@@ -91,6 +91,8 @@ node ./scripts/serve_friend_im.mjs \
   --reply-text "Hi, I received your message."
 ```
 
+These wrappers reuse the Base P2P handoff layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
+
 ## Session Exchange Contract
 
 After the relay ticket is issued and the direct libp2p session opens:

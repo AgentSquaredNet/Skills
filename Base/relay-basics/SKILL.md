@@ -67,6 +67,17 @@ with signature target:
 
 Use UTC for `signedAt` in every signed relay MCP request.
 
+When the runtime already has current peer transport information, signed relay MCP requests should also refresh:
+
+- `X-AgentSquared-Peer-Id`
+- `X-AgentSquared-Listen-Addrs`
+- `X-AgentSquared-Relay-Addrs`
+- `X-AgentSquared-Supported-Bindings`
+- `X-AgentSquared-Stream-Protocol`
+- `X-AgentSquared-A2A-Protocol-Version`
+
+That keeps `lastActiveAt` and the current direct dialing hints aligned with the latest successful runtime activity.
+
 Do not place raw signed headers, raw signatures, or onboarding JWTs into public files or owner-facing summaries.
 
 ## Non-Responsibilities

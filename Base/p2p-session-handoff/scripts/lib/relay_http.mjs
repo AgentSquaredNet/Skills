@@ -50,42 +50,75 @@ export function signedHeaders(method, path, agentId, bundle) {
   }
 }
 
-export async function signedJson(apiBase, method, path, agentId, bundle, payload = null) {
+function appendCsv(headers, name, values = []) {
+  const cleaned = values.map((value) => `${value}`.trim()).filter(Boolean)
+  if (cleaned.length > 0) {
+    headers[name] = cleaned.join(',')
+  }
+}
+
+export function transportRefreshHeaders(transport = null) {
+  if (!transport) return {}
+  const headers = {}
+  const peerId = `${transport.peerId ?? ''}`.trim()
+  if (peerId) {
+    headers['X-AgentSquared-Peer-Id'] = peerId
+  }
+  appendCsv(headers, 'X-AgentSquared-Listen-Addrs', transport.listenAddrs ?? [])
+  appendCsv(headers, 'X-AgentSquared-Relay-Addrs', transport.relayAddrs ?? [])
+  appendCsv(headers, 'X-AgentSquared-Supported-Bindings', transport.supportedBindings ?? [])
+  const streamProtocol = `${transport.streamProtocol ?? ''}`.trim()
+  if (streamProtocol) {
+    headers['X-AgentSquared-Stream-Protocol'] = streamProtocol
+  }
+  const a2aProtocolVersion = `${transport.a2aProtocolVersion ?? ''}`.trim()
+  if (a2aProtocolVersion) {
+    headers['X-AgentSquared-A2A-Protocol-Version'] = a2aProtocolVersion
+  }
+  return headers
+}
+
+export async function signedJson(apiBase, method, path, agentId, bundle, payload = null, transport = null) {
   const response = await fetch(`${apiBase}${path}`, {
     method,
-    headers: signedHeaders(method, path, agentId, bundle),
+    headers: {
+      ...signedHeaders(method, path, agentId, bundle),
+      ...transportRefreshHeaders(transport)
+    },
     body: payload == null ? undefined : JSON.stringify(payload)
   })
   return parseJsonResponse(response)
 }
 
-export async function createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName) {
+export async function createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport = null) {
   return signedJson(apiBase, 'POST', '/api/relay/connect-tickets', agentId, bundle, {
     targetAgentId,
     skillName
-  })
+  }, transport)
 }
 
-export async function introspectConnectTicket(apiBase, agentId, bundle, ticket) {
+export async function introspectConnectTicket(apiBase, agentId, bundle, ticket, transport = null) {
   return signedJson(apiBase, 'POST', '/api/relay/connect-tickets/introspect', agentId, bundle, {
     ticket
-  })
+  }, transport)
 }
 
-export async function reportSession(apiBase, agentId, bundle, payload) {
-  return signedJson(apiBase, 'POST', '/api/relay/session-reports', agentId, bundle, payload)
+export async function reportSession(apiBase, agentId, bundle, payload, transport = null) {
+  return signedJson(apiBase, 'POST', '/api/relay/session-reports', agentId, bundle, payload, transport)
 }
 
-export async function getFriendDirectory(apiBase, agentId, bundle) {
-  return signedJson(apiBase, 'GET', '/api/relay/friends', agentId, bundle)
+export async function getFriendDirectory(apiBase, agentId, bundle, transport = null) {
+  return signedJson(apiBase, 'GET', '/api/relay/friends', agentId, bundle, null, transport)
 }
 
-export async function getAgentCard(apiBase, agentId, bundle, targetAgentId) {
+export async function getAgentCard(apiBase, agentId, bundle, targetAgentId, transport = null) {
   return signedJson(
     apiBase,
     'GET',
     `/api/relay/agents/${encodeURIComponent(targetAgentId)}/.well-known/agent-card.json`,
     agentId,
-    bundle
+    bundle,
+    null,
+    transport
   )
 }

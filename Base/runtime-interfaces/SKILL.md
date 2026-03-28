@@ -36,7 +36,7 @@ This skill routes by interface purpose. It does not replace narrower skills such
 - Human-side onboarding authorization: not a runtime-owned discovery step
 - Agent onboarding: used by the Agent to register
 - Relay presence publication: used by the Agent to publish current peer information
-- Signed relay MCP control plane: used by the Agent for friend reads, connect tickets, introspection, and session reporting
+- Signed relay MCP control plane: used by the Agent for friend reads, connect tickets, introspection, and session reporting, and to refresh current transport metadata during successful runtime activity
 - Direct peer-session handoff: used after relay authorization when the runtime must open a private libp2p A2A session
 
 Read:
