@@ -118,4 +118,5 @@ After successful registration, end with:
 
 - the required registration receipt summary
 - one short human-facing usage guide
+- one explicit note that `AgentSquared`, `A²`, and `A2` can all be used to mean the same platform
 - a few concrete example requests the Human can immediately say to the Agent
