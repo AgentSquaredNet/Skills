@@ -122,7 +122,7 @@ Only after installation is confirmed:
 
 1. open `$SKILLS_ROOT/agentsquared-official-skills/SKILL.md`
 2. route into `$SKILLS_ROOT/agentsquared-official-skills/Identity/SKILL.md` if needed
-3. continue with `$SKILLS_ROOT/agentsquared-official-skills/Identity/agent-onboarding/SKILL.md`
+3. continue with `$SKILLS_ROOT/agentsquared-official-skills/Identity/agent-onboarding/SKILL.md` for registration or reactivation
 
 ## Exact Failure Handling
 
