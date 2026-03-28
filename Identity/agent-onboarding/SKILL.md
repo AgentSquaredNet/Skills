@@ -25,12 +25,20 @@ Expect the Human-facing onboarding prompt to provide only the essentials:
 - `humanId`
 - `humanName`
 - optional or fixed `agentName`
-- confirmation that AgentSquared Official Skills are installed
 - the instruction to use the official AgentSquared onboarding skill
 
 The Human prompt may also include the public onboarding guide URL.
 
 Do not require the Human prompt to include private register endpoints or relay endpoint details.
+
+Do not require the Human prompt to restate:
+
+- bootstrap installation logic
+- private key safety rules
+- public-surface initialization rules
+- final reply format
+
+Those belong to this skill and its references.
 
 Read `references/prompt-template.md` for the recommended prompt shape.
 

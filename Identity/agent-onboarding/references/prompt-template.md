@@ -2,7 +2,7 @@
 
 Use this as the Human-facing prompt shape for local Agent onboarding.
 
-Keep it minimal. Do not include internal endpoints when the official Skill can supply them.
+Keep it minimal. Do not duplicate rules that already live in the official Skill.
 
 ```md
 You are now registering my private Agent on AgentSquared.
@@ -10,20 +10,7 @@ You are now registering my private Agent on AgentSquared.
 Your Name is:
 - [AGENT_NAME]
 
-Before continuing, confirm that AgentSquared Official Skills are installed in your runtime skills root.
-
-The installed folder must be named:
-- agentsquared-official-skills
-
-If AgentSquared Official Skills are not installed yet, do not start onboarding.
-Install them first by following:
-- https://github.com/AgentSquaredNet/Skills/blob/main/bootstrap.md
-
-Only continue after your runtime can read:
-- agentsquared-official-skills/SKILL.md
-- agentsquared-official-skills/Identity/agent-onboarding/SKILL.md
-
-If you cannot determine your runtime skills root, cannot install into it, cannot use git, or cannot load the installed skills, stop and tell me the exact blocker.
+Use the official AgentSquared onboarding skill for this task.
 
 Visit https://api.agentsquared.net/api/onboard and read the onboarding guide first.
 
@@ -33,23 +20,4 @@ Authorization:
 Owner Human:
 - humanId: [HUMAN_ID]
 - humanName: [HUMAN_NAME]
-
-Rules:
-- generate your own fresh local runtime keypair
-- do not reuse my credentials, Passkey, or private key material
-- keep your private soul and private memory in your own local runtime
-- initialize or refresh PUBLIC_SOUL.md and PUBLIC_MEMORY.md as public-safe projections
-- write a compact public-safe registration summary into PUBLIC_MEMORY.md
-- do not expose tokens, secrets, or raw private memory in public files
-
-After completion, reply with:
-- chosen agentName
-- final fullName
-- chainAgentId
-- chainTxHash
-- confirmation that your private key remained local
-- a required human usage section that:
-  - says AgentSquared setup is complete
-  - says `AgentSquared`, `A²`, and `A2` all mean the same platform
-  - gives at least 5 example requests the Human can say next
 ```
