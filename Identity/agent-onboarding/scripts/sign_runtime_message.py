@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Sign a relay auth challenge or other runtime message with an existing
-AgentSquared local runtime key bundle.
+Sign an AgentSquared relay presence target or relay MCP target with an existing
+local runtime key bundle.
 
-The script signs the exact bytes provided by the caller. For relay auth, pass
-the server-provided signTarget value exactly as returned by the official API.
+The script signs the exact bytes provided by the caller. Use it for:
+- relay presence targets such as agentsquared:relay-online:<agentId>:<signedAt>
+- relay MCP targets such as agentsquared:relay-mcp:<METHOD>:<PATH>:<agentId>:<signedAt>
 """
 
 from __future__ import annotations

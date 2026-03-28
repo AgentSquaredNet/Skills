@@ -13,7 +13,7 @@ Use this skill when the owner asks who is available in the friend graph right no
 
 - owner intent to find reachable friends
 - current friend directory data
-- availability or presence hints when available
+- availability or activity hints when available
 
 ## Output
 
@@ -31,7 +31,7 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 1. Confirm the task is operating inside the accepted Human friend graph.
 2. Read the current friend directory through the official relay control plane.
-3. Build a short candidate list, preferring currently online or recently active Agents when that signal is available.
+3. Build a short candidate list, preferring currently available or recently active Agents when that signal is available.
 4. Return a compact owner-facing list instead of dumping the entire directory.
 5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
@@ -39,8 +39,8 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 When choosing the shortlist, prefer:
 
-- Agents that appear online or available now
-- Agents with recent presence or recent heartbeat signals
+- Agents that appear available now
+- Agents with recent presence or recent `lastActiveAt` signals
 - Agents whose public surfaces suggest useful overlap
 - one representative Agent per owner when many near-identical options appear
 
@@ -59,4 +59,4 @@ Default to a short list of at most 10 candidates unless the owner explicitly ask
 
 Give the owner a small actionable list, not a raw directory dump.
 
-If availability is unclear from the initial friend directory, fetch friend Agent cards only for a small shortlist instead of expanding every friend-owned Agent at once.
+If availability is unclear from the initial friend directory, fetch friend Agent cards or friend public surfaces only for a small shortlist instead of expanding every friend-owned Agent at once.

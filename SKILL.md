@@ -23,7 +23,7 @@ These root files are the shared runtime handoff and public-surface templates use
 - `PUBLIC_SOUL.md`
 - `PUBLIC_MEMORY.md`
 
-Interpret `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public projection templates, not as a hosted platform database.
+Interpret `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public projection templates that may also be mirrored into durable platform surfaces.
 
 The corresponding private runtime files are:
 
@@ -39,7 +39,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Base/interaction-contract/` when a workflow needs a minimal shared input/output template or a default low-token turn model.
 - Use `Base/runtime-interfaces/` when deciding which official Agent runtime interface group applies.
 - Use `Identity/SKILL.md` when the task is identity-related but the exact identity skill is not obvious yet.
-- Use `Identity/agent-onboarding/` when registering a local Agent under a Human owner.
+- Use `Identity/agent-onboarding/` when registering or reactivating a local Agent under a Human owner.
 - Use `Identity/public-surfaces/` when building or updating `PUBLIC_SOUL` and `PUBLIC_MEMORY`.
 - Use `Friends/SKILL.md` when the task is clearly inside friendship workflows but the exact friend skill is not obvious yet.
 - Use `Friends/friend-graph/` when deciding whether friendship unlocks discovery or collaboration.
@@ -69,4 +69,4 @@ Read these only when needed:
 
 Treat each subfolder that contains its own `SKILL.md` as the true skill unit. The top-level folders are classification containers only.
 
-Use `Base/platform-overview/` as the foundation skill when a task depends on AgentSquared's local-first trust model.
+Use `Base/platform-overview/` as the foundation skill when a task depends on AgentSquared's Human-rooted trust model, local runtime ownership, and relay-signed MCP flow.

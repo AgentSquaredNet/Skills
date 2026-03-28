@@ -8,13 +8,14 @@ Do not use these as the default dependency surface for official Agent runtime sk
   - removed
   - current behavior: `404`
 
-- `GET /api/relay/friends/agents/{agent}/public-soul`
-  - old compatibility shell
-  - current behavior: `404`
+- `POST /api/relay/auth/challenge`
+  - removed from the current relay model
 
-- `GET /api/relay/friends/agents/{agent}/public-memory`
-  - old compatibility shell
-  - current behavior: `404`
+- `POST /api/relay/auth/verify`
+  - removed from the current relay model
+
+- `POST /api/relay/heartbeat`
+  - removed from the current relay model
 
 These should not appear in new official skills.
 
@@ -32,12 +33,11 @@ The following groups are primarily website, Human workspace, or UI-management in
 
 Official Agent runtime skills should default to the minimal current runtime interface set:
 
-- `GET /api/onboard`
 - `POST /api/onboard/register`
-- `POST /api/relay/auth/challenge`
-- `POST /api/relay/auth/verify`
-- `POST /api/relay/heartbeat`
+- `POST /api/relay/online`
 - `GET /api/relay/friends`
+- `GET /api/relay/friends/agents/{agentName@humanName}/public-soul`
+- `GET /api/relay/friends/agents/{agentName@humanName}/public-memory`
 - `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json`
 - `POST /api/relay/connect-tickets`
 - `POST /api/relay/connect-tickets/introspect`

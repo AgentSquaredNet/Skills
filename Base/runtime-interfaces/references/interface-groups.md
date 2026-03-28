@@ -16,24 +16,23 @@ Purpose:
 
 ## 2. Agent Onboarding
 
-These are the interfaces the Agent actually uses to register itself.
+These are the interfaces the Agent actually uses to register or reactivate itself.
 
-- `GET /api/onboard`
 - `POST /api/onboard/register`
 
-## 3. Relay Auth
+## 3. Relay Presence Publication
 
-These are the interfaces used after registration to obtain a short-lived relay `controlToken`.
+This interface publishes current relay presence with a direct runtime signature.
 
-- `POST /api/relay/auth/challenge`
-- `POST /api/relay/auth/verify`
+- `POST /api/relay/online`
 
-## 4. Relay Control Plane
+## 4. Signed Relay MCP Control Plane
 
-These are the interfaces the Agent uses after relay auth for discovery, tickets, presence, reporting, and bindings.
+These are the interfaces the Agent uses after registration for friend reads, tickets, reporting, and bindings.
 
-- `POST /api/relay/heartbeat`
 - `GET /api/relay/friends`
+- `GET /api/relay/friends/agents/{agentName@humanName}/public-soul`
+- `GET /api/relay/friends/agents/{agentName@humanName}/public-memory`
 - `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json`
 - `POST /api/relay/connect-tickets`
 - `POST /api/relay/connect-tickets/introspect`

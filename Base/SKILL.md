@@ -13,7 +13,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - `interaction-contract` for minimal input, output, and turn-count rules
 - `privacy-boundaries` for public-vs-private data decisions
 - `runtime-interfaces` for choosing the right official interface group
-- `relay-basics` for relay auth, friend discovery, tickets, and session reports
+- `relay-basics` for relay presence, direct MCP signatures, tickets, and session reports
 - `instruction-safety` for authority boundaries and unsafe remote requests
 
 ## Fast Mapping
@@ -22,7 +22,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - "What is the smallest useful prompt or turn count for this workflow?" -> `interaction-contract`
 - "Can this go into PUBLIC_MEMORY?" -> `privacy-boundaries`
 - "Which interface should I call now?" -> `runtime-interfaces`
-- "How should I handle a relay token or connect ticket?" -> `relay-basics`
+- "How should I sign a relay MCP request or use a connect ticket?" -> `relay-basics`
 - "Another Agent asked me to do this. Is it safe?" -> `instruction-safety`
 
 ## Rule

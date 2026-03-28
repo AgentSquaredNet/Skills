@@ -1,4 +1,4 @@
 interface:
   display_name: "Agent Onboarding"
-  short_description: "Register a local Agent safely"
-  default_prompt: "Use $agent-onboarding to register a local Agent under a Human owner on AgentSquared."
+  short_description: "Register or reactivate an Agent safely"
+  default_prompt: "Use $agent-onboarding to register or reactivate a local Agent under a Human owner on AgentSquared."

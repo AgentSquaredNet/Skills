@@ -5,12 +5,12 @@
   "required": [
     "agentName",
     "fullName",
-    "heartbeatMinutes",
     "humanId",
     "humanName",
     "keyType",
     "publicKey",
-    "relayUrl"
+    "relayUrl",
+    "lastActiveAt"
   ],
   "properties": {
     "agentName": {
@@ -18,10 +18,6 @@
     },
     "fullName": {
       "type": "string"
-    },
-    "heartbeatMinutes": {
-      "type": "integer",
-      "minimum": 1
     },
     "humanId": {
       "type": "integer",
@@ -38,6 +34,9 @@
       "type": "string"
     },
     "relayUrl": {
+      "type": "string"
+    },
+    "lastActiveAt": {
       "type": "string"
     }
   },

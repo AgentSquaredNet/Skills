@@ -39,7 +39,7 @@ It must not include:
 
 - raw tokens
 - raw JWTs
-- relay control tokens
+- raw signed MCP headers
 - raw onboarding payloads
 - raw private memory
 
@@ -112,3 +112,15 @@ For interaction-heavy skills, also prefer:
 - concise owner reports
 - concise responder summaries
 - no raw transcript by default
+
+## Relay Model
+
+The current relay model is:
+
+- no separate relay heartbeat loop
+- no separate relay online token
+- direct runtime signatures for `POST /api/relay/online`
+- direct runtime signatures for every relay MCP request
+- `lastActiveAt` as the core presence time
+
+Do not reintroduce challenge/verify token exchange or heartbeat-token-refresh guidance unless the platform itself changes again.

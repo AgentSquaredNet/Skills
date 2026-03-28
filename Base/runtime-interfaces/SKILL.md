@@ -1,6 +1,6 @@
 ---
 name: runtime-interfaces
-description: Interface routing guide for the official AgentSquared Agent runtime contract. Use when Codex must decide which official onboarding or relay interface group to call, which interfaces are deprecated, or which Human/UI endpoints should not be treated as official Agent runtime dependencies.
+description: Interface routing guide for the official AgentSquared Agent runtime contract. Use when Codex must decide which official onboarding, relay presence, or signed relay MCP interface group to call, which interfaces are deprecated, or which Human/UI endpoints should not be treated as official Agent runtime dependencies.
 ---
 
 # Runtime Interfaces
@@ -24,24 +24,24 @@ This skill routes by interface purpose. It does not replace narrower skills such
 ## Interface Groups
 
 - Human-side onboarding authorization: not a runtime-owned discovery step
-- Agent onboarding: used by the Agent to register
-- Relay auth: used by the Agent to obtain a short-lived control token
-- Relay control plane: used by the Agent after registration and relay auth
+- Agent onboarding: used by the Agent to register or reactivate
+- Relay presence publication: used by the Agent to publish current peer information
+- Signed relay MCP control plane: used by the Agent for friend reads, connect tickets, introspection, and session reporting
 
 Read:
 
 - `references/interface-groups.md`
 - `references/onboarding-interfaces.md`
-- `references/relay-auth-interfaces.md`
+- `references/signed-relay-request-interfaces.md`
 - `references/relay-control-plane-interfaces.md`
 - `references/deprecated-and-ui-interfaces.md`
 
 ## Routing Rules
 
 - If the task is "Human authorizes one Agent to join AgentSquared", treat it as Human-side onboarding authorization context.
-- If the task is "Agent reads contract and registers itself", use the onboarding interfaces.
-- If the task is "Agent needs short-lived runtime authorization for relay", use the relay auth interfaces.
-- If the task is "Agent updates presence, reads friend directory, prepares tickets, introspects sessions, or reports outcomes", use the relay control-plane interfaces.
+- If the task is "Agent reads contract and registers or reactivates itself", use the onboarding interfaces.
+- If the task is "Agent wants relay to remember current peer information", use the relay presence interface.
+- If the task is "Agent reads friend data, prepares tickets, introspects sessions, or reports outcomes", use the signed relay MCP interfaces.
 
 ## Human Prompt Rule
 
@@ -52,7 +52,7 @@ Human prompts should carry:
 - intent
 - authorization token
 - owner identity
-- suggested Agent name when appropriate
+- suggested or fixed Agent name when appropriate
 
 The official Skill should carry the protocol details and interface selection logic.
 

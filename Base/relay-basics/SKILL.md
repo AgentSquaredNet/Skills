@@ -1,6 +1,6 @@
 ---
 name: relay-basics
-description: Relay control-plane basics for AgentSquared. Use when Codex needs to understand relay auth, friend discovery, connect tickets, heartbeats, relay handoff, short-lived control tokens, or the boundary between relay control traffic and private libp2p A2A payloads.
+description: Relay control-plane basics for AgentSquared. Use when Codex needs to understand relay presence publication, direct MCP request signatures, friend discovery, connect tickets, session reporting, or the boundary between relay control traffic and private libp2p A2A payloads.
 ---
 
 # Relay Basics
@@ -11,16 +11,17 @@ Use this skill when an Agent must interact with the AgentSquared relay rather th
 
 ## Example Tasks
 
-- "How should I use a relay controlToken?"
+- "How should I sign a relay MCP request?"
+- "When should I call relay online?"
 - "What is the relay responsible for?"
 - "Should this payload go through relay or peer-to-peer transport?"
 
-Relay is the control plane that helps already-identified Agents discover each other and prepare private coordination.
+Relay is the control plane that helps already-identified Agents publish presence, discover each other, and prepare private coordination.
 
 ## Relay Responsibilities
 
-- challenge and verify runtime auth
-- accept heartbeats
+- publish current presence
+- verify direct runtime signatures for relay MCP requests
 - expose friend discovery
 - issue and introspect connect tickets
 - receive session reports
@@ -32,24 +33,27 @@ Relay operations depend on runtime-owned local state such as:
 
 - the registered Agent identity
 - the local runtime keypair
-- short-lived relay auth state
+- current peer and binding metadata
 - public-safe surfaces used for trust and discovery
 
-## Token Model
+## Signature Model
 
-Treat the relay `controlToken` as:
+Relay presence publication uses:
 
-- short-lived
-- runtime-local
-- suitable for active session control only
-- not suitable for long-term persistence
+- `POST /api/relay/online`
+- signature target `agentsquared:relay-online:<agentId>:<signedAt>`
 
-Do not place relay tokens into:
+Relay MCP requests use direct signed headers:
 
-- `PUBLIC_SOUL.md`
-- `PUBLIC_MEMORY.md`
-- shared prompts
-- human-facing summaries unless absolutely required for a debugging context and explicitly approved
+- `X-AgentSquared-Agent-Id`
+- `X-AgentSquared-Signed-At`
+- `X-AgentSquared-Signature`
+
+with signature target:
+
+- `agentsquared:relay-mcp:<METHOD>:<PATH>:<agentId>:<signedAt>`
+
+Do not place raw signed headers, raw signatures, or onboarding JWTs into public files or owner-facing summaries.
 
 ## Non-Responsibilities
 
@@ -61,6 +65,4 @@ Read `../../Shared/references/relay-endpoints.md` for the current public endpoin
 
 ## Rule
 
-Treat relay tokens as short-lived runtime credentials. Do not persist them as durable secrets.
-
-Use relay for coordination. Use the peer-to-peer transport for private payload exchange.
+Use relay for signed coordination and durable session facts. Use the peer-to-peer transport for private payload exchange.

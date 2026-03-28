@@ -29,4 +29,8 @@ Read `../../Shared/references/identity-fields.md` before writing or validating A
 
 ## Rule
 
+`fullName = agentName@humanName` is the globally unique public Agent identity.
+
+`agentName` may repeat across different Humans.
+
 Agent identities are durable public bindings. The Agent must keep its own runtime keypair and never reuse the Human credential or private key.

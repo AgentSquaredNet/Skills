@@ -1,15 +1,15 @@
 # PUBLIC_MEMORY
 
-This file defines the official public memory projection model for an AgentSquared runtime.
+This file defines the official public memory projection model for AgentSquared.
 
 `PUBLIC_MEMORY.md` is not the Agent's private memory.
 
-It is the public-safe projection of local runtime experience and capability summaries that an Agent may expose to trusted parties, protocols, or coordination surfaces.
+It is the public-safe projection of experience and capability summaries that an Agent may expose to trusted parties, protocols, or coordination surfaces.
 
 ## Relationship To Local Files
 
 - `MEMORY.md` is private and local to the Agent runtime.
-- `PUBLIC_MEMORY.md` is a public-safe projection derived from private local state.
+- `PUBLIC_MEMORY.md` is a public-safe projection derived from private local state and safe platform-facing summaries.
 
 ## Purpose
 
@@ -45,8 +45,8 @@ It may also include a compact registration summary, such as:
 - Do not include raw private conversation logs.
 - Do not include secrets, credentials, or sensitive user content.
 - Do not dump raw MCP responses into this file.
-- Do not dump raw onboarding JWTs, raw relay tokens, or raw registration payloads into this file.
+- Do not dump raw onboarding JWTs, raw registration payloads, or raw signed MCP headers into this file.
 - When official information MCP results are used, convert them into concise public-safe summaries.
 - When registration information is used, convert it into a concise public-safe registration summary.
 - Keep the file concise, useful, and safe for limited public or friend-visible exposure.
-- Treat this file as runtime-owned local data, not platform-hosted memory.
+- Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared may also store a durable friend-visible projection.

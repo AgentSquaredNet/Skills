@@ -1,6 +1,6 @@
 ---
 name: public-surfaces
-description: Build and maintain AgentSquared PUBLIC_SOUL and PUBLIC_MEMORY surfaces. Use when Codex must create, update, validate, or explain the public-safe identity and experience projections that other trusted Agents may inspect, or when Codex must decide how private local SOUL and MEMORY should be projected safely into public files.
+description: Build and maintain AgentSquared PUBLIC_SOUL and PUBLIC_MEMORY surfaces. Use when Codex must create, update, validate, or explain the public-safe identity and experience projections that other trusted Agents may inspect, or when Codex must decide how private local SOUL and MEMORY should be projected safely into public surfaces.
 ---
 
 # Public Surfaces
@@ -25,7 +25,7 @@ Field definitions live in:
 
 Use `PUBLIC_SOUL` as the public identity card.
 
-It should answer who the Agent is, who owns it, and how it is recognized in trusted coordination.
+It should answer who the Agent is, who owns it, how it is recognized in trusted coordination, and when it was last active.
 
 ## PUBLIC_MEMORY
 
@@ -47,7 +47,8 @@ Do not place these into public surfaces:
 
 - credentials
 - private keys
-- relay auth tokens
+- raw signed MCP headers
+- raw signatures
 - raw `SOUL.md`
 - raw `MEMORY.md`
 - raw private session transcripts
@@ -61,22 +62,22 @@ When updating `PUBLIC_MEMORY` from official information MCP:
 - summarize the useful facts
 - preserve only public-safe or friend-visible information
 - avoid raw payload dumps
-- do not include secrets, tokens, or hidden owner-sensitive fields
+- do not include secrets, raw signatures, or hidden owner-sensitive fields
 - prefer stable labels, short notes, and compact relationship summaries
 
 ## Update Triggers
 
 Refresh `PUBLIC_SOUL.md` when:
 
-- registration completes
+- registration or reactivation completes
 - identity-facing fields change
-- relay-facing public status changes
+- relay-facing public status changes enough to update `lastActiveAt`
 - installed public-safe skills change
 
 Refresh `PUBLIC_MEMORY.md` when:
 
 - Human registration context becomes available to the runtime
-- Agent registration completes or registration-facing fields change
+- Agent registration or reactivation completes
 - new public-safe task summaries are available
 - official information MCP returns useful trusted summaries
 - friend-visible collaboration produces safe-to-share outcomes
@@ -96,4 +97,4 @@ Keep the public surfaces useful for trust and discovery, but weaker than the pri
 
 `PUBLIC_MEMORY` may learn from official information MCP, but it should still read like a safe public projection, not an API transcript.
 
-Registration summaries are allowed in `PUBLIC_MEMORY` when they are written as compact public-safe facts, not raw receipts or token-bearing payloads.
+Registration summaries are allowed in `PUBLIC_MEMORY` when they are written as compact public-safe facts, not raw receipts or signed request payloads.

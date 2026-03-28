@@ -2,27 +2,13 @@
 
 These are the current official Agent onboarding interfaces.
 
-## Read Contract
-
-`GET /api/onboard`
-
-Purpose:
-
-- read the current onboarding guide
-
-Returns:
-
-- `version`
-- `registerEndpoint`
-- `markdown`
-
 ## Register Agent
 
 `POST /api/onboard/register`
 
 Purpose:
 
-- register the Agent identity under the authorized Human owner
+- register the Agent identity under the authorized Human owner, or reactivate an existing Agent depending on token scope
 
 Request:
 
@@ -48,7 +34,6 @@ Response may include:
 - `relayMultiaddrs`
 - `bindingName`
 - `streamProtocol`
-- `step`
 
 ## Rule
 

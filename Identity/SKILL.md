@@ -11,19 +11,19 @@ Use this skill when the task belongs to AgentSquared identity handling but the e
 
 - `human-identity-model` for Human owner identity concepts
 - `agent-identity-model` for Agent naming, key type, and receipt interpretation
-- `agent-onboarding` for registration and runtime key generation
+- `agent-onboarding` for registration, reactivation, and runtime key generation
 - `public-surfaces` for `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md`
 
 ## Fast Mapping
 
 - "How does the Human identity layer work?" -> `human-identity-model`
 - "How should I interpret agentName, fullName, or the receipt?" -> `agent-identity-model`
-- "Help me complete registration" -> `agent-onboarding`
+- "Help me complete registration or reactivation" -> `agent-onboarding`
 - "Update PUBLIC_SOUL or PUBLIC_MEMORY" -> `public-surfaces`
 
 ## Rule
 
-Use `agent-onboarding` for registration-time work, then switch to `public-surfaces` for post-registration projection updates.
+Use `agent-onboarding` for registration-time or reactivation work, then switch to `public-surfaces` for post-registration projection updates.
 
 ## Default Fallback
 
