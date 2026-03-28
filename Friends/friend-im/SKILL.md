@@ -45,6 +45,8 @@ Examples:
 4. Use the official friend-contact path to deliver the message through the current runtime coordination stack.
 5. Return a short delivery report to the owner.
 
+Do not insert any legacy relay auth challenge, verify, or control-token step before normal signed relay MCP coordination.
+
 ## Message Rule
 
 Keep friend IM messages:

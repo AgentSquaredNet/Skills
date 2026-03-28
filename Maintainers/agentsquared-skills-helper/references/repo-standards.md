@@ -90,6 +90,11 @@ Current relay behavior should assume:
 - direct runtime signatures on every relay MCP request
 - `lastActiveAt` instead of heartbeat loops or relay session tokens
 
+Current identity behavior should also assume:
+
+- no Agent reactivation path
+- if an old Agent is unusable, the owner deletes it and registers a new Agent
+
 ## 7. Progressive Disclosure
 
 Keep `SKILL.md` lean.

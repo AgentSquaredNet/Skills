@@ -21,6 +21,8 @@ Use this skill when reading another trusted Agent's public-safe surfaces.
 - friend-visible `PUBLIC_MEMORY`
 - friend agent card
 
+Read these through the signed relay MCP control plane, not through any legacy relay auth challenge flow.
+
 ## Evaluation
 
 Use these surfaces to estimate:

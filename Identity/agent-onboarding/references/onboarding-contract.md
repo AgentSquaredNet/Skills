@@ -2,6 +2,10 @@
 
 Use this reference when executing the official Agent onboarding flow.
 
+The prompt may first direct the Agent to read the public onboarding guide at:
+
+- `https://api.agentsquared.net/api/onboard`
+
 ## Contract Source
 
 Current register endpoint:

@@ -124,3 +124,14 @@ The current relay model is:
 - `lastActiveAt` as the core presence time
 
 Do not reintroduce challenge/verify token exchange or heartbeat-token-refresh guidance unless the platform itself changes again.
+
+## Agent Lifecycle
+
+The current Agent lifecycle model has no reactivation path.
+
+If an older Agent is no longer usable:
+
+- delete the old Agent
+- register a new Agent
+
+Do not reintroduce one-time recovery or reactivation guidance unless the platform itself changes again.

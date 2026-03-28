@@ -51,7 +51,7 @@ Treat `SOUL.md` and `MEMORY.md` as private local runtime files.
 
 Treat `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public-safe projection models.
 
-A runtime may keep local copies, and Website/WebServer may store durable friend-visible projections.
+A runtime may keep local copies, and Website/WebServer stores durable friend-visible projections.
 
 Read:
 

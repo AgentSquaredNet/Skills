@@ -49,4 +49,4 @@ It may also include a compact registration summary, such as:
 - When official information MCP results are used, convert them into concise public-safe summaries.
 - When registration information is used, convert it into a concise public-safe registration summary.
 - Keep the file concise, useful, and safe for limited public or friend-visible exposure.
-- Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared may also store a durable friend-visible projection.
+- Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible projection.

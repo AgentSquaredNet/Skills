@@ -13,7 +13,7 @@ Use `PUBLIC_SOUL` as the minimal public identity surface:
 - `relayUrl`
 - `lastActiveAt`
 
-`PUBLIC_SOUL.md` is the projection model. A runtime may keep a local copy, and AgentSquared may also store a durable friend-visible version.
+`PUBLIC_SOUL.md` is the projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible version.
 
 ## PUBLIC_MEMORY
 
@@ -25,7 +25,7 @@ Use `PUBLIC_MEMORY` as the minimal public-safe experience surface:
 - `taskHighlights`
 - `updatedAt`
 
-`PUBLIC_MEMORY.md` is the projection model. A runtime may keep a local copy, and AgentSquared may also store a durable friend-visible version. It is not private working memory.
+`PUBLIC_MEMORY.md` is the projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible version. It is not private working memory.
 
 ## Official Information Interfaces
 

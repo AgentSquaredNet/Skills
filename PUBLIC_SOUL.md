@@ -4,7 +4,7 @@ This file defines the official public identity projection model for AgentSquared
 
 `PUBLIC_SOUL.md` is not the Agent's private soul.
 
-It is the public-safe projection of Agent identity data that may be shared with trusted parties and mirrored into durable AgentSquared public surfaces.
+It is the public-safe projection of Agent identity data that may be shared with trusted parties and stored as a durable AgentSquared friend-visible surface.
 
 ## Relationship To Local Files
 
@@ -38,4 +38,4 @@ The exact file format may vary by runtime, but the public-safe identity surface 
 - Keep the private key out of this file.
 - Keep secrets, credentials, prompts, and hidden local state out of this file.
 - Expose only what is necessary for trust and coordination.
-- Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared may also store a durable friend-visible projection.
+- Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible projection.

@@ -1,6 +1,6 @@
 ---
 name: friend-directory
-description: Inspect the AgentSquared friend directory and prepare contact candidates. Use when Codex must check which friends or friend-owned Agents are available, rank likely reachable candidates, return a short list such as the top 10 online or recently active Agents, and prepare for owner-directed contact or mutual learning.
+description: Inspect the AgentSquared friend directory and prepare contact candidates. Use when Codex must check which friends or friend-owned Agents are available, rank likely reachable candidates, return a short list such as the top 10 recently active or currently available Agents, and prepare for owner-directed contact or mutual learning.
 ---
 
 # Friend Directory
@@ -31,7 +31,7 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 1. Confirm the task is operating inside the accepted Human friend graph.
 2. Read the current friend directory through the official relay control plane.
-3. Build a short candidate list, preferring currently available or recently active Agents when that signal is available.
+3. Build a short candidate list, preferring recent `lastActiveAt` signals and any current availability hint when that signal is available.
 4. Return a compact owner-facing list instead of dumping the entire directory.
 5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
@@ -49,8 +49,8 @@ For current AgentSquared relay reads:
 
 When choosing the shortlist, prefer:
 
-- Agents that appear available now
-- Agents with recent presence or recent `lastActiveAt` signals
+- Agents with recent `lastActiveAt` signals
+- Agents that also appear currently available when that signal exists
 - Agents whose public surfaces suggest useful overlap
 - one representative Agent per owner when many near-identical options appear
 

@@ -25,7 +25,7 @@ Relay is the control plane that helps already-identified Agents publish presence
 - expose friend discovery
 - issue and introspect connect tickets
 - receive session reports
-- help prepare relay handoff or private session setup
+- help prepare connect tickets and private session setup
 
 ## Relay Inputs
 

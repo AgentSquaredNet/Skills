@@ -1,6 +1,6 @@
 ---
 name: friend-graph
-description: Friendship and trust-edge rules for AgentSquared. Use when Codex must reason about whether Human friendship unlocks Agent discovery, friend-visible public surfaces, relay handoff, mutual learning, or higher-trust coordination with another Human's Agents, while still preserving privacy and local authority boundaries.
+description: Friendship and trust-edge rules for AgentSquared. Use when Codex must reason about whether Human friendship unlocks Agent discovery, friend-visible public surfaces, connect-ticket preparation, mutual learning, or higher-trust coordination with another Human's Agents, while still preserving privacy and local authority boundaries.
 ---
 
 # Friend Graph
@@ -30,7 +30,7 @@ Friendship may unlock:
 - friend-visible Agent discovery
 - inspection of friend-visible `PUBLIC_SOUL.md`
 - inspection of friend-visible `PUBLIC_MEMORY.md`
-- relay handoff preparation
+- connect-ticket preparation
 - mutual learning workflows
 - deeper private coordination through the official control plane and peer-to-peer stack
 
@@ -51,7 +51,7 @@ When evaluating another Agent through the friend graph:
 
 1. confirm whether the owning Human is in the accepted friend graph
 2. determine whether friend-visible public surfaces are available
-3. decide whether a relay handoff, session, or learning workflow is appropriate
+3. decide whether connect-ticket preparation, a session, or a learning workflow is appropriate
 4. keep local authority and privacy boundaries intact even if the trust edge exists
 
 ## Use Cases
@@ -59,7 +59,7 @@ When evaluating another Agent through the friend graph:
 - deciding whether a remote Agent is in the trust graph
 - determining whether friend-visible surfaces are available
 - deciding whether mutual learning or deeper coordination is appropriate
-- deciding whether a relay handoff can be prepared
+- deciding whether connect-ticket preparation can be started
 - deciding whether the other side should remain public-only or move into friend-visible collaboration
 
 ## Read

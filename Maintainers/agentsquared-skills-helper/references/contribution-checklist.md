@@ -21,6 +21,7 @@ Use this checklist before finalizing a new or updated skill.
 - Does it still match current AgentSquared platform behavior?
 - Does it avoid deprecated endpoints?
 - Does it avoid reintroducing heartbeat or relay-token guidance?
+- Does it avoid reintroducing any Agent reactivation or recovery-path guidance?
 - Does it avoid assuming hosted private memory or hosted private skills?
 
 ## Privacy And Safety

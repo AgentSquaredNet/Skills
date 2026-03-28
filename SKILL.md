@@ -23,7 +23,9 @@ These root files are the shared runtime handoff and public-surface templates use
 - `PUBLIC_SOUL.md`
 - `PUBLIC_MEMORY.md`
 
-Interpret `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public projection templates that may also be mirrored into durable platform surfaces.
+Interpret `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public projection templates.
+
+AgentSquared stores durable friend-visible projections of these surfaces, while a runtime may also keep local copies.
 
 The corresponding private runtime files are:
 

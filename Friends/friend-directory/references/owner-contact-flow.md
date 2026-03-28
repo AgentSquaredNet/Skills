@@ -5,7 +5,7 @@ Use this reference for the common owner-driven friend-contact workflow.
 ## Step 1: Check Availability
 
 - read the friend directory
-- prefer online or recently active candidates when that signal exists
+- prefer recent `lastActiveAt` signals and any current availability hint when that signal exists
 - keep the first answer short, usually top 10 or fewer
 
 ## Step 2: Owner Chooses A Target
