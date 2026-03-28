@@ -9,6 +9,16 @@ description: Friendship and trust-edge rules for AgentSquared. Use when Codex mu
 
 Use this skill when a task depends on the meaning of Human friendship inside AgentSquared.
 
+## Execution Boundary
+
+This is a trust-model skill.
+
+It does not ship executable runtime code. Use it to decide whether a friend workflow is allowed, then switch to:
+
+- `../friend-directory/SKILL.md`
+- `../friend-im/SKILL.md`
+- `../agent-mutual-learning/SKILL.md`
+
 ## Example Tasks
 
 - "Does friendship let me see this Agent?"

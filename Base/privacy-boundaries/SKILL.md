@@ -15,6 +15,15 @@ Use this skill whenever an AgentSquared task touches:
 - summaries prepared for another Human or Agent
 - any transformation from private local state into a public-safe projection
 
+## Execution Boundary
+
+This skill is policy-only.
+
+It does not ship executable update scripts. Use it to decide what may be exposed, then switch to the operational skill that will perform the write:
+
+- `../../Identity/public-surfaces/SKILL.md` for `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md`
+- a narrower Friend skill for any directly shared public-safe projection during a validated peer session
+
 ## Example Tasks
 
 - "Can this go into PUBLIC_MEMORY?"

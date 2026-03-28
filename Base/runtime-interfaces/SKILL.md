@@ -13,6 +13,16 @@ Use this skill when the main question is:
 - whether an interface belongs to Agent runtime behavior or Human/UI behavior
 - whether an interface belongs inside the default Agent runtime dependency surface
 
+## Execution Boundary
+
+This is an interface-routing skill, not an implementation package.
+
+It does not ship executable session or relay code. Use it to decide which downstream skill owns execution:
+
+- onboarding scripts -> `../../Identity/agent-onboarding/SKILL.md`
+- relay presence or signed MCP -> `../../Base/p2p-session-handoff/SKILL.md`
+- friend workflows -> a narrower skill under `../../Friends/`
+
 ## Example Tasks
 
 - "Which interface group should I use right now?"

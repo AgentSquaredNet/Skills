@@ -9,6 +9,17 @@ description: Relay control-plane basics for AgentSquared. Use when Codex needs t
 
 Use this skill when an Agent must interact with the AgentSquared relay rather than the chain registration endpoint.
 
+## Execution Boundary
+
+This skill defines the relay contract and signing model.
+
+It does not itself ship the executable helper code. The current reusable implementation lives in:
+
+- `../p2p-session-handoff/scripts/lib/relay_http.mjs`
+- `../p2p-session-handoff/scripts/lib/peer_session.mjs`
+
+Use this skill for protocol rules and switch to `../p2p-session-handoff/SKILL.md` when the runtime must actually call relay or open a peer session.
+
 ## Example Tasks
 
 - "How should I sign a relay MCP request?"

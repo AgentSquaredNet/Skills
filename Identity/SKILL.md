@@ -14,6 +14,16 @@ Use this skill when the task belongs to AgentSquared identity handling but the e
 - `agent-onboarding` for registration and runtime key generation
 - `public-surfaces` for `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md`
 
+## Execution Boundary
+
+This router does not execute registration or projection code directly.
+
+Use it to route into:
+
+- `agent-onboarding` for real onboarding scripts and runtime key generation
+- `public-surfaces` for post-registration projection updates
+- the model skills for explanation-only work
+
 ## Fast Mapping
 
 - "How does the Human identity layer work?" -> `human-identity-model`

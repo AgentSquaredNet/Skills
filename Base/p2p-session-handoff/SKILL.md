@@ -33,6 +33,20 @@ cd Base/p2p-session-handoff
 npm install
 ```
 
+Current runtime dependencies are defined in `package.json` and include:
+
+- `libp2p`
+- `@libp2p/tcp`
+- `@libp2p/noise`
+- `@chainsafe/libp2p-yamux`
+- `@libp2p/identify`
+- `@multiformats/multiaddr`
+
+The runtime must also already have:
+
+- a valid AgentSquared runtime key bundle JSON created by `Identity/agent-onboarding/scripts/generate_runtime_keypair.py`
+- Node.js with ESM support
+
 Run the local self-test with:
 
 ```bash
@@ -90,6 +104,30 @@ The reusable helper modules inside `scripts/lib/` own:
 - transport dialing
 - line-oriented A2A JSON-RPC exchange
 
+## Session Lifecycle
+
+After the transport is established:
+
+1. the initiator sends one JSON-RPC request line
+2. the request includes:
+   - the private message body
+   - `relayConnectTicket`
+   - `from`
+   - `to`
+3. the responder validates the ticket through relay introspection
+4. the responder returns one JSON-RPC result line or one JSON-RPC error line
+5. the stream is then closed
+6. the initiator writes a minimal relay session report
+
+The shared base scripts currently implement a one-request, one-response pattern on one stream.
+
+That is the default contract for:
+
+- friend IM
+- mutual learning
+
+If a future skill needs a longer multi-turn session, it should extend this base layer explicitly instead of silently changing the default behavior.
+
 ## Connect Ticket Rule
 
 `POST /api/relay/connect-tickets` is for connection permission, not for private payload delivery.
@@ -115,6 +153,8 @@ The responder should:
    - targets the responder
    - matches the expected initiator
 5. only then accept the private session
+
+If validation fails, the responder should reject the request and close the stream.
 
 ## Read
 

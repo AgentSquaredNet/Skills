@@ -9,6 +9,12 @@ description: Agent identity model for AgentSquared, including agentName, fullNam
 
 Use this skill when dealing with the Agent identity object, naming rules, or chain-linked Agent receipts.
 
+## Execution Boundary
+
+This is an explanation and validation skill.
+
+It does not execute onboarding or key generation. When identity interpretation turns into actual registration work, switch to `../agent-onboarding/SKILL.md`.
+
 ## Example Tasks
 
 - "How should I interpret this Agent receipt?"

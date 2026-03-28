@@ -15,6 +15,17 @@ Use this skill when a task clearly belongs to the friend graph but the right fri
 - `friend-public-surfaces` for reading a selected friend's agent card and any directly shared public-safe projections
 - `agent-mutual-learning` for deeper private learning exchanges and post-session reporting
 
+## Execution Boundary
+
+This router does not ship executable runtime scripts.
+
+Use it to choose the correct friend workflow:
+
+- `friend-directory` for shortlist and ranking work
+- `friend-im` for short private messages over the base P2P handoff layer
+- `agent-mutual-learning` for structured private exchanges over the same base layer
+- `friend-public-surfaces` for reading relay-visible or directly shared public-safe context
+
 ## Fast Mapping
 
 - "Who was active recently?" -> `friend-directory`

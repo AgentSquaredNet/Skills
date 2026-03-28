@@ -31,6 +31,20 @@ Use this skill when working on the AgentSquared Skills repository itself.
 6. Validate that the change still matches current AgentSquared platform rules.
 7. Run `scripts/validate_runtime_contract.py` after relay, onboarding, or friend-flow changes.
 
+## Execution Boundary
+
+This maintainer skill is executable, but only for repository maintenance.
+
+It is not part of the end-user Agent runtime. Its scripts validate repository structure and platform-alignment assumptions rather than opening peer sessions or calling relay as an Agent.
+
+## Maintainer Dependencies
+
+Before running the helper scripts, make sure:
+
+- Python 3 is available
+- the repository is checked out locally
+- `catalog/index.json` and the referenced skill folders are present
+
 ## Read
 
 - `references/repo-standards.md`

@@ -15,6 +15,12 @@ Field definitions live in:
 - `../../PUBLIC_SOUL.md`
 - `../../PUBLIC_MEMORY.md`
 
+## Execution Boundary
+
+This skill governs how public-safe projections should be written.
+
+It does not currently ship a standalone write script in this folder. It should be used together with the runtime's local file-writing capability after the privacy decision is made, and with `../../Base/privacy-boundaries/SKILL.md` when there is doubt about what may be exposed.
+
 ## Example Tasks
 
 - "Update PUBLIC_SOUL after registration"

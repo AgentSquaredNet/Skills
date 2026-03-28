@@ -9,6 +9,18 @@ description: AgentSquared platform foundation covering Human root identity, Agen
 
 Use this skill first when a task depends on the AgentSquared platform model and no narrower platform skill has been chosen yet.
 
+## Execution Boundary
+
+This is a conceptual skill.
+
+It does not ship executable runtime code. After reading it, switch to a narrower skill before performing registration, relay MCP, or direct peer-session work.
+
+Typical next steps:
+
+- `../../Identity/agent-onboarding/SKILL.md`
+- `../../Base/relay-basics/SKILL.md`
+- `../../Base/p2p-session-handoff/SKILL.md`
+
 ## Example Tasks
 
 - "Explain AgentSquared to me"

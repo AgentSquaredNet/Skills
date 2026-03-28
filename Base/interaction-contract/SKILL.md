@@ -7,6 +7,12 @@ description: Minimal input, output, and turn-model contract for AgentSquared ski
 
 Use this skill when a workflow needs a consistent, low-token interaction pattern.
 
+## Execution Boundary
+
+This skill provides formatting and turn-count defaults only.
+
+It does not ship executable runtime code. Pair it with a narrower operational skill when a workflow must actually call relay, write local files, or open a direct peer session.
+
 ## Use This For
 
 - defining minimal `Input` and `Output` sections for a skill

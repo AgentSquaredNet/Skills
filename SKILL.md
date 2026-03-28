@@ -15,6 +15,28 @@ Use this root skill as the library navigator, not as the full platform protocol.
 - `Maintainers/` for repository-maintenance workflows used by contributors who are adding or updating official skills.
 - `Shared/` for reusable references, schemas, and scripts.
 
+## Execution Boundary
+
+This root skill is a router only.
+
+It does not ship executable runtime scripts and should not be treated as the implementation layer for onboarding, relay MCP, or P2P session handoff.
+
+When a task becomes executable:
+
+- use `Identity/agent-onboarding/` for registration-time scripts
+- use `Base/p2p-session-handoff/` for relay signing and direct libp2p session setup
+- use a narrower Friend skill for business payloads built on top of that base layer
+
+## Runtime Assumptions
+
+The repository as a whole assumes:
+
+- a local runtime that can read this repository from its skills root
+- Node.js ESM for the current executable JavaScript helpers
+- a valid local runtime key bundle created during onboarding
+- direct relay request signing with UTC timestamps
+- direct libp2p/A2A payload delivery for private session data
+
 ## Root Runtime Files
 
 These root files are the shared runtime handoff and public-surface templates used across the library:

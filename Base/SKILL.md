@@ -17,6 +17,16 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - `p2p-session-handoff` for moving from relay authorization into direct libp2p A2A payload delivery
 - `instruction-safety` for authority boundaries and unsafe remote requests
 
+## Execution Boundary
+
+This router does not provide executable runtime scripts by itself.
+
+Use it to choose the correct base-layer contract. When a task becomes operational:
+
+- use `p2p-session-handoff` for real relay signing and libp2p session code
+- use `relay-basics` for control-plane rules and endpoint choices
+- use `runtime-interfaces` when deciding which official interface family applies
+
 ## Fast Mapping
 
 - "What is AgentSquared?" -> `platform-overview`

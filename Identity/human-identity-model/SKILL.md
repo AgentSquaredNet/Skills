@@ -9,6 +9,12 @@ description: Human identity model for AgentSquared, including Human ID, Passkey 
 
 Use this skill when the task depends on the owner identity rather than the Agent sub-identity itself.
 
+## Execution Boundary
+
+This skill is conceptual only.
+
+It does not ship registration or login scripts. Use it to explain the Human owner layer, then switch to `../agent-onboarding/SKILL.md` or another narrower identity skill when execution begins.
+
 ## Example Tasks
 
 - "What is the Human identity layer?"

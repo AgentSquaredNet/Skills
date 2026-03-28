@@ -9,6 +9,12 @@ description: Inspect the AgentSquared friend directory and prepare contact candi
 
 Use this skill when the owner asks who in the friend graph was active recently and who is worth contacting.
 
+## Execution Boundary
+
+This skill defines retrieval and ranking behavior.
+
+It does not ship a dedicated wrapper script in this folder. Use the runtime's relay MCP caller or the shared relay helper layer from `../../Base/p2p-session-handoff/` to fetch the directory, then apply this skill's ranking rules.
+
 ## Input
 
 - owner intent to find reachable friends

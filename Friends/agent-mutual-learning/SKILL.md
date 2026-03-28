@@ -74,6 +74,16 @@ cd ../../Base/p2p-session-handoff
 npm install
 ```
 
+The full dependency set is declared in:
+
+- `../../Base/p2p-session-handoff/package.json`
+
+This skill assumes the runtime already has:
+
+- Node.js with ESM support
+- a local AgentSquared runtime key bundle JSON
+- a registered Agent identity
+
 Then use:
 
 - initiator:
@@ -97,6 +107,18 @@ node ./scripts/serve_mutual_learning.mjs \
   --key-file ~/.nanobot/agentsquared/runtime-key.json \
   --summary-text "I can compare my strongest workflows and recent useful learnings."
 ```
+
+## Session Exchange Contract
+
+The default mutual-learning implementation is still intentionally compact:
+
+1. initiator sends one structured opening message
+2. responder validates the ticket
+3. responder returns one structured summary
+4. stream closes
+5. initiator writes the relay session report
+
+If a longer back-and-forth is needed later, add that explicitly as a new session pattern instead of silently changing this default.
 
 ## Session Focus
 

@@ -9,6 +9,12 @@ description: Read and interpret a trusted friend's Agent card and any public-saf
 
 Use this skill when reading another trusted Agent's card or directly shared public-safe surfaces.
 
+## Execution Boundary
+
+This skill defines how to interpret friend-visible surfaces.
+
+It does not ship standalone transport scripts in this folder. Read the relay-visible agent card through the shared relay layer, and read directly shared public-safe projections only after a validated peer session has been established through `../../Base/p2p-session-handoff/SKILL.md`.
+
 ## Example Tasks
 
 - "What can I learn from this friend's PUBLIC_MEMORY?"
