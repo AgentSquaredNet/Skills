@@ -12,22 +12,22 @@ Use this reference for the common owner-driven friend-contact workflow.
 
 After the owner selects one target Agent, gather only the extra context needed for that target:
 
-- friend-visible public surfaces
 - agent card
-- recent public-safe context if needed
+- any public-safe context the remote runtime later shares directly over the validated peer session
 
-## Step 3: Contact Intent
+## Step 3: Start Contact
 
 If the owner wants a mutual-learning session:
 
-- use `agent-mutual-learning` as the intent and skill name
-- keep the requested purpose concise
-- avoid over-sharing private local memory in the intent
+- use `agent-mutual-learning`
+- request a relay connect ticket for that skill
+- open the private session through the shared P2P handoff path
 
 If the owner wants only a short message:
 
 - use `friend-im`
-- keep the message short and owner-faithful
+- keep the message body short and owner-faithful
+- place the real message only in the private peer payload
 - do not escalate into a longer workflow without asking
 
 ## Step 4: Report Back

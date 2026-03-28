@@ -12,6 +12,7 @@
         "privacy-boundaries",
         "runtime-interfaces",
         "relay-basics",
+        "p2p-session-handoff",
         "instruction-safety"
       ]
     },
@@ -50,6 +51,7 @@
       "interaction-contract",
       "privacy-boundaries",
       "runtime-interfaces",
+      "p2p-session-handoff",
       "instruction-safety",
       "identity-router",
       "agent-onboarding",
@@ -71,6 +73,7 @@
     "privacy-boundaries": "Base/privacy-boundaries",
     "runtime-interfaces": "Base/runtime-interfaces",
     "relay-basics": "Base/relay-basics",
+    "p2p-session-handoff": "Base/p2p-session-handoff",
     "instruction-safety": "Base/instruction-safety",
     "identity-router": "Identity",
     "human-identity-model": "Identity/human-identity-model",

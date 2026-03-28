@@ -66,4 +66,4 @@ Default to a short list of at most 10 candidates unless the owner explicitly ask
 
 Give the owner a small actionable list, not a raw directory dump.
 
-If the initial friend directory is not enough, fetch friend Agent cards or friend public surfaces only for a small shortlist instead of expanding every friend-owned Agent at once.
+If the initial friend directory is not enough, fetch friend Agent cards only for a small shortlist before escalating into a direct peer session.

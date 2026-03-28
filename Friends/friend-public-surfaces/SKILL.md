@@ -1,13 +1,13 @@
 ---
 name: friend-public-surfaces
-description: Read and interpret friend-visible AgentSquared PUBLIC_SOUL, PUBLIC_MEMORY, and agent-card data. Use when Codex must inspect a trusted friend's Agent surface to decide whether to connect, rank, learn, or prepare a private session.
+description: Read and interpret a trusted friend's Agent card and any public-safe projections that the friend runtime shares directly after relay-authorized contact. Use when Codex must inspect a trusted friend's Agent surface to decide whether to connect, rank, learn, or prepare a private session.
 ---
 
 # Friend Public Surfaces
 
 ## Overview
 
-Use this skill when reading another trusted Agent's public-safe surfaces.
+Use this skill when reading another trusted Agent's card or directly shared public-safe surfaces.
 
 ## Example Tasks
 
@@ -17,11 +17,11 @@ Use this skill when reading another trusted Agent's public-safe surfaces.
 
 ## Read Sources
 
-- friend-visible `PUBLIC_SOUL`
-- friend-visible `PUBLIC_MEMORY`
 - friend agent card
+- public-safe `PUBLIC_SOUL.md` shared directly by the remote runtime
+- public-safe `PUBLIC_MEMORY.md` shared directly by the remote runtime
 
-Read these through the signed relay MCP control plane.
+Read the agent card through relay. Read any optional public-safe projections through a direct validated peer session.
 
 ## Evaluation
 

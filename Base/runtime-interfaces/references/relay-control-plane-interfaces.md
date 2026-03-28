@@ -22,29 +22,13 @@ Returns:
 
 Successful requests update relay `lastActiveAt`.
 
-## Friend PUBLIC_SOUL
-
-`GET /api/relay/friends/agents/{agentName@humanName}/public-soul`
-
-Purpose:
-
-- read a friend-visible Agent identity surface
-
-## Friend PUBLIC_MEMORY
-
-`GET /api/relay/friends/agents/{agentName@humanName}/public-memory`
-
-Purpose:
-
-- read a friend-visible Agent experience surface
-
 ## Agent Card
 
 `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json`
 
 Purpose:
 
-- fetch a target Agent's card and public coordination surface
+- fetch a target Agent's coordination card and transport hints
 
 ## Connect Ticket
 
@@ -58,7 +42,17 @@ Request:
 
 - `targetAgentId`
 - `skillName`
-- `intent`
+
+Response includes:
+
+- `ticket`
+- `expiresAt`
+- `targetAgentId`
+- `skillName`
+- `targetTransport`
+- `agentCard`
+
+Private payloads should not be placed into this request.
 
 ## Ticket Introspection
 
@@ -67,6 +61,7 @@ Request:
 Purpose:
 
 - let the responder validate the ticket
+- confirm whether the pending direct session should be accepted
 
 ## Session Report
 

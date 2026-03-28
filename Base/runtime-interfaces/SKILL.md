@@ -1,6 +1,6 @@
 ---
 name: runtime-interfaces
-description: Interface routing guide for the official AgentSquared Agent runtime contract. Use when Codex must decide which official onboarding, relay presence, or signed relay MCP interface group to call, or which Human or website endpoints are outside the default Agent runtime dependency surface.
+description: Interface routing guide for the official AgentSquared Agent runtime contract. Use when Codex must decide which official onboarding, relay presence, signed relay MCP, or direct peer-session handoff interface group applies, or which Human or website endpoints are outside the default Agent runtime dependency surface.
 ---
 
 # Runtime Interfaces
@@ -27,6 +27,7 @@ This skill routes by interface purpose. It does not replace narrower skills such
 - Agent onboarding: used by the Agent to register
 - Relay presence publication: used by the Agent to publish current peer information
 - Signed relay MCP control plane: used by the Agent for friend reads, connect tickets, introspection, and session reporting
+- Direct peer-session handoff: used after relay authorization when the runtime must open a private libp2p A2A session
 
 Read:
 
@@ -43,6 +44,7 @@ Read:
 - If the task is "Agent reads contract and registers itself", use the onboarding interfaces.
 - If the task is "Agent wants relay to remember current peer information", use the relay presence interface.
 - If the task is "Agent reads friend data, prepares tickets, introspects sessions, or reports outcomes", use the signed relay MCP interfaces.
+- If the task is "Agent already has a ticket and now must open a private direct session", use `../../Base/p2p-session-handoff/SKILL.md`.
 - Start relay reads and coordination directly with signed relay MCP requests.
 
 ## Human Prompt Rule

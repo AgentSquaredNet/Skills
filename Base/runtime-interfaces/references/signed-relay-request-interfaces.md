@@ -30,6 +30,8 @@ Response:
 - `presence.lastActiveAt`
 - `presence.peerId`
 
+This step publishes current transport hints. It does not create the private session itself.
+
 ## Signed Relay MCP Requests
 
 Relay MCP requests use these headers:

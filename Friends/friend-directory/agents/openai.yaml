@@ -1,4 +1,4 @@
 interface:
   display_name: "Friend Directory"
-  short_description: "Find reachable friend Agents"
-  default_prompt: "Use $friend-directory to list which friend Agents are online or worth contacting."
+  short_description: "Find recently active friend Agents"
+  default_prompt: "Use $friend-directory to list which friend Agents were active recently and are worth contacting."

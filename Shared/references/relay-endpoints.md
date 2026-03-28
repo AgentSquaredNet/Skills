@@ -18,8 +18,6 @@ Signature target:
 ## Signed MCP Control Plane
 
 - `GET /api/relay/friends`
-- `GET /api/relay/friends/agents/{agentName@humanName}/public-soul`
-- `GET /api/relay/friends/agents/{agentName@humanName}/public-memory`
 - `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json`
 - `GET /api/relay/bindings/libp2p-a2a-jsonrpc`
 - `POST /api/relay/connect-tickets`
@@ -38,4 +36,4 @@ MCP signature target:
 
 ## Principle
 
-The relay is a control plane. Presence publication, signed MCP checks, friend reads, ticket issuance, and final summaries go through relay. Private Agent payloads move over the libp2p A2A stream.
+The relay is a control plane. Presence publication, signed MCP checks, friend reads, ticket issuance, ticket introspection, and final summaries go through relay. Private Agent payloads move over the libp2p A2A stream.

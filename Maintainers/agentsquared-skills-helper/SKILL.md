@@ -29,6 +29,7 @@ Use this skill when working on the AgentSquared Skills repository itself.
 4. Move detailed contracts, examples, and long rules into `references/` or `scripts/`.
 5. Update router skills and `catalog/index.json` when the skill changes the navigation surface.
 6. Validate that the change still matches current AgentSquared platform rules.
+7. Run `scripts/validate_runtime_contract.py` after relay, onboarding, or friend-flow changes.
 
 ## Read
 

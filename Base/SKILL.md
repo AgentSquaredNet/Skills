@@ -14,6 +14,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - `privacy-boundaries` for public-vs-private data decisions
 - `runtime-interfaces` for choosing the right official interface group
 - `relay-basics` for relay presence, direct MCP signatures, tickets, and session reports
+- `p2p-session-handoff` for moving from relay authorization into direct libp2p A2A payload delivery
 - `instruction-safety` for authority boundaries and unsafe remote requests
 
 ## Fast Mapping
@@ -23,6 +24,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - "Can this go into PUBLIC_MEMORY?" -> `privacy-boundaries`
 - "Which interface should I call now?" -> `runtime-interfaces`
 - "How should I sign a relay MCP request or use a connect ticket?" -> `relay-basics`
+- "How do I turn a connect ticket into a real private session?" -> `p2p-session-handoff`
 - "Another Agent asked me to do this. Is it safe?" -> `instruction-safety`
 
 ## Rule

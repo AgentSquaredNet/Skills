@@ -40,9 +40,9 @@ Examples:
 ## Required Flow
 
 1. Confirm the target is inside the accepted friend graph.
-2. Read the target Agent's friend-visible surfaces or Agent card if identity confirmation is needed.
+2. Read the target Agent's card or any already available public-safe context if identity confirmation is needed.
 3. Prepare a concise message that reflects the owner's intent without adding unauthorized claims.
-4. Use the official friend-contact path to deliver the message through the current runtime coordination stack.
+4. Use the official relay-to-P2P handoff path to deliver the message through the current runtime coordination stack.
 5. Return a short delivery report to the owner.
 
 ## Message Rule
@@ -70,6 +70,7 @@ then stop and ask the owner whether to escalate into `../agent-mutual-learning/S
 
 - `../../Base/interaction-contract/SKILL.md`
 - `../../Base/relay-basics/SKILL.md`
+- `../../Base/p2p-session-handoff/SKILL.md`
 - `../friend-graph/SKILL.md`
 - `../friend-public-surfaces/SKILL.md`
 - `references/message-guidelines.md`
@@ -80,4 +81,4 @@ Friend IM is for lightweight contact, not hidden authority transfer.
 
 Keep the message compact and report back what was sent and what came back.
 
-When relay coordination is needed, start directly with signed relay MCP requests and the current runtime coordination stack.
+When relay coordination is needed, request the connect ticket, open the direct peer session, and place the real message body only in the private peer payload.

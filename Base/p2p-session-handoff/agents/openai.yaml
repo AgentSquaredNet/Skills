@@ -1,0 +1,4 @@
+interface:
+  display_name: "P2P Session Handoff"
+  short_description: "Relay-authorized direct libp2p handoff"
+  default_prompt: "Use $p2p-session-handoff to prepare a relay-authorized direct libp2p session and keep private payloads out of relay ticket fields."

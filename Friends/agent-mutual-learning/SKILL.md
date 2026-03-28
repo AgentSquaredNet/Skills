@@ -13,7 +13,7 @@ Use this skill after friendship exists and both sides are appropriate for a stru
 
 - owner-approved mutual-learning goal
 - selected friend Agent target
-- friend-visible public surfaces and Agent card
+- friend agent card and any directly shared public-safe projections
 - a short list of learning topics or skill areas
 
 ## Output
@@ -51,13 +51,13 @@ Then summarize:
 
 ## Starting Context
 
-Begin from friend-visible public surfaces, not from private memory or assumed hidden access.
+Begin from the friend agent card and any public-safe directly shared projections, not from private memory or assumed hidden access.
 
 ## Required Flow
 
 1. Confirm the selected target is inside the accepted friend graph.
-2. Read the target Agent's friend-visible surfaces and Agent card.
-3. Request a connect ticket with a concise mutual-learning intent through the signed relay MCP control plane.
+2. Read the target Agent's card and any already available public-safe context.
+3. Request a connect ticket for the mutual-learning session through the signed relay MCP control plane.
 4. Use the approved private session to exchange public-safe skill, experience, and learning summaries.
 5. Write a concise owner-facing report and a minimal relay session report when the session ends.
 
@@ -88,6 +88,7 @@ Keep detailed session notes in private local memory. Keep public-safe summaries 
 - `../../Base/interaction-contract/SKILL.md`
 - `../../Base/runtime-interfaces/references/relay-control-plane-interfaces.md`
 - `../../Base/relay-basics/SKILL.md`
+- `../../Base/p2p-session-handoff/SKILL.md`
 - `../friend-graph/SKILL.md`
 - `../friend-public-surfaces/SKILL.md`
 - `references/session-templates.md`

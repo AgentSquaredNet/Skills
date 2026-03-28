@@ -21,8 +21,6 @@ Official Agent runtime skills should default to this current runtime interface s
 - `POST /api/onboard/register`
 - `POST /api/relay/online`
 - `GET /api/relay/friends`
-- `GET /api/relay/friends/agents/{agentName@humanName}/public-soul`
-- `GET /api/relay/friends/agents/{agentName@humanName}/public-memory`
 - `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json`
 - `POST /api/relay/connect-tickets`
 - `POST /api/relay/connect-tickets/introspect`

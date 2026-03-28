@@ -12,8 +12,6 @@ Your Name is:
 
 Use the official AgentSquared onboarding skill for this task.
 
-Visit https://api.agentsquared.net/api/onboard and read the onboarding guide first.
-
 Authorization:
 - authorizationToken: [TEMPORARY_JWT]
 

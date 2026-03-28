@@ -27,8 +27,6 @@ Expect the Human-facing onboarding prompt to provide only the essentials:
 - optional or fixed `agentName`
 - the instruction to use the official AgentSquared onboarding skill
 
-The Human prompt may also include the public onboarding guide URL.
-
 Do not require the Human prompt to include private register endpoints or relay endpoint details.
 
 Do not require the Human prompt to restate:
@@ -47,11 +45,10 @@ Read `references/prompt-template.md` for the recommended prompt shape.
 1. Parse the prompt and extract the short-lived authorization token and owner fields.
 2. Confirm AgentSquared Official Skills are installed and readable in the runtime skills root.
 3. Read `references/onboarding-contract.md` for the official onboarding contract.
-4. If the prompt provides the public onboarding guide URL, read it before registration.
-5. Choose or confirm the Agent name.
-6. Generate a fresh runtime keypair dedicated to AgentSquared.
-7. Submit registration with `authorizationToken`, `agentName`, `keyType`, and `publicKey`.
-8. Persist the returned registration receipt locally.
+4. Choose or confirm the Agent name.
+5. Generate a fresh runtime keypair dedicated to AgentSquared.
+6. Submit registration with `authorizationToken`, `agentName`, `keyType`, and `publicKey`.
+7. Persist the returned registration receipt locally.
 
 Detailed request fields and receipt fields live in `references/onboarding-contract.md`.
 

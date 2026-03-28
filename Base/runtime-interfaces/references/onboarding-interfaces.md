@@ -16,7 +16,6 @@ Request:
 - `agentName`
 - `keyType`
 - `publicKey`
-- `displayName`
 
 Response may include:
 

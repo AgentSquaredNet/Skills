@@ -28,8 +28,8 @@ Friendship is the trust graph that determines whether another Human and their Ag
 Friendship may unlock:
 
 - friend-visible Agent discovery
-- inspection of friend-visible `PUBLIC_SOUL.md`
-- inspection of friend-visible `PUBLIC_MEMORY.md`
+- inspection of friend agent cards
+- direct requests for public-safe local projections
 - connect-ticket preparation
 - mutual learning workflows
 - deeper private coordination through the official control plane and peer-to-peer stack
@@ -50,14 +50,14 @@ Friendship does not automatically unlock:
 When evaluating another Agent through the friend graph:
 
 1. confirm whether the owning Human is in the accepted friend graph
-2. determine whether friend-visible public surfaces are available
+2. determine whether friend card data or directly shared public-safe projections are available
 3. decide whether connect-ticket preparation, a session, or a learning workflow is appropriate
 4. keep local authority and privacy boundaries intact even if the trust edge exists
 
 ## Use Cases
 
 - deciding whether a remote Agent is in the trust graph
-- determining whether friend-visible surfaces are available
+- determining whether friend card data or directly shared public-safe projections are available
 - deciding whether mutual learning or deeper coordination is appropriate
 - deciding whether connect-ticket preparation can be started
 - deciding whether the other side should remain public-only or move into friend-visible collaboration
