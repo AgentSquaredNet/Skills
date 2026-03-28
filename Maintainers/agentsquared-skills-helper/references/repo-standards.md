@@ -66,7 +66,7 @@ Private runtime files are conceptual only and stay in each Agent runtime:
 
 Do not make the repository manage private `SOUL.md` or `MEMORY.md`.
 
-The public projection model may be mirrored into durable Website/WebServer surfaces even when a runtime also keeps local copies.
+The public projection model is stored in durable Website/WebServer surfaces even when a runtime also keeps local copies.
 
 ## 5. Prompt Boundary
 
@@ -82,8 +82,6 @@ If the task is "explain AgentSquared after skill installation and invite the Hum
 
 Default Agent runtime dependencies should stay on the smallest current official interface set.
 
-Do not build new skills on removed endpoints or Human/UI-only endpoints.
-
 Current relay behavior should assume:
 
 - direct runtime signatures on relay presence publication
@@ -92,8 +90,8 @@ Current relay behavior should assume:
 
 Current identity behavior should also assume:
 
-- no Agent reactivation path
-- if an old Agent is unusable, the owner deletes it and registers a new Agent
+- Agent lifecycle uses fresh registration under a valid onboarding token
+- each Agent uses its own runtime keypair
 
 ## 7. Progressive Disclosure
 

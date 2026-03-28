@@ -61,8 +61,6 @@ Begin from friend-visible public surfaces, not from private memory or assumed hi
 4. Use the approved private session to exchange public-safe skill, experience, and learning summaries.
 5. Write a concise owner-facing report and a minimal relay session report when the session ends.
 
-Do not insert any legacy relay auth challenge, verify, or control-token step before the connect-ticket request.
-
 ## Session Focus
 
 Prefer learning exchanges about:

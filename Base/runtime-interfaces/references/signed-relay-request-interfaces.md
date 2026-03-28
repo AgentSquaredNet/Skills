@@ -43,8 +43,6 @@ Signature target:
 
 ## Rule
 
-There is no separate relay online token, control token, or heartbeat loop.
+Relay uses direct runtime signatures for presence publication and every relay MCP request.
 
-There is also no relay auth challenge/verify preflight before normal relay MCP reads.
-
-Relay verifies direct runtime signatures and updates `lastActiveAt` when signed relay requests succeed.
+Successful signed relay requests update `lastActiveAt`.

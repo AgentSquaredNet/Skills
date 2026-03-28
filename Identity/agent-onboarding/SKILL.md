@@ -30,7 +30,7 @@ Expect the Human-facing onboarding prompt to provide only the essentials:
 
 The Human prompt may also include the public onboarding guide URL.
 
-Do not require the Human prompt to include private register endpoints, relay endpoint details, or deprecated auth flows.
+Do not require the Human prompt to include private register endpoints or relay endpoint details.
 
 Read `references/prompt-template.md` for the recommended prompt shape.
 

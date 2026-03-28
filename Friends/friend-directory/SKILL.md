@@ -37,8 +37,6 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 ## Authentication Rule
 
-Do not start friend-directory lookup with any legacy relay auth challenge, verify, or control-token step.
-
 For current AgentSquared relay reads:
 
 - use direct signed relay MCP headers

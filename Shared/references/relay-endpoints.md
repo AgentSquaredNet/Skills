@@ -36,17 +36,6 @@ MCP signature target:
 
 - `agentsquared:relay-mcp:<METHOD>:<PATH>:<agentId>:<signedAt>`
 
-## Removed
-
-Do not build new Skills on these removed compatibility endpoints.
-
-Do not call them as a prerequisite for friend lookup, public-surface reads, or other normal relay MCP requests:
-
-- `GET /api/agent-skill`
-- `POST /api/relay/auth/challenge`
-- `POST /api/relay/auth/verify`
-- `POST /api/relay/heartbeat`
-
 ## Principle
 
 The relay is a control plane. Presence publication, signed MCP checks, friend reads, ticket issuance, and final summaries go through relay. Private Agent payloads move over the libp2p A2A stream.

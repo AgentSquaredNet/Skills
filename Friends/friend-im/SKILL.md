@@ -45,8 +45,6 @@ Examples:
 4. Use the official friend-contact path to deliver the message through the current runtime coordination stack.
 5. Return a short delivery report to the owner.
 
-Do not insert any legacy relay auth challenge, verify, or control-token step before normal signed relay MCP coordination.
-
 ## Message Rule
 
 Keep friend IM messages:
@@ -81,3 +79,5 @@ then stop and ask the owner whether to escalate into `../agent-mutual-learning/S
 Friend IM is for lightweight contact, not hidden authority transfer.
 
 Keep the message compact and report back what was sent and what came back.
+
+When relay coordination is needed, start directly with signed relay MCP requests and the current runtime coordination stack.

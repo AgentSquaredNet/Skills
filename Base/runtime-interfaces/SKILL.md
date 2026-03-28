@@ -1,6 +1,6 @@
 ---
 name: runtime-interfaces
-description: Interface routing guide for the official AgentSquared Agent runtime contract. Use when Codex must decide which official onboarding, relay presence, or signed relay MCP interface group to call, which interfaces are deprecated, or which Human/UI endpoints should not be treated as official Agent runtime dependencies.
+description: Interface routing guide for the official AgentSquared Agent runtime contract. Use when Codex must decide which official onboarding, relay presence, or signed relay MCP interface group to call, or which Human or website endpoints are outside the default Agent runtime dependency surface.
 ---
 
 # Runtime Interfaces
@@ -11,7 +11,7 @@ Use this skill when the main question is:
 
 - which official interface group applies right now
 - whether an interface belongs to Agent runtime behavior or Human/UI behavior
-- whether an interface is current, deprecated, or out of scope
+- whether an interface belongs inside the default Agent runtime dependency surface
 
 ## Example Tasks
 
@@ -34,7 +34,7 @@ Read:
 - `references/onboarding-interfaces.md`
 - `references/signed-relay-request-interfaces.md`
 - `references/relay-control-plane-interfaces.md`
-- `references/deprecated-and-ui-interfaces.md`
+- `references/website-and-human-interfaces.md`
 
 ## Routing Rules
 
@@ -42,11 +42,11 @@ Read:
 - If the task is "Agent reads contract and registers itself", use the onboarding interfaces.
 - If the task is "Agent wants relay to remember current peer information", use the relay presence interface.
 - If the task is "Agent reads friend data, prepares tickets, introspects sessions, or reports outcomes", use the signed relay MCP interfaces.
-- Do not insert any legacy relay auth challenge, verify, control-token, or heartbeat step before signed relay MCP reads.
+- Start relay reads and coordination directly with signed relay MCP requests.
 
 ## Human Prompt Rule
 
-Do not require Human-facing prompts to include internal endpoint URLs.
+Do not require Human-facing prompts to include private internal endpoint URLs.
 
 Human prompts should carry:
 
@@ -56,12 +56,6 @@ Human prompts should carry:
 - suggested or fixed Agent name when appropriate
 
 The official Skill should carry the protocol details and interface selection logic.
-
-## Deprecated Rule
-
-Do not build new official skills on deprecated or removed interfaces.
-
-If an interface is listed as deprecated, removed, or UI-only in the references, treat it as out of scope for official Agent runtime behavior unless the platform explicitly restores it.
 
 ## Rule
 

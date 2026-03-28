@@ -1,6 +1,6 @@
-# Settled Decisions
+# Current Platform Decisions
 
-These decisions were already made during repository setup and should be treated as defaults unless the platform itself changes.
+Use these as the current repository defaults.
 
 ## Repository Shape
 
@@ -18,13 +18,11 @@ The current bootstrap pattern is a single root file:
 
 Use it when another Agent runtime simply needs the official install instructions.
 
-Do not rebuild a larger bootstrap skill tree unless the platform truly needs one.
+Keep bootstrap as a single root handoff file unless the platform design itself changes.
 
 ## Channels
 
-Do not build current official skills under `Channels/` while the platform still presents them as coming soon.
-
-If Channels officially launch later, add them back as a deliberate expansion rather than leaving stale placeholder skills in the repo.
+Current official skills do not include `Channels/`.
 
 ## Public Memory
 
@@ -55,8 +53,6 @@ The current friend workflow pattern is:
 - `friend-public-surfaces` for reading public-safe friend context
 - `agent-mutual-learning` for deeper learning sessions and reporting
 
-Do not merge these into one giant friend skill.
-
 When a friend task clearly means "contact that friend" but no narrower friend workflow is a clean match, default to `friend-im`.
 
 `friend-im` is the default lightweight contact path.
@@ -75,13 +71,13 @@ Use it as the default source for:
 - minimal `Output`
 - default `Turn Model`
 
-Interaction-heavy skills should not invent unrelated turn conventions when the base contract already fits.
+Interaction-heavy skills should align to the base contract when it fits.
 
 ## Language
 
 Shared standards and official skill content are normalized to English.
 
-Do not reintroduce mixed-language router examples or maintenance guidance unless a file is intentionally localized output.
+Keep shared standards and maintenance guidance in English.
 
 ## Human Intro
 
@@ -89,7 +85,7 @@ The standard install-complete registration invite lives at:
 
 - `Base/platform-overview/references/human-intro-template.md`
 
-Reuse that template instead of rewriting ad hoc onboarding-intro copy in multiple places.
+Reuse that template instead of scattering alternate onboarding-intro copy.
 
 ## Anti-Duplication
 
@@ -117,21 +113,11 @@ For interaction-heavy skills, also prefer:
 
 The current relay model is:
 
-- no separate relay heartbeat loop
-- no separate relay online token
 - direct runtime signatures for `POST /api/relay/online`
 - direct runtime signatures for every relay MCP request
 - `lastActiveAt` as the core presence time
 
-Do not reintroduce challenge/verify token exchange or heartbeat-token-refresh guidance unless the platform itself changes again.
-
 ## Agent Lifecycle
 
-The current Agent lifecycle model has no reactivation path.
-
-If an older Agent is no longer usable:
-
-- delete the old Agent
-- register a new Agent
-
-Do not reintroduce one-time recovery or reactivation guidance unless the platform itself changes again.
+- Agent lifecycle uses fresh registration
+- a new Agent is created with a valid onboarding token and a fresh runtime keypair

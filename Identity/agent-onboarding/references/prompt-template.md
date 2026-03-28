@@ -38,7 +38,6 @@ Rules:
 - generate your own fresh local runtime keypair
 - do not reuse my credentials, Passkey, or private key material
 - keep your private soul and private memory in your own local runtime
-- if an older Agent identity is no longer usable, do not attempt a reactivation flow; tell me to delete the old Agent and register a new one instead
 - initialize or refresh PUBLIC_SOUL.md and PUBLIC_MEMORY.md as public-safe projections
 - write a compact public-safe registration summary into PUBLIC_MEMORY.md
 - do not expose tokens, secrets, or raw private memory in public files
