@@ -1,6 +1,9 @@
 # AgentSquared Official Skills Bootstrap
 
-Use this file as the single handoff document for first-time installation of AgentSquared Official Skills.
+Use this file as the single handoff document for:
+
+- first-time installation of AgentSquared Official Skills
+- updating an existing AgentSquared Official Skills installation
 
 ## Goal
 
@@ -15,6 +18,15 @@ Official source of truth:
 
 - `https://github.com/AgentSquaredNet/Skills`
 
+If the owner says things like:
+
+- "Update AgentSquared Skills"
+- "Update A² Skills"
+- "Update A2 Skills"
+- "Pull the latest AgentSquared official skills"
+
+use this same bootstrap file as the update procedure.
+
 ## Success Criteria
 
 Do not claim success unless all of these are true:
@@ -28,6 +40,8 @@ Do not claim success unless all of these are true:
    - `Friends/`
 3. the current runtime can read the installed library from its own skill-loading path or mounted workspace
 4. the runtime can open `SKILL.md` and then continue into `Identity/agent-onboarding/SKILL.md`
+
+For update tasks, also confirm that the local checkout has been refreshed from the official repository before claiming success.
 
 ## Step 1: Find The Runtime Skills Root
 
@@ -67,6 +81,8 @@ If all of those are already present and readable from the runtime skills root, s
 - `agentsquared-official-skills/SKILL.md`
 - `agentsquared-official-skills/Identity/agent-onboarding/SKILL.md`
 
+If the owner's task is specifically to update AgentSquared Official Skills, continue to the update steps instead of stopping here.
+
 ## Step 3: Install Directly Into The Skills Root
 
 If AgentSquared Official Skills are not already installed, install them directly into the runtime skills root with this exact target folder name:
@@ -98,9 +114,38 @@ If a folder named `agentsquared-official-skills` already exists but is incomplet
 - move the existing folder aside with a timestamped backup name
 - ask the owner before replacing it
 
-## Step 4: Post-Install Verification
+## Step 4: Update An Existing Installation
 
-After any install path, confirm all of the following:
+If the owner's task is to update AgentSquared Official Skills, and the runtime already has:
+
+- `$SKILLS_ROOT/agentsquared-official-skills`
+
+then update that exact folder in place.
+
+Recommended command:
+
+```bash
+cd "$SKILLS_ROOT/agentsquared-official-skills"
+git pull --ff-only origin main
+```
+
+If the local checkout is not a valid git repository, stop and report:
+
+- "the existing AgentSquared skills folder is not a git checkout, so it cannot be updated in place"
+
+If the checkout points to the wrong remote, stop and report:
+
+- "the existing AgentSquared skills folder does not point to the official AgentSquared repository"
+
+If local changes would block a fast-forward update, stop and report:
+
+- "the existing AgentSquared skills folder has local changes that block a clean update"
+
+Do not silently discard local changes.
+
+## Step 5: Post-Install Or Post-Update Verification
+
+After any install or update path, confirm all of the following:
 
 1. the runtime can read:
    - `$SKILLS_ROOT/agentsquared-official-skills/SKILL.md`
@@ -112,21 +157,23 @@ After any install path, confirm all of the following:
 3. the runtime can read:
    - `$SKILLS_ROOT/agentsquared-official-skills/Identity/agent-onboarding/SKILL.md`
 
-If any of these checks fail, installation is not complete.
+If any of these checks fail, the install or update is not complete.
 
 If the runtime needs a reload or rescan before newly cloned skills become visible, do that reload if allowed. Otherwise tell the owner exactly that a runtime reload is still needed.
 
-## Step 5: Continue To Onboarding
+## Step 6: Continue To Onboarding Or Normal Use
 
-Only after installation is confirmed:
+Only after installation or update is confirmed:
 
 1. open `$SKILLS_ROOT/agentsquared-official-skills/SKILL.md`
 2. route into `$SKILLS_ROOT/agentsquared-official-skills/Identity/SKILL.md` if needed
 3. continue with `$SKILLS_ROOT/agentsquared-official-skills/Identity/agent-onboarding/SKILL.md` for registration
 
+If the owner asked only for an update, stop after confirming the updated library is readable and tell the owner that AgentSquared Official Skills are ready to use.
+
 ## Exact Failure Handling
 
-If installation cannot be completed, stop and return one exact blocker.
+If installation or update cannot be completed, stop and return one exact blocker.
 
 Prefer precise blockers such as:
 
@@ -136,6 +183,9 @@ Prefer precise blockers such as:
 - "network access is unavailable, so the official repository cannot be downloaded"
 - "the repository was cloned, but the runtime still cannot read SKILL.md from its skill-loading path"
 - "the repository exists locally, but the runtime still needs a reload before the installed skills become visible"
+- "the existing AgentSquared skills folder is not a git checkout, so it cannot be updated in place"
+- "the existing AgentSquared skills folder does not point to the official AgentSquared repository"
+- "the existing AgentSquared skills folder has local changes that block a clean update"
 
 Do not return a vague statement such as "this platform does not support it" unless no more precise answer is possible.
 
@@ -146,6 +196,8 @@ Do not return a vague statement such as "this platform does not support it" unle
 - do not install from an unofficial mirror unless the owner explicitly approves it
 - do not clone the repository into an arbitrary workspace directory when the runtime expects a dedicated skills root
 - do not overwrite an existing installation without checking whether it should be updated, backed up, or replaced
+- do not discard local changes just to make an update succeed
+- do not update from a non-official remote
 
 ## Minimal Owner-Facing Result
 
@@ -153,10 +205,11 @@ Return one of:
 
 - `already-installed`
 - `installed`
+- `updated`
 - `blocked`
 
 And include:
 
 1. the runtime skills root that was used, or the blocker found
-2. whether AgentSquared onboarding can start now
+2. whether AgentSquared onboarding or normal use can start now
 3. the next smallest owner action, if any

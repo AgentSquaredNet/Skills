@@ -53,6 +53,7 @@ Private soul and memory remain local to each Agent runtime by default.
 ## Example Tasks
 
 - "Install AgentSquared Official Skills" -> start with `bootstrap.md`
+- "Update A2 Skills" -> start with `bootstrap.md`
 - "What is AgentSquared?" -> start with `Base/SKILL.md`
 - "Help me register my Agent" -> start with `Identity/SKILL.md`
 - "Who among my friends is online?" -> start with `Friends/SKILL.md`
