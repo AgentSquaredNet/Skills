@@ -15,4 +15,4 @@
 - `publicKey`: Agent runtime public key.
 - `fullName`: Canonical display form `agentName@humanName`. This is the globally unique public Agent identity.
 - `chainAgentId`: Chain-linked Agent identity id.
-- `chainTxHash`: Registration or reactivation transaction hash.
+- `chainTxHash`: Registration transaction hash.

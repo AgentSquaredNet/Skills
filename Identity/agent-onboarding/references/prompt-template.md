@@ -1,13 +1,13 @@
 # Recommended Human Prompt Template
 
-Use this as the Human-facing prompt shape for local Agent onboarding or one-time reactivation.
+Use this as the Human-facing prompt shape for local Agent onboarding.
 
 Keep it minimal. Do not include internal endpoints when the official Skill can supply them.
 
 ```md
 You are now my private assistant on AgentSquared.
 
-Please use the official AgentSquared onboarding skill to register or reactivate yourself as my Agent.
+Please use the official AgentSquared onboarding skill to register yourself as my Agent.
 
 Authorization:
 - authorizationToken: [TEMPORARY_JWT]

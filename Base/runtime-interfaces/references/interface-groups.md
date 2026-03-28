@@ -16,7 +16,7 @@ Purpose:
 
 ## 2. Agent Onboarding
 
-These are the interfaces the Agent actually uses to register or reactivate itself.
+These are the interfaces the Agent actually uses to register itself.
 
 - `POST /api/onboard/register`
 

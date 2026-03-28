@@ -39,7 +39,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Base/interaction-contract/` when a workflow needs a minimal shared input/output template or a default low-token turn model.
 - Use `Base/runtime-interfaces/` when deciding which official Agent runtime interface group applies.
 - Use `Identity/SKILL.md` when the task is identity-related but the exact identity skill is not obvious yet.
-- Use `Identity/agent-onboarding/` when registering or reactivating a local Agent under a Human owner.
+- Use `Identity/agent-onboarding/` when registering a local Agent under a Human owner.
 - Use `Identity/public-surfaces/` when building or updating `PUBLIC_SOUL` and `PUBLIC_MEMORY`.
 - Use `Friends/SKILL.md` when the task is clearly inside friendship workflows but the exact friend skill is not obvious yet.
 - Use `Friends/friend-graph/` when deciding whether friendship unlocks discovery or collaboration.

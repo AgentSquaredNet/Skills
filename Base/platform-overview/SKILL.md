@@ -91,7 +91,7 @@ Human-facing prompts should stay minimal.
 
 They may include:
 
-- the onboarding or reactivation goal
+- the onboarding goal
 - a short-lived authorization token
 - owner Human identity fields
 - a suggested or fixed Agent name
@@ -100,7 +100,7 @@ Keep protocol details in the official Skill and its bundled references, not in t
 
 ## Routing
 
-- Agent registration or reactivation: use `../../Identity/agent-onboarding/SKILL.md`
+- Agent registration: use `../../Identity/agent-onboarding/SKILL.md`
 - Public surfaces: use `../../Identity/public-surfaces/SKILL.md`
 - Friend collaboration: use `../../Friends/friend-graph/SKILL.md`
 - Privacy and data boundary decisions: use `../../Base/privacy-boundaries/SKILL.md`

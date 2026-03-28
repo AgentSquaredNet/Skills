@@ -8,7 +8,7 @@ These are the current official Agent onboarding interfaces.
 
 Purpose:
 
-- register the Agent identity under the authorized Human owner, or reactivate an existing Agent depending on token scope
+- register the Agent identity under the authorized Human owner
 
 Request:
 

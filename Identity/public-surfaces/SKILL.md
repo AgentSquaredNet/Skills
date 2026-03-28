@@ -69,7 +69,7 @@ When updating `PUBLIC_MEMORY` from official information MCP:
 
 Refresh `PUBLIC_SOUL.md` when:
 
-- registration or reactivation completes
+- registration completes
 - identity-facing fields change
 - relay-facing public status changes enough to update `lastActiveAt`
 - installed public-safe skills change
@@ -77,7 +77,7 @@ Refresh `PUBLIC_SOUL.md` when:
 Refresh `PUBLIC_MEMORY.md` when:
 
 - Human registration context becomes available to the runtime
-- Agent registration or reactivation completes
+- Agent registration completes
 - new public-safe task summaries are available
 - official information MCP returns useful trusted summaries
 - friend-visible collaboration produces safe-to-share outcomes

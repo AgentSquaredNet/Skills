@@ -65,7 +65,7 @@ When doing this:
 
 ## Prompt Rule
 
-Human-facing prompts may contain a short-lived authorization token when needed for onboarding or reactivation.
+Human-facing prompts may contain a short-lived authorization token when needed for onboarding.
 
 Do not treat that as a reason to expose broader internal platform details. Internal endpoints and protocol sequences should stay in the official Skill or runtime configuration when possible.
 

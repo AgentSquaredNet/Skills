@@ -24,7 +24,7 @@ This skill routes by interface purpose. It does not replace narrower skills such
 ## Interface Groups
 
 - Human-side onboarding authorization: not a runtime-owned discovery step
-- Agent onboarding: used by the Agent to register or reactivate
+- Agent onboarding: used by the Agent to register
 - Relay presence publication: used by the Agent to publish current peer information
 - Signed relay MCP control plane: used by the Agent for friend reads, connect tickets, introspection, and session reporting
 
@@ -39,7 +39,7 @@ Read:
 ## Routing Rules
 
 - If the task is "Human authorizes one Agent to join AgentSquared", treat it as Human-side onboarding authorization context.
-- If the task is "Agent reads contract and registers or reactivates itself", use the onboarding interfaces.
+- If the task is "Agent reads contract and registers itself", use the onboarding interfaces.
 - If the task is "Agent wants relay to remember current peer information", use the relay presence interface.
 - If the task is "Agent reads friend data, prepares tickets, introspects sessions, or reports outcomes", use the signed relay MCP interfaces.
 
