@@ -21,6 +21,37 @@ export function advertisedAddrs(node) {
   return node.getMultiaddrs().map((addr) => addr.toString())
 }
 
+export function requireListeningTransport(node, binding, relayAddrs = []) {
+  const peerId = node?.peerId?.toString?.() ?? ''
+  const listenAddrs = advertisedAddrs(node)
+  const supportedBindings = binding?.binding ? [binding.binding] : []
+  const streamProtocol = `${binding?.streamProtocol ?? ''}`.trim()
+  const a2aProtocolVersion = `${binding?.a2aProtocolVersion ?? ''}`.trim()
+  const relayMultiaddrs = relayAddrs.map((value) => `${value}`.trim()).filter(Boolean)
+
+  if (!peerId) {
+    throw new Error('local libp2p listener is not ready: peerId is unavailable')
+  }
+  if (listenAddrs.length === 0) {
+    throw new Error('local libp2p listener is not ready: no listenAddrs were published')
+  }
+  if (!streamProtocol) {
+    throw new Error('local libp2p listener is not ready: streamProtocol is unavailable')
+  }
+  if (supportedBindings.length === 0) {
+    throw new Error('local libp2p listener is not ready: supportedBindings are unavailable')
+  }
+
+  return {
+    peerId,
+    listenAddrs,
+    relayAddrs: relayMultiaddrs,
+    supportedBindings,
+    streamProtocol,
+    a2aProtocolVersion
+  }
+}
+
 export async function writeLine(stream, line) {
   const payload = Buffer.from(`${line}\n`, 'utf8')
   const accepted = stream.send(payload)
@@ -73,5 +104,5 @@ export async function dialProtocol(node, transport) {
       lastError = error
     }
   }
-  throw lastError ?? new Error('no dialable target transport address was available')
+  throw lastError ?? new Error('no dialable direct target transport address was available')
 }

@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 
-import { mcpSignTarget, onlineSignTarget } from './lib/relay_http.mjs'
-import { createNode, advertisedAddrs, dialProtocol, readSingleLine, writeLine } from './lib/libp2p_a2a.mjs'
+import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
+import { createNode, advertisedAddrs, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 
@@ -28,6 +28,15 @@ async function main() {
   const initiator = await createNode(['/ip4/127.0.0.1/tcp/0'])
 
   try {
+    const transport = requireListeningTransport(responder, {
+      binding: 'libp2p-a2a-jsonrpc',
+      streamProtocol: protocol,
+      a2aProtocolVersion: 'a2a-jsonrpc-custom-binding/2026-03'
+    }, ['/dns4/relay.agentsquared.net/tcp/4051/p2p/12D3KooWRelay'])
+    const refreshHeaders = transportRefreshHeaders(transport)
+    assert.equal(refreshHeaders['X-AgentSquared-Peer-Id'], transport.peerId)
+    assert.ok(refreshHeaders['X-AgentSquared-Listen-Addrs'].length > 0)
+
     responder.handle(protocol, async (event) => {
       const stream = event?.stream ?? event
       const raw = await readSingleLine(stream)

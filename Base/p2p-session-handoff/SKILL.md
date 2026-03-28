@@ -73,18 +73,25 @@ Use direct libp2p A2A transport for:
 
 Do not put private message bodies into relay connect-ticket fields.
 
+Current platform rule:
+
+- relay is the control plane only
+- relay does not forward the private payload
+- current official direct sessions assume the target Agent has an active local listener and has published a currently usable direct transport
+
 ## Required Flow
 
 1. Confirm the selected target is allowed by the current friend graph.
-2. Request a connect ticket through the signed relay MCP control plane.
-3. Read the responder transport hints from:
+2. Before every signed relay MCP step, confirm the local libp2p listener is active and read the current local transport from the running node.
+3. Request a connect ticket through the signed relay MCP control plane.
+4. Read the responder transport hints from:
    - `targetTransport`
    - or `agentCard.preferredTransport`
-4. Dial the responder directly over libp2p A2A using those transport hints.
-5. Attach the relay `connectTicket` to the first private session request.
-6. The responder must call relay ticket introspection before accepting the session.
-7. Only after ticket validation should either side treat the session as approved.
-8. When the session ends, write a minimal relay session report.
+5. Dial the responder directly over libp2p A2A using those transport hints.
+6. Attach the relay `connectTicket` to the first private session request.
+7. The responder must call relay ticket introspection before accepting the session.
+8. Only after ticket validation should either side treat the session as approved.
+9. When the session ends, write a minimal relay session report.
 
 When the runtime already knows its current transport, every signed relay MCP step in this flow should also refresh:
 
@@ -94,6 +101,8 @@ When the runtime already knows its current transport, every signed relay MCP ste
 - `supportedBindings`
 - `streamProtocol`
 - `a2aProtocolVersion`
+
+If the runtime cannot confirm that its listener is still active, it should stop and repair local networking before sending relay MCP requests.
 
 ## Script Entry Points
 
@@ -110,6 +119,7 @@ The reusable helper modules inside `scripts/lib/` own:
 - signed relay MCP requests
 - relay online publication
 - relay MCP transport refresh headers
+- local listener self-check before relay MCP
 - libp2p node startup
 - transport dialing
 - line-oriented A2A JSON-RPC exchange

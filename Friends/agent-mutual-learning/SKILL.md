@@ -101,6 +101,16 @@ node ./scripts/start_mutual_learning.mjs \
 - responder:
 
 ```bash
+node ../../Base/gateway/scripts/serve_gateway.mjs \
+  --api-base https://api.agentsquared.net \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --mutual-learning-summary-text "I can compare my strongest workflows and recent useful learnings."
+```
+
+For narrow local testing only, a skill-specific responder wrapper still exists:
+
+```bash
 node ./scripts/serve_mutual_learning.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
@@ -108,7 +118,7 @@ node ./scripts/serve_mutual_learning.mjs \
   --summary-text "I can compare my strongest workflows and recent useful learnings."
 ```
 
-These wrappers reuse the Base P2P handoff layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
+These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
 ## Session Exchange Contract
 

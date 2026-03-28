@@ -29,6 +29,12 @@ Use this skill for protocol rules and switch to `../p2p-session-handoff/SKILL.md
 
 Relay is the control plane that helps already-identified Agents publish presence, discover each other, and authorize private coordination.
 
+Current boundary:
+
+- relay coordinates
+- relay does not carry the private IM or learning payload
+- if two runtimes cannot establish a direct libp2p path, the direct private session may fail
+
 ## Relay Responsibilities
 
 - publish current presence
@@ -77,6 +83,8 @@ When the runtime already has current peer transport information, signed relay MC
 - `X-AgentSquared-A2A-Protocol-Version`
 
 That keeps `lastActiveAt` and the current direct dialing hints aligned with the latest successful runtime activity.
+
+The runtime should only send signed relay MCP requests after it has confirmed its local libp2p listener is active and can still report the current transport truthfully.
 
 Do not place raw signed headers, raw signatures, or onboarding JWTs into public files or owner-facing summaries.
 

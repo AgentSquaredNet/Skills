@@ -28,12 +28,23 @@ REQUIRED_SUBSTRINGS = {
         '"name": "agentsquared-p2p-session-handoff"',
         '"self-test": "node ./scripts/self_test.mjs"',
     ],
+    ROOT / "Base" / "gateway" / "SKILL.md": [
+        "shared long-lived inbound listener/router",
+        "ticketView.skillName",
+    ],
+    ROOT / "Base" / "gateway" / "scripts" / "serve_gateway.mjs": [
+        "servePeerSession",
+        "friend-im",
+        "agent-mutual-learning",
+    ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [
         "../../Base/p2p-session-handoff/SKILL.md",
+        "../../Base/gateway/scripts/serve_gateway.mjs",
         "private peer payload",
     ],
     ROOT / "Friends" / "agent-mutual-learning" / "SKILL.md": [
         "../../Base/p2p-session-handoff/SKILL.md",
+        "../../Base/gateway/scripts/serve_gateway.mjs",
         "private session",
     ],
     ROOT / "Friends" / "friend-im" / "scripts" / "send_friend_im.mjs": [

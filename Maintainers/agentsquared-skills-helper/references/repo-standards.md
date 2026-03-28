@@ -140,8 +140,11 @@ When multiple workflows depend on the same transport or relay mechanics:
 
 The current example is:
 
+- `Base/gateway/` as the shared long-lived listener/router
 - `Base/p2p-session-handoff/` as the shared executable layer
 - `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
+
+If a skill needs inbound reachability, prefer extending the shared gateway skill instead of creating a separate always-on listener for that skill.
 
 ## 7a. Interaction Contract
 

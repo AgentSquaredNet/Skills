@@ -1,6 +1,6 @@
 import { randomRequestId } from './cli.mjs'
 import { getBindingDocument, postOnline, createConnectTicket, introspectConnectTicket, reportSession } from './relay_http.mjs'
-import { createNode, advertisedAddrs, dialProtocol, readSingleLine, writeLine } from './libp2p_a2a.mjs'
+import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './libp2p_a2a.mjs'
 
 export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
   return {
@@ -15,27 +15,21 @@ export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
 }
 
 export async function bringNodeOnline(apiBase, agentId, bundle, node, binding, activitySummary, availabilityStatus = 'available') {
+  const transport = currentTransport(node, binding)
   return postOnline(apiBase, agentId, bundle, {
     availabilityStatus,
     activitySummary,
-    peerId: node.peerId.toString(),
-    listenAddrs: advertisedAddrs(node),
-    relayAddrs: binding.relayMultiaddrs ?? [],
-    supportedBindings: binding.binding ? [binding.binding] : [],
-    a2aProtocolVersion: binding.a2aProtocolVersion ?? '',
-    streamProtocol: binding.streamProtocol ?? ''
+    peerId: transport.peerId,
+    listenAddrs: transport.listenAddrs,
+    relayAddrs: transport.relayAddrs,
+    supportedBindings: transport.supportedBindings,
+    a2aProtocolVersion: transport.a2aProtocolVersion,
+    streamProtocol: transport.streamProtocol
   })
 }
 
 export function currentTransport(node, binding) {
-  return {
-    peerId: node.peerId.toString(),
-    listenAddrs: advertisedAddrs(node),
-    relayAddrs: binding.relayMultiaddrs ?? [],
-    supportedBindings: binding.binding ? [binding.binding] : [],
-    a2aProtocolVersion: binding.a2aProtocolVersion ?? '',
-    streamProtocol: binding.streamProtocol ?? ''
-  }
+  return requireListeningTransport(node, binding, binding.relayMultiaddrs ?? [])
 }
 
 export async function initiatePeerSession({

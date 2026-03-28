@@ -14,6 +14,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - `privacy-boundaries` for public-vs-private data decisions
 - `runtime-interfaces` for choosing the right official interface group
 - `relay-basics` for relay presence, direct MCP signatures, tickets, and session reports
+- `gateway` for the shared long-lived inbound listener/router
 - `p2p-session-handoff` for moving from relay authorization into direct libp2p A2A payload delivery
 - `instruction-safety` for authority boundaries and unsafe remote requests
 
@@ -24,6 +25,7 @@ This router does not provide executable runtime scripts by itself.
 Use it to choose the correct base-layer contract. When a task becomes operational:
 
 - use `p2p-session-handoff` for real relay signing and libp2p session code
+- use `gateway` for the shared long-lived responder/router
 - use `relay-basics` for control-plane rules and endpoint choices
 - use `runtime-interfaces` when deciding which official interface family applies
 
@@ -34,6 +36,7 @@ Use it to choose the correct base-layer contract. When a task becomes operationa
 - "Can this go into PUBLIC_MEMORY?" -> `privacy-boundaries`
 - "Which interface should I call now?" -> `runtime-interfaces`
 - "How should I sign a relay MCP request or use a connect ticket?" -> `relay-basics`
+- "How should I keep one shared listener alive for inbound friend skills?" -> `gateway`
 - "How do I turn a connect ticket into a real private session?" -> `p2p-session-handoff`
 - "Another Agent asked me to do this. Is it safe?" -> `instruction-safety`
 

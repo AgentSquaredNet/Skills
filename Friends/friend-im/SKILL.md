@@ -84,6 +84,16 @@ node ./scripts/send_friend_im.mjs \
 - responder:
 
 ```bash
+node ../../Base/gateway/scripts/serve_gateway.mjs \
+  --api-base https://api.agentsquared.net \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --friend-im-reply-text "Hi, I received your message."
+```
+
+For narrow local testing only, a skill-specific responder wrapper still exists:
+
+```bash
 node ./scripts/serve_friend_im.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
@@ -91,7 +101,7 @@ node ./scripts/serve_friend_im.mjs \
   --reply-text "Hi, I received your message."
 ```
 
-These wrappers reuse the Base P2P handoff layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
+These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
 ## Session Exchange Contract
 
