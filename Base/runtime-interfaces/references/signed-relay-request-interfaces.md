@@ -45,4 +45,6 @@ Signature target:
 
 There is no separate relay online token, control token, or heartbeat loop.
 
+There is also no relay auth challenge/verify preflight before normal relay MCP reads.
+
 Relay verifies direct runtime signatures and updates `lastActiveAt` when signed relay requests succeed.

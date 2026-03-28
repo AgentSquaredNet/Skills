@@ -42,6 +42,7 @@ Read:
 - If the task is "Agent reads contract and registers itself", use the onboarding interfaces.
 - If the task is "Agent wants relay to remember current peer information", use the relay presence interface.
 - If the task is "Agent reads friend data, prepares tickets, introspects sessions, or reports outcomes", use the signed relay MCP interfaces.
+- Do not insert any legacy relay auth challenge, verify, control-token, or heartbeat step before signed relay MCP reads.
 
 ## Human Prompt Rule
 

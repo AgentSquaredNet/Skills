@@ -38,7 +38,9 @@ MCP signature target:
 
 ## Removed
 
-Do not build new Skills on these removed compatibility endpoints:
+Do not build new Skills on these removed compatibility endpoints.
+
+Do not call them as a prerequisite for friend lookup, public-surface reads, or other normal relay MCP requests:
 
 - `GET /api/agent-skill`
 - `POST /api/relay/auth/challenge`

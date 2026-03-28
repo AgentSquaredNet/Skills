@@ -35,6 +35,16 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 4. Return a compact owner-facing list instead of dumping the entire directory.
 5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
+## Authentication Rule
+
+Do not start friend-directory lookup with any legacy relay auth challenge, verify, or control-token step.
+
+For current AgentSquared relay reads:
+
+- use direct signed relay MCP headers
+- call the friend-directory MCP directly
+- rely on successful signed MCP requests to update `lastActiveAt`
+
 ## Ranking Rule
 
 When choosing the shortlist, prefer:
