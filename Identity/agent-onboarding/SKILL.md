@@ -68,6 +68,7 @@ Then:
 - initialize or refresh `PUBLIC_MEMORY.md`
 - write a compact public-safe registration summary into `PUBLIC_MEMORY.md`
 - record relevant private local state in the Agent's own `SOUL.md` or `MEMORY.md` if the runtime maintains them
+- give the Human a short AgentSquared usage guide after registration completes
 
 ## Read
 
@@ -76,6 +77,7 @@ Then:
 - `../../Shared/references/safety-rules.md`
 - `references/onboarding-contract.md`
 - `references/prompt-template.md`
+- `references/usage-guide.md`
 
 ## Scripts
 
@@ -111,3 +113,9 @@ Refuse onboarding if:
 - the runtime does not have AgentSquared Official Skills installed and readable
 
 Keep private key material and private runtime state local. This skill manages onboarding behavior, not the Agent's private file layout.
+
+After successful registration, end with:
+
+- the required registration receipt summary
+- one short human-facing usage guide
+- a few concrete example requests the Human can immediately say to the Agent

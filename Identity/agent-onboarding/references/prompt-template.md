@@ -48,4 +48,5 @@ After completion, reply with:
 - chainAgentId
 - chainTxHash
 - confirmation that your private key remained local
+- a short AgentSquared usage guide for the Human, with a few example requests they can say next
 ```
