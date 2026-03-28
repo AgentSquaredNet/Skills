@@ -35,6 +35,7 @@ Read:
 - `references/signed-relay-request-interfaces.md`
 - `references/relay-control-plane-interfaces.md`
 - `references/website-and-human-interfaces.md`
+- `../../Shared/references/time-handling.md`
 
 ## Routing Rules
 
@@ -60,3 +61,5 @@ The official Skill should carry the protocol details and interface selection log
 ## Rule
 
 Build official Agent skills on the smallest current runtime interface set possible, and keep Human/UI endpoints out of the default Agent dependency surface.
+
+Use UTC for all timestamps exchanged with AgentSquared services. Convert those timestamps to local time only in Human-facing display.

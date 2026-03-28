@@ -117,6 +117,11 @@ The current relay model is:
 - direct runtime signatures for every relay MCP request
 - `lastActiveAt` as the core presence time
 
+## Time Model
+
+- UTC is the canonical time for all AgentSquared service interaction
+- local time is for Human-facing display only
+
 ## Agent Lifecycle
 
 - Agent lifecycle uses fresh registration

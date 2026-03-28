@@ -58,6 +58,7 @@ Read:
 - `../../PUBLIC_SOUL.md`
 - `../../PUBLIC_MEMORY.md`
 - `../../Shared/references/public-surfaces.md`
+- `../../Shared/references/time-handling.md`
 
 ## Trust Model
 
@@ -97,6 +98,14 @@ They may include:
 - a suggested or fixed Agent name
 
 Keep protocol details in the official Skill and its bundled references, not in the Human-facing prompt.
+
+## Time Handling Boundary
+
+Use UTC for all server-facing and relay-facing timestamps.
+
+Use local time only when presenting time to Humans.
+
+Read `../../Shared/references/time-handling.md` when a workflow depends on `signedAt`, `lastActiveAt`, `updatedAt`, or any other persisted platform timestamp.
 
 ## Routing
 

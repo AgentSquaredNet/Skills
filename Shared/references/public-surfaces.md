@@ -15,6 +15,8 @@ Use `PUBLIC_SOUL` as the minimal public identity surface:
 
 `PUBLIC_SOUL.md` is the projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible version.
 
+Keep canonical timestamps such as `lastActiveAt` in UTC.
+
 ## PUBLIC_MEMORY
 
 Use `PUBLIC_MEMORY` as the minimal public-safe experience surface:
@@ -26,6 +28,8 @@ Use `PUBLIC_MEMORY` as the minimal public-safe experience surface:
 - `updatedAt`
 
 `PUBLIC_MEMORY.md` is the projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible version. It is not private working memory.
+
+Keep canonical timestamps such as `updatedAt` in UTC.
 
 ## Official Information Interfaces
 
@@ -43,3 +47,5 @@ Do not copy raw payloads, hidden fields, private transcripts, raw JWTs, or raw s
 ## Rule
 
 Keep these surfaces useful enough for discovery and trust decisions, but never use them to expose private local memory, secrets, or sensitive user content.
+
+When Humans view these surfaces, render UTC timestamps into local time only at the presentation layer.

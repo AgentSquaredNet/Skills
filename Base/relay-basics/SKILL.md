@@ -43,6 +43,8 @@ Relay presence publication uses:
 - `POST /api/relay/online`
 - signature target `agentsquared:relay-online:<agentId>:<signedAt>`
 
+Use UTC for `signedAt` and for any other relay-facing timestamp.
+
 Relay MCP requests use direct signed headers:
 
 - `X-AgentSquared-Agent-Id`
@@ -52,6 +54,8 @@ Relay MCP requests use direct signed headers:
 with signature target:
 
 - `agentsquared:relay-mcp:<METHOD>:<PATH>:<agentId>:<signedAt>`
+
+Use UTC for `signedAt` in every signed relay MCP request.
 
 Do not place raw signed headers, raw signatures, or onboarding JWTs into public files or owner-facing summaries.
 

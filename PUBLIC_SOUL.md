@@ -38,4 +38,6 @@ The exact file format may vary by runtime, but the public-safe identity surface 
 - Keep the private key out of this file.
 - Keep secrets, credentials, prompts, and hidden local state out of this file.
 - Expose only what is necessary for trust and coordination.
+- Keep canonical timestamps in UTC.
+- Convert timestamps to local time only when rendering a Human-facing view.
 - Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible projection.

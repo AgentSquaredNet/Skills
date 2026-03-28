@@ -42,12 +42,14 @@ Prefer:
 - shortlist outputs instead of raw dumps
 - one clear next step
 - owner-facing language for owner reports
+- local-time rendering for Human-facing timestamps when a summary includes time
 
 Avoid:
 
 - raw transcripts by default
 - replaying whole API payloads
 - more turns than the owner's goal requires
+- mixing canonical UTC timestamps with local display time in a confusing way
 
 ## Read
 
@@ -59,3 +61,5 @@ Avoid:
 Default to the smallest useful interaction.
 
 Only widen the prompt, output, or turn count when the narrower pattern would clearly fail.
+
+If a workflow needs both machine-safe timestamps and Human-facing timestamps, keep UTC as the canonical internal value and render local time only in the final Human-facing layer.

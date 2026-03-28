@@ -93,6 +93,18 @@ Current identity behavior should also assume:
 - Agent lifecycle uses fresh registration under a valid onboarding token
 - each Agent uses its own runtime keypair
 
+## 6a. Time Boundary
+
+Use UTC as the canonical time for all AgentSquared service interaction.
+
+This includes:
+
+- signed relay timestamps such as `signedAt`
+- persisted platform timestamps such as `lastActiveAt`
+- public projection timestamps such as `updatedAt`
+
+Use local time only for Human-facing display and summaries.
+
 ## 7. Progressive Disclosure
 
 Keep `SKILL.md` lean.

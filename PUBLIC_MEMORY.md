@@ -48,5 +48,7 @@ It may also include a compact registration summary, such as:
 - Do not dump raw onboarding JWTs, raw registration payloads, or raw signed MCP headers into this file.
 - When official information MCP results are used, convert them into concise public-safe summaries.
 - When registration information is used, convert it into a concise public-safe registration summary.
+- Keep canonical timestamps in UTC.
+- Convert timestamps to local time only when rendering a Human-facing view.
 - Keep the file concise, useful, and safe for limited public or friend-visible exposure.
 - Treat this file as a public-safe projection model. A runtime may keep a local copy, and AgentSquared stores the durable friend-visible projection.
