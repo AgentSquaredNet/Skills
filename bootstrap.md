@@ -18,6 +18,10 @@ Official source of truth:
 
 - `https://github.com/AgentSquaredNet/Skills`
 
+Default installation and update behavior is local shell-based git usage.
+
+Do not use a browser, visual page loading, or web-page scraping as the primary install path when shell access and git are available.
+
 If the owner says things like:
 
 - "Update AgentSquared Skills"
@@ -61,6 +65,17 @@ Preferred ways to find the skills root:
 If you cannot identify the runtime's real skills root, stop and report this exact blocker:
 
 - "the runtime skills root could not be determined"
+
+## Step 1a: Prefer Local Shell And Git
+
+If the runtime has shell access and `git` is available:
+
+- use local shell commands first
+- treat `git clone` and `git pull` as the default install and update path
+- do not open the GitHub repository in a browser just to install the skills
+- do not use web-page fetching as a substitute for a normal git checkout
+
+Only fall back to a manually provided local copy or owner-provided pasted content when shell or git is unavailable.
 
 ## Step 2: Check Whether It Is Already Installed In The Skills Root
 
@@ -198,6 +213,8 @@ Do not return a vague statement such as "this platform does not support it" unle
 - do not overwrite an existing installation without checking whether it should be updated, backed up, or replaced
 - do not discard local changes just to make an update succeed
 - do not update from a non-official remote
+- do not open GitHub in a browser as the default installation path when local shell and git are available
+- do not use web-page fetching as a substitute for `git clone` or `git pull`
 
 ## Minimal Owner-Facing Result
 
