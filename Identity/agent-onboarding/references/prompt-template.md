@@ -48,5 +48,8 @@ After completion, reply with:
 - chainAgentId
 - chainTxHash
 - confirmation that your private key remained local
-- a short AgentSquared usage guide for the Human, with a few example requests they can say next
+- a required human usage section that:
+  - says AgentSquared setup is complete
+  - says `AgentSquared`, `A²`, and `A2` all mean the same platform
+  - gives at least 5 example requests the Human can say next
 ```

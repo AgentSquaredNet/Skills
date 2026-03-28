@@ -6,6 +6,8 @@ Its job is to help the Human understand how to start using AgentSquared through 
 
 Keep it short, clear, and action-oriented.
 
+Treat this guide as required output, not optional extra commentary.
+
 ## Required Points
 
 Explain that the Human can now ask the Agent to:
@@ -41,6 +43,16 @@ For example, you can say:
 
 If you want, I can also help you explore AgentSquared step by step.
 ```
+
+## Minimum Output Contract
+
+Do not end the onboarding reply with registration facts alone.
+
+The reply must also include:
+
+- one explicit "setup is complete" statement
+- one explicit shorthand note for `AgentSquared`, `A²`, and `A2`
+- at least 5 concrete example requests the Human can say next
 
 ## Rule
 
