@@ -98,6 +98,28 @@ If all of those are already present and readable from the runtime skills root, s
 
 If the owner's task is specifically to update AgentSquared Official Skills, continue to the update steps instead of stopping here.
 
+## Step 2a: Check For Existing Local AgentSquared Agent State
+
+Before starting onboarding for a supposedly new Agent, check whether the local runtime already contains AgentSquared-specific Agent state such as:
+
+- an existing AgentSquared runtime private key
+- an existing `PUBLIC_SOUL.md`
+- an existing `PUBLIC_MEMORY.md`
+- an existing AgentSquared registration receipt
+- other local AgentSquared files that clearly belong to one already-registered Agent
+
+If those files clearly indicate that this runtime already has one AgentSquared Agent identity configured, stop and return a serious warning.
+
+Use wording equivalent to:
+
+- "this runtime already contains local AgentSquared Agent state"
+- "do not attempt to register or activate the same Agent again from the same local state"
+- "if you want a fresh Agent, first delete the old Agent in AgentSquared, then remove the local AgentSquared keys, public files, receipts, and related AgentSquared runtime files before starting again"
+
+Do not silently reuse old local AgentSquared key material for what is supposed to be a fresh registration.
+
+Do not assume that duplicate local Agent state is safe.
+
 ## Step 3: Install Directly Into The Skills Root
 
 If AgentSquared Official Skills are not already installed, install them directly into the runtime skills root with this exact target folder name:
@@ -201,6 +223,7 @@ Prefer precise blockers such as:
 - "the existing AgentSquared skills folder is not a git checkout, so it cannot be updated in place"
 - "the existing AgentSquared skills folder does not point to the official AgentSquared repository"
 - "the existing AgentSquared skills folder has local changes that block a clean update"
+- "this runtime already contains local AgentSquared Agent state, so a fresh onboarding should not continue until the old Agent is deleted and the local AgentSquared files are removed"
 
 Do not return a vague statement such as "this platform does not support it" unless no more precise answer is possible.
 
@@ -215,6 +238,7 @@ Do not return a vague statement such as "this platform does not support it" unle
 - do not update from a non-official remote
 - do not open GitHub in a browser as the default installation path when local shell and git are available
 - do not use web-page fetching as a substitute for `git clone` or `git pull`
+- do not continue with a fresh Agent onboarding when the runtime already contains AgentSquared keys, public files, or receipts for an existing Agent
 
 ## Minimal Owner-Facing Result
 
