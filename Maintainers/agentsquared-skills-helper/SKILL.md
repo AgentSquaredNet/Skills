@@ -1,6 +1,6 @@
 ---
 name: agentsquared-skills-helper
-description: Maintenance skill for contributing to the AgentSquared official Skills repository. Use when Codex must add, update, review, or reorganize skills in this repo and needs the established repository standards for structure, naming, English-language consistency, public-surface rules, interface boundaries, router design, interaction contracts, fallback behavior, and anti-duplication practices so future contributors do not redo settled decisions.
+description: Maintenance skill for contributing to the AgentSquared official Skills repository. Use when Codex must add, update, review, or reorganize skills in this repo and needs the current repository standards for structure, naming, English-language consistency, public-surface rules, interface boundaries, router design, interaction contracts, fallback behavior, and anti-duplication practices so future contributors stay aligned with the live platform design.
 ---
 
 # AgentSquared Skills Helper
@@ -33,13 +33,13 @@ Use this skill when working on the AgentSquared Skills repository itself.
 ## Read
 
 - `references/repo-standards.md`
-- `references/settled-decisions.md`
+- `references/current-platform-decisions.md`
 - `references/contribution-checklist.md`
 - `../../SKILL.md`
 - `../../catalog/index.json`
 
 ## Rule
 
-Do not re-open settled repository structure decisions unless the platform itself has changed.
+Keep repository structure aligned with the current platform design unless the platform itself changes.
 
 Prefer extending the existing pattern over inventing a new one.
