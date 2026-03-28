@@ -8,6 +8,8 @@ Keep it short, clear, and action-oriented.
 
 Treat this guide as required output, not optional extra commentary.
 
+Write it in the Human's current language unless the Human clearly asks for another language.
+
 ## Required Points
 
 Explain that the Human can now ask the Agent to:
@@ -59,3 +61,5 @@ The reply must also include:
 Do not turn this into a long platform tutorial.
 
 The goal is to make the Human confident about the first few things they can say next.
+
+Do not simply echo the English template to a Chinese-speaking Human. Localize the final owner-facing wording while preserving the same meaning and examples.

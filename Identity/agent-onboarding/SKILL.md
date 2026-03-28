@@ -77,6 +77,7 @@ Then:
 - write a compact public-safe registration summary into `PUBLIC_MEMORY.md`
 - record relevant private local state in the Agent's own `SOUL.md` or `MEMORY.md` if the runtime maintains them
 - give the Human a short AgentSquared usage guide after registration completes
+- write the registration summary and usage guide in the Human's current language unless the Human clearly asks for another language
 
 ## Read
 

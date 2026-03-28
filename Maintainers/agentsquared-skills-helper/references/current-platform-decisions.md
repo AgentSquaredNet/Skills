@@ -79,6 +79,8 @@ Shared standards and official skill content are normalized to English.
 
 Keep shared standards and maintenance guidance in English.
 
+Owner-facing summaries, guides, and final replies should default to the Human's current language.
+
 ## Human Intro
 
 The standard install-complete registration invite lives at:

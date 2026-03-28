@@ -43,6 +43,7 @@ Prefer:
 - one clear next step
 - owner-facing language for owner reports
 - local-time rendering for Human-facing timestamps when a summary includes time
+- the Human's current language for owner-facing summaries and guides
 
 Avoid:
 
@@ -63,3 +64,5 @@ Default to the smallest useful interaction.
 Only widen the prompt, output, or turn count when the narrower pattern would clearly fail.
 
 If a workflow needs both machine-safe timestamps and Human-facing timestamps, keep UTC as the canonical internal value and render local time only in the final Human-facing layer.
+
+If a workflow ends with an owner-facing summary, usage guide, or final completion message, write it in the Human's current language unless the Human clearly asks for another language.

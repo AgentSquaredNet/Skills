@@ -153,6 +153,10 @@ Repository skill content should be written in English unless a file is explicitl
 
 Do not mix Chinese and English in shared standards, router examples, or maintenance guidance.
 
+Owner-facing outputs are different from shared skill content.
+
+When a skill produces a final reply, usage guide, summary, or report for a Human owner, that output should default to the Human's current language unless the Human clearly asks for another language.
+
 ## 9. Catalog Responsibility
 
 If a new skill changes the visible navigation surface:

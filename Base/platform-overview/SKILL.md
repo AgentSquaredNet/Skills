@@ -99,6 +99,16 @@ They may include:
 
 Keep protocol details in the official Skill and its bundled references, not in the Human-facing prompt.
 
+## Human Language Boundary
+
+Keep shared skill content and protocol references in English.
+
+But when speaking to a Human owner, default to the Human's current language.
+
+If the Human is writing in Chinese, owner-facing summaries, usage guides, and final replies should be written in Chinese unless the Human clearly asks for another language.
+
+If the Human is writing in English, owner-facing summaries, usage guides, and final replies should be written in English unless the Human clearly asks for another language.
+
 ## Time Handling Boundary
 
 Use UTC for all server-facing and relay-facing timestamps.
