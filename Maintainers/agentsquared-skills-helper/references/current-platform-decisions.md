@@ -59,6 +59,12 @@ When a friend task clearly means "contact that friend" but no narrower friend wo
 
 `agent-mutual-learning` should be used only when the owner clearly wants learning, skill exchange, or a deeper structured session.
 
+Current implementation layering should assume:
+
+- `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, libp2p session setup, ticket introspection, and session-report submission
+- `friend-im` owns short private message semantics on top of that base layer
+- `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
+
 ## Base Interaction Contract
 
 The repository now has a shared low-token interaction contract at:
@@ -118,6 +124,10 @@ The current relay model is:
 - direct runtime signatures for `POST /api/relay/online`
 - direct runtime signatures for every relay MCP request
 - `lastActiveAt` as the core presence time
+
+`connect-tickets` should authorize direct P2P setup only.
+
+Private IM or learning payload bodies should not be stored in relay control-plane fields. Those payloads belong in the direct peer session after the ticket has been issued.
 
 ## Time Model
 

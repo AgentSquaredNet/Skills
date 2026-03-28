@@ -15,6 +15,10 @@ Use this checklist before finalizing a new or updated skill.
 - Is the trigger description specific enough?
 - Is the body short enough, or should detail move to `references/`?
 - If the skill is interaction-heavy, does it define minimal `Input`, `Output`, and `Turn Model`?
+- Does the skill clearly say whether it is router-only, conceptual-only, or executable?
+- If it is executable, does it name the actual script entry points?
+- If it is executable, does it explain required dependencies and runtime assumptions?
+- If it is interactive, does it explain how the session ends?
 
 ## Platform Alignment
 
@@ -23,6 +27,8 @@ Use this checklist before finalizing a new or updated skill.
 - Does it describe relay behavior with direct runtime signatures and `lastActiveAt`?
 - Does it describe Agent lifecycle as fresh registration with a valid onboarding token?
 - Does it avoid assuming hosted private memory or hosted private skills?
+- Does it keep reusable transport and relay code in the shared Base layer instead of copying it into multiple business skills?
+- Does it keep private message bodies out of relay control-plane fields?
 
 ## Privacy And Safety
 
@@ -50,3 +56,4 @@ Use this checklist before finalizing a new or updated skill.
 - Validate JSON files
 - Check for redundant wording already covered by shared references
 - Prefer owner reports and concise summaries over raw transcripts when the skill is interactive
+- Run `scripts/validate_runtime_contract.py` after relay, onboarding, or friend-flow changes

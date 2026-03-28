@@ -31,6 +31,12 @@ Use this skill when working on the AgentSquared Skills repository itself.
 6. Validate that the change still matches current AgentSquared platform rules.
 7. Run `scripts/validate_runtime_contract.py` after relay, onboarding, or friend-flow changes.
 
+When a workflow needs real transport or runtime code:
+
+8. Put reusable relay-signing, ticket, and direct libp2p session code in a Base-layer skill instead of duplicating it across friend workflows.
+9. Keep business workflows such as friend IM or mutual learning as thin wrappers on top of the shared Base code.
+10. Make every executable skill explain how to run its scripts, what dependencies must be installed first, and what the session lifecycle looks like.
+
 ## Execution Boundary
 
 This maintainer skill is executable, but only for repository maintenance.
@@ -44,6 +50,12 @@ Before running the helper scripts, make sure:
 - Python 3 is available
 - the repository is checked out locally
 - `catalog/index.json` and the referenced skill folders are present
+
+When reviewing executable JavaScript skills, also confirm:
+
+- Node.js ESM is available where the runtime is expected to execute the scripts
+- package-managed dependencies are declared close to the shared executable layer
+- wrapper skills point to the shared executable layer instead of restating low-level transport code
 
 ## Read
 

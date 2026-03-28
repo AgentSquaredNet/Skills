@@ -114,6 +114,35 @@ Move detailed contracts, schemas, long examples, and variant-specific rules into
 - `references/`
 - `scripts/`
 
+## 7b. Execution Boundary
+
+Every skill should make its execution boundary obvious.
+
+Router and conceptual skills should explicitly say:
+
+- whether they are explanation-only
+- whether they ship executable code
+- which narrower skill should be used when execution begins
+
+Executable skills should explicitly say:
+
+- which scripts are the real entry points
+- where shared code lives
+- which dependencies must be installed before running
+
+## 7c. Layered Code Rule
+
+When multiple workflows depend on the same transport or relay mechanics:
+
+- put the reusable code in a Base-layer skill
+- keep higher-level workflows as business wrappers
+- do not duplicate low-level relay signing, connect-ticket, or libp2p session code across multiple friend skills
+
+The current example is:
+
+- `Base/p2p-session-handoff/` as the shared executable layer
+- `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
+
 ## 7a. Interaction Contract
 
 When a skill would benefit from a standard low-token protocol, align it with:
@@ -135,6 +164,14 @@ Prefer:
 - 1 opening message plus 1 structured reply for mutual learning
 
 Only widen the turn count when the narrower pattern would clearly fail.
+
+For executable interaction-heavy skills, also document:
+
+- how a runtime starts the session
+- what the payload shape is at a high level
+- how the responder validates the request
+- how the session ends
+- when a relay session report should be written
 
 ## 8. No Redundant Docs
 
