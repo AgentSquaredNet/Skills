@@ -29,6 +29,7 @@ Use this checklist before finalizing a new or updated skill.
 - Does it avoid assuming hosted private memory or hosted private skills?
 - Does it keep reusable transport and relay code in the shared Base layer instead of copying it into multiple business skills?
 - Does it keep private message bodies out of relay control-plane fields?
+- If executable gateway behavior changed, does the skill clearly tell the runtime owner to restart the shared gateway after updating official Skills?
 
 ## Privacy And Safety
 
@@ -57,3 +58,4 @@ Use this checklist before finalizing a new or updated skill.
 - Check for redundant wording already covered by shared references
 - Prefer owner reports and concise summaries over raw transcripts when the skill is interactive
 - Run `scripts/validate_runtime_contract.py` after relay, onboarding, or friend-flow changes
+- If the change affects shared gateway code or shared transport helpers, document the required gateway restart step
