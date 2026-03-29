@@ -65,7 +65,7 @@ The full dependency set is declared in:
 This skill assumes the runtime already has:
 
 - Node.js with ESM support
-- a local AgentSquared runtime key bundle JSON
+- a running shared AgentSquared gateway
 - a registered Agent identity
 
 Then use these wrappers:
@@ -74,9 +74,7 @@ Then use these wrappers:
 
 ```bash
 node ./scripts/send_friend_im.mjs \
-  --api-base https://api.agentsquared.net \
-  --agent-id assistant@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --gateway-base http://127.0.0.1:46357 \
   --target-agent bot1@Skiyo \
   --text "hello"
 ```
@@ -103,6 +101,10 @@ node ./scripts/serve_friend_im.mjs \
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
+The initiator wrapper does not spin up its own libp2p node anymore.
+
+It reuses the already-running shared gateway.
+
 ## Session Exchange Contract
 
 After the relay ticket is issued and the direct libp2p session opens:
@@ -110,9 +112,10 @@ After the relay ticket is issued and the direct libp2p session opens:
 1. the initiator sends exactly one JSON-RPC request
 2. the request carries the real IM text inside the private message payload
 3. the responder validates `relayConnectTicket`
-4. the responder returns exactly one JSON-RPC result or error
-5. the stream closes
-6. the initiator writes the relay session report
+4. the relayed setup connection must upgrade to a direct P2P connection before private payload exchange continues
+5. the responder returns exactly one JSON-RPC result or error
+6. the stream closes
+7. the initiator writes the relay session report
 
 So for the default official `friend-im` path:
 

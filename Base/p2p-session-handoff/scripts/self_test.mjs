@@ -2,9 +2,12 @@
 
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
-import { createNode, advertisedAddrs, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
+import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 
@@ -24,15 +27,22 @@ async function main() {
   assert.ok(signText(bundle, onlineTarget).length > 20)
 
   const protocol = '/agentsquared/test/1.0'
-  const responder = await createNode(['/ip4/127.0.0.1/tcp/0'])
-  const initiator = await createNode(['/ip4/127.0.0.1/tcp/0'])
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-test-'))
+  const responder = await createNode({
+    listenAddrs: ['/ip4/127.0.0.1/tcp/0'],
+    peerKeyFile: path.join(tempDir, 'responder.peer')
+  })
+  const initiator = await createNode({
+    listenAddrs: ['/ip4/127.0.0.1/tcp/0'],
+    peerKeyFile: path.join(tempDir, 'initiator.peer')
+  })
 
   try {
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
       streamProtocol: protocol,
       a2aProtocolVersion: 'a2a-jsonrpc-custom-binding/2026-03'
-    }, ['/dns4/relay.agentsquared.net/tcp/4051/p2p/12D3KooWRelay'])
+    })
     const refreshHeaders = transportRefreshHeaders(transport)
     assert.equal(refreshHeaders['X-AgentSquared-Peer-Id'], transport.peerId)
     assert.ok(refreshHeaders['X-AgentSquared-Listen-Addrs'].length > 0)
@@ -58,7 +68,8 @@ async function main() {
 
     const stream = await dialProtocol(initiator, {
       streamProtocol: protocol,
-      listenAddrs: advertisedAddrs(responder)
+      peerId: responder.peerId.toString(),
+      listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
     })
     const request = buildJsonRpcEnvelope({
       id: 'req_test',
@@ -82,6 +93,7 @@ async function main() {
   } finally {
     await initiator.stop()
     await responder.stop()
+    fs.rmSync(tempDir, { recursive: true, force: true })
   }
 
   console.log('p2p-session-handoff self-test passed')

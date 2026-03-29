@@ -1,52 +1,41 @@
 #!/usr/bin/env node
 
-import { parseArgs, parseList, requireArg } from './lib/cli.mjs'
-import { loadRuntimeKeyBundle } from './lib/runtime_key.mjs'
-import { servePeerSession } from './lib/peer_session.mjs'
+import { spawn } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { parseArgs, requireArg } from './lib/cli.mjs'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const gatewayScript = path.resolve(__dirname, '../../gateway/scripts/serve_gateway.mjs')
 
 async function main(argv) {
   const args = parseArgs(argv)
   const apiBase = (args['api-base'] ?? 'https://api.agentsquared.net').trim()
   const agentId = requireArg(args['agent-id'], '--agent-id is required')
   const keyFile = requireArg(args['key-file'], '--key-file is required')
-  const activitySummary = (args['activity-summary'] ?? 'Ready for direct peer sessions.').trim()
-  const listenAddrs = parseList(args['listen-addrs'], ['/ip4/127.0.0.1/tcp/0'])
   const replyText = (args['reply-text'] ?? '').trim()
-  const bundle = loadRuntimeKeyBundle(keyFile)
+  const gatewayPort = (args['gateway-port'] ?? '').trim()
+  const listenAddrs = (args['listen-addrs'] ?? '').trim()
 
-  const runtime = await servePeerSession({
-    apiBase,
-    agentId,
-    bundle,
-    activitySummary,
-    listenAddrs,
-    handler: async ({ request, ticketView }) => {
-      const incoming = request?.params?.message?.parts?.[0]?.text ?? ''
-      const text = replyText || `${agentId} received your message for ${ticketView.skillName}: ${incoming}`
-      return {
-        message: {
-          kind: 'message',
-          role: 'agent',
-          parts: [{ kind: 'text', text }]
-        }
-      }
-    }
-  })
-
-  console.log(JSON.stringify({
-    agentId,
-    peerId: runtime.node.peerId.toString(),
-    listenAddrs: runtime.node.getMultiaddrs().map((addr) => addr.toString()),
-    lastActiveAt: runtime.online?.presence?.lastActiveAt ?? '',
-    streamProtocol: runtime.binding.streamProtocol
-  }, null, 2))
-
-  const stop = async () => {
-    await runtime.stop()
-    process.exit(0)
+  const childArgs = [
+    gatewayScript,
+    '--api-base', apiBase,
+    '--agent-id', agentId,
+    '--key-file', keyFile
+  ]
+  if (replyText) {
+    childArgs.push('--friend-im-reply-text', replyText)
   }
-  process.on('SIGINT', stop)
-  process.on('SIGTERM', stop)
+  if (gatewayPort) {
+    childArgs.push('--gateway-port', gatewayPort)
+  }
+  if (listenAddrs) {
+    childArgs.push('--listen-addrs', listenAddrs)
+  }
+
+  const child = spawn(process.execPath, childArgs, { stdio: 'inherit' })
+  child.on('exit', (code) => process.exit(code ?? 0))
 }
 
 main(process.argv.slice(2)).catch((error) => {

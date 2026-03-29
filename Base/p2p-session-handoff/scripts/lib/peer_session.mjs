@@ -1,6 +1,6 @@
 import { randomRequestId } from './cli.mjs'
-import { getBindingDocument, postOnline, createConnectTicket, introspectConnectTicket, reportSession } from './relay_http.mjs'
-import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './libp2p_a2a.mjs'
+import { createConnectTicket, introspectConnectTicket, postOnline, reportSession } from './relay_http.mjs'
+import { dialProtocol, readSingleLine, waitForPublishedTransport, writeLine } from './libp2p_a2a.mjs'
 
 export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
   return {
@@ -14,8 +14,15 @@ export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
   }
 }
 
-export async function bringNodeOnline(apiBase, agentId, bundle, node, binding, activitySummary, availabilityStatus = 'available') {
-  const transport = currentTransport(node, binding)
+export async function currentTransport(node, binding, options = {}) {
+  return waitForPublishedTransport(node, binding, options)
+}
+
+export async function publishGatewayPresence(apiBase, agentId, bundle, node, binding, activitySummary, {
+  availabilityStatus = 'available',
+  requireRelayReservation = false
+} = {}) {
+  const transport = await currentTransport(node, binding, { requireRelayReservation })
   return postOnline(apiBase, agentId, bundle, {
     availabilityStatus,
     activitySummary,
@@ -28,30 +35,26 @@ export async function bringNodeOnline(apiBase, agentId, bundle, node, binding, a
   })
 }
 
-export function currentTransport(node, binding) {
-  return requireListeningTransport(node, binding, binding.relayMultiaddrs ?? [])
-}
-
-export async function initiatePeerSession({
+export async function openDirectPeerSession({
   apiBase,
   agentId,
   bundle,
+  node,
+  binding,
   targetAgentId,
   skillName,
   method,
   message,
   activitySummary,
-  report,
-  listenAddrs = ['/ip4/127.0.0.1/tcp/0']
+  report
 }) {
-  const binding = await getBindingDocument(apiBase)
-  const node = await createNode(listenAddrs)
+  // Require direct P2P upgrade before any private payload is treated as delivered.
+  const transport = await currentTransport(node, binding, { requireRelayReservation: true })
+  const ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
+  const targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
+  const stream = await dialProtocol(node, targetTransport, { requireDirect: true })
+
   try {
-    const online = await bringNodeOnline(apiBase, agentId, bundle, node, binding, activitySummary)
-    const localTransport = currentTransport(node, binding)
-    const ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, localTransport)
-    const targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
-    const stream = await dialProtocol(node, targetTransport)
     const request = buildJsonRpcEnvelope({
       method,
       message,
@@ -63,11 +66,11 @@ export async function initiatePeerSession({
     })
     await writeLine(stream, JSON.stringify(request))
     const rawResponse = await readSingleLine(stream)
-    await stream.close()
     const response = JSON.parse(rawResponse)
     if (response.error) {
       throw new Error(response.error.message ?? 'remote peer returned an error')
     }
+
     let sessionReport = null
     if (report) {
       sessionReport = await reportSession(apiBase, agentId, bundle, {
@@ -76,26 +79,33 @@ export async function initiatePeerSession({
         status: report.status ?? 'completed',
         summary: report.summary,
         publicSummary: report.publicSummary ?? ''
-      }, currentTransport(node, binding))
+      }, await currentTransport(node, binding, { requireRelayReservation: true }))
     }
-    return { binding, online, ticket, response, sessionReport }
+
+    return { ticket, response, sessionReport }
   } finally {
-    await node.stop()
+    await stream.close()
   }
 }
 
-export async function servePeerSession({
+export function buildRouter(routes = {}) {
+  return async ({ request, ticketView, agentId }) => {
+    const route = routes[(ticketView?.skillName ?? '').trim()]
+    if (!route) {
+      throw new Error(`unsupported inbound skill route: ${ticketView?.skillName ?? ''}`)
+    }
+    return route({ request, ticketView, agentId })
+  }
+}
+
+export async function attachInboundRouter({
   apiBase,
   agentId,
   bundle,
-  activitySummary,
-  handler,
-  listenAddrs = ['/ip4/127.0.0.1/tcp/0']
+  node,
+  binding,
+  handler
 }) {
-  const binding = await getBindingDocument(apiBase)
-  const node = await createNode(listenAddrs)
-  const online = await bringNodeOnline(apiBase, agentId, bundle, node, binding, activitySummary)
-
   node.handle(binding.streamProtocol, async (event) => {
     const stream = event?.stream ?? event
     try {
@@ -110,12 +120,13 @@ export async function servePeerSession({
         }))
         return
       }
+
       const ticketView = await introspectConnectTicket(
         apiBase,
         agentId,
         bundle,
         relayConnectTicket,
-        currentTransport(node, binding)
+        await currentTransport(node, binding, { requireRelayReservation: true })
       )
       const result = await handler({ request, ticketView, agentId })
       await writeLine(stream, JSON.stringify({
@@ -133,13 +144,4 @@ export async function servePeerSession({
       await stream.close()
     }
   })
-
-  return {
-    binding,
-    online,
-    node,
-    stop: async () => {
-      await node.stop()
-    }
-  }
 }

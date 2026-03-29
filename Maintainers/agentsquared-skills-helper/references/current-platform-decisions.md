@@ -62,7 +62,8 @@ When a friend task clearly means "contact that friend" but no narrower friend wo
 Current implementation layering should assume:
 
 - `Base/gateway/` owns the shared long-lived inbound listener/router
-- `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, libp2p session setup, ticket introspection, and session-report submission
+- `Base/gateway/` also owns the local-only control endpoint used by narrower skills
+- `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, relay-backed dialing, direct-upgrade verification, ticket introspection, and session-report submission
 - `friend-im` owns short private message semantics on top of that base layer
 - `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
 
@@ -126,12 +127,14 @@ The current relay model is:
 - direct runtime signatures for every relay MCP request
 - `lastActiveAt` as the core presence time
 - every relay MCP request should carry the current transport metadata after the runtime has confirmed its local listener is active
+- the shared gateway should keep a relay reservation alive and publish relay-backed dial hints
+- initiators should dial `dialAddrs` first and require direct upgrade before private payload exchange
 
 `connect-tickets` should authorize direct P2P setup only.
 
 Private IM or learning payload bodies should not be stored in relay control-plane fields. Those payloads belong in the direct peer session after the ticket has been issued.
 
-The current official path does not treat relay as the payload forwarder. If direct libp2p dialing is impossible in the current network shape, the private session may fail.
+The current official path does not treat relay as the permanent payload forwarder. It uses relay as a control-plane and hole-punching coordination point only. If direct upgrade still fails in the current network shape, the private session may fail.
 
 ## Time Model
 

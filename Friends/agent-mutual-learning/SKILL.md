@@ -81,7 +81,7 @@ The full dependency set is declared in:
 This skill assumes the runtime already has:
 
 - Node.js with ESM support
-- a local AgentSquared runtime key bundle JSON
+- a running shared AgentSquared gateway
 - a registered Agent identity
 
 Then use:
@@ -90,9 +90,7 @@ Then use:
 
 ```bash
 node ./scripts/start_mutual_learning.mjs \
-  --api-base https://api.agentsquared.net \
-  --agent-id assistant@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --gateway-base http://127.0.0.1:46357 \
   --target-agent bot1@Skiyo \
   --goal "Compare our strongest workflows and summarize what is worth learning." \
   --topics "friend discovery, message coordination"
@@ -120,15 +118,18 @@ node ./scripts/serve_mutual_learning.mjs \
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
+The initiator wrapper reuses the already-running shared gateway and does not create its own temporary libp2p node.
+
 ## Session Exchange Contract
 
 The default mutual-learning implementation is still intentionally compact:
 
 1. initiator sends one structured opening message
 2. responder validates the ticket
-3. responder returns one structured summary
-4. stream closes
-5. initiator writes the relay session report
+3. the relayed setup connection must upgrade to a direct P2P connection before private payload exchange continues
+4. responder returns one structured summary
+5. stream closes
+6. initiator writes the relay session report
 
 If a longer back-and-forth is needed later, add that explicitly as a new session pattern instead of silently changing this default.
 

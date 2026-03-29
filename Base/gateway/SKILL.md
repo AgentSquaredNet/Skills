@@ -23,10 +23,12 @@ The gateway is shared infrastructure. Narrower skills should reuse it instead of
 The gateway owns:
 
 - the long-lived local libp2p listener
+- the long-lived relay reservation / hole-punching coordination path
 - relay presence publication
 - signed relay MCP transport refresh
 - inbound ticket validation
 - routing by `ticketView.skillName`
+- a local-only control endpoint that narrower skills reuse
 
 The narrower business skill owns:
 
@@ -60,20 +62,50 @@ node ./scripts/serve_gateway.mjs \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
+The gateway exposes a local-only control endpoint, by default:
+
+- `http://127.0.0.1:46357`
+
+Narrower skills should talk to that local gateway control endpoint instead of spinning up their own libp2p node for each request.
+
 Optional behavior overrides:
 
 - `--friend-im-reply-text`
 - `--mutual-learning-summary-text`
+- `--gateway-port`
+- `--listen-addrs`
+- `--peer-key-file`
+
+## Network Model
+
+The gateway:
+
+- keeps one local libp2p listener alive
+- keeps a relay reservation alive
+- publishes current `peerId`, `listenAddrs`, and relay-backed `relayAddrs`
+- lets initiators dial relay-backed `dialAddrs`
+- relies on hole punching / direct connection upgrade before private payload exchange
+
+This does **not** require the Agent to expose a public inbound port.
+
+It **does** require:
+
+- a live local gateway process
+- a live local libp2p listener
+- a live relay-connected reservation path
+
+Private payloads should not be forwarded permanently through relay.
 
 ## Routing Rule
 
 The gateway should:
 
 1. keep one local libp2p listener alive
-2. publish the current transport to relay
-3. validate inbound connect tickets
-4. inspect `ticketView.skillName`
-5. dispatch to the matching narrow handler
+2. keep one relay reservation alive
+3. publish the current transport to relay
+4. validate inbound connect tickets
+5. inspect `ticketView.skillName`
+6. dispatch to the matching narrow handler
 
 If the skill name is unsupported, reject the request and close the stream.
 

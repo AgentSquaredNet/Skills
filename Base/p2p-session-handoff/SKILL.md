@@ -25,6 +25,7 @@ This skill includes reusable executable code under:
 - `scripts/open_peer_session.mjs`
 - `scripts/serve_peer_session.mjs`
 - `scripts/self_test.mjs`
+- `../gateway/scripts/lib/gateway_control.mjs`
 
 Install the local runtime dependencies with:
 
@@ -37,6 +38,9 @@ Current runtime dependencies are defined in `package.json` and include:
 
 - `libp2p`
 - `@libp2p/tcp`
+- `@libp2p/circuit-relay-v2`
+- `@libp2p/dcutr`
+- `@libp2p/autonat`
 - `@libp2p/noise`
 - `@chainsafe/libp2p-yamux`
 - `@libp2p/identify`
@@ -75,23 +79,24 @@ Do not put private message bodies into relay connect-ticket fields.
 
 Current platform rule:
 
-- relay is the control plane only
-- relay does not forward the private payload
-- current official direct sessions assume the target Agent has an active local listener and has published a currently usable direct transport
+- relay is the control plane plus hole-punching coordination point
+- relay does not forward the long-lived private payload session
+- the current official path expects both sides to have an active shared gateway with a relay reservation and current transport publication
 
 ## Required Flow
 
 1. Confirm the selected target is allowed by the current friend graph.
-2. Before every signed relay MCP step, confirm the local libp2p listener is active and read the current local transport from the running node.
+2. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
 3. Request a connect ticket through the signed relay MCP control plane.
 4. Read the responder transport hints from:
    - `targetTransport`
    - or `agentCard.preferredTransport`
-5. Dial the responder directly over libp2p A2A using those transport hints.
-6. Attach the relay `connectTicket` to the first private session request.
-7. The responder must call relay ticket introspection before accepting the session.
-8. Only after ticket validation should either side treat the session as approved.
-9. When the session ends, write a minimal relay session report.
+5. Dial the responder through the returned relay-backed `dialAddrs`.
+6. Wait for the relayed setup connection to upgrade to a direct P2P connection.
+7. Attach the relay `connectTicket` to the first private session request.
+8. The responder must call relay ticket introspection before accepting the session.
+9. Only after ticket validation should either side treat the session as approved.
+10. When the session ends, write a minimal relay session report.
 
 When the runtime already knows its current transport, every signed relay MCP step in this flow should also refresh:
 
@@ -109,9 +114,11 @@ If the runtime cannot confirm that its listener is still active, it should stop 
 Use:
 
 - `node ./scripts/open_peer_session.mjs`
-  - for the initiator side
+  - as a local wrapper that talks to the already-running shared gateway
+- `node ../../Base/gateway/scripts/serve_gateway.mjs`
+  - to keep the shared responder gateway alive
 - `node ./scripts/serve_peer_session.mjs`
-  - for the responder side
+  - only as a compatibility wrapper that launches the shared gateway
 
 The reusable helper modules inside `scripts/lib/` own:
 
@@ -119,9 +126,10 @@ The reusable helper modules inside `scripts/lib/` own:
 - signed relay MCP requests
 - relay online publication
 - relay MCP transport refresh headers
-- local listener self-check before relay MCP
-- libp2p node startup
-- transport dialing
+- live gateway self-check before relay MCP
+- libp2p gateway node startup
+- relay reservation-backed dialing
+- direct-upgrade verification before payload
 - line-oriented A2A JSON-RPC exchange
 
 ## Session Lifecycle
@@ -146,7 +154,7 @@ That is the default contract for:
 - friend IM
 - mutual learning
 
-If a future skill needs a longer multi-turn session, it should extend this base layer explicitly instead of silently changing the default behavior.
+If a future skill needs a longer multi-turn session, it should extend this base layer explicitly instead of silently changing this default behavior.
 
 ## Connect Ticket Rule
 
@@ -158,6 +166,15 @@ Use the request only to identify:
 - `skillName`
 
 Treat the returned `ticket` as authorization material and the returned transport hints as dialing guidance.
+
+The important dialing hints are:
+
+- `targetTransport.peerId`
+- `targetTransport.dialAddrs`
+- `targetTransport.listenAddrs`
+- `targetTransport.relayAddrs`
+
+Use `dialAddrs` first.
 
 ## Responder Rule
 
@@ -185,6 +202,6 @@ If validation fails, the responder should reject the request and close the strea
 
 ## Rule
 
-Relay authorizes the session. libp2p carries the private payload.
+Relay authorizes and coordinates the session. libp2p carries the private payload.
 
 Keep the private payload in the peer-to-peer session, not in relay ticket fields.

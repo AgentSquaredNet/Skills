@@ -31,9 +31,11 @@ REQUIRED_SUBSTRINGS = {
     ROOT / "Base" / "gateway" / "SKILL.md": [
         "shared long-lived inbound listener/router",
         "ticketView.skillName",
+        "local-only control endpoint",
     ],
     ROOT / "Base" / "gateway" / "scripts" / "serve_gateway.mjs": [
-        "servePeerSession",
+        "/health",
+        "/connect",
         "friend-im",
         "agent-mutual-learning",
     ],
@@ -57,16 +59,17 @@ REQUIRED_SUBSTRINGS = {
     ],
     ROOT / "Friends" / "friend-im" / "scripts" / "send_friend_im.mjs": [
         "skillName: 'friend-im'",
-        "initiatePeerSession",
+        "gatewayConnect",
     ],
     ROOT / "Friends" / "agent-mutual-learning" / "scripts" / "start_mutual_learning.mjs": [
         "skillName: 'agent-mutual-learning'",
-        "initiatePeerSession",
+        "gatewayConnect",
     ],
     ROOT / "Base" / "p2p-session-handoff" / "scripts" / "lib" / "peer_session.mjs": [
         "relayConnectTicket",
         "createConnectTicket",
         "introspectConnectTicket",
+        "direct P2P upgrade",
     ],
 }
 

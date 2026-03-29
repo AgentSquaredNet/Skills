@@ -1,55 +1,223 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { createLibp2p } from 'libp2p'
 import { tcp } from '@libp2p/tcp'
 import { noise } from '@libp2p/noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { identify } from '@libp2p/identify'
+import { autoNAT } from '@libp2p/autonat'
+import { dcutr } from '@libp2p/dcutr'
+import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
+import { generateKeyPair, privateKeyFromProtobuf, privateKeyToProtobuf } from '@libp2p/crypto/keys'
+import { peerIdFromString } from '@libp2p/peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 
-export async function createNode(listenAddrs = ['/ip4/127.0.0.1/tcp/0']) {
+const DEFAULT_LISTEN_ADDRS = ['/ip4/0.0.0.0/tcp/0']
+const DEFAULT_DIRECT_UPGRADE_TIMEOUT_MS = 12000
+const DEFAULT_TRANSPORT_READY_TIMEOUT_MS = 20000
+
+function unique(values = []) {
+  return [...new Set(values.map((value) => `${value}`.trim()).filter(Boolean))]
+}
+
+function ensureParentDir(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+}
+
+async function loadOrCreatePeerPrivateKey(peerKeyFile) {
+  if (!peerKeyFile) {
+    throw new Error('peerKeyFile is required for gateway node identity')
+  }
+  const cleaned = path.resolve(peerKeyFile)
+  if (fs.existsSync(cleaned)) {
+    return privateKeyFromProtobuf(fs.readFileSync(cleaned))
+  }
+  ensureParentDir(cleaned)
+  const privateKey = await generateKeyPair('Ed25519')
+  fs.writeFileSync(cleaned, Buffer.from(privateKeyToProtobuf(privateKey)), { mode: 0o600 })
+  fs.chmodSync(cleaned, 0o600)
+  return privateKey
+}
+
+export function buildRelayListenAddrs(relayMultiaddrs = []) {
+  return unique(relayMultiaddrs.map((value) => `${value}`.trim()).filter(Boolean).map((value) => `${value}/p2p-circuit`))
+}
+
+export async function createNode({
+  listenAddrs = DEFAULT_LISTEN_ADDRS,
+  relayListenAddrs = [],
+  peerKeyFile
+} = {}) {
+  const privateKey = await loadOrCreatePeerPrivateKey(peerKeyFile)
   const node = await createLibp2p({
-    addresses: { listen: listenAddrs },
-    transports: [tcp()],
+    privateKey,
+    addresses: {
+      listen: unique([...listenAddrs, ...relayListenAddrs])
+    },
+    transports: [
+      tcp(),
+      circuitRelayTransport()
+    ],
     connectionEncrypters: [noise()],
     streamMuxers: [yamux()],
-    services: { identify: identify() }
+    services: {
+      identify: identify(),
+      autoNAT: autoNAT(),
+      dcutr: dcutr()
+    },
+    start: true
   })
-  await node.start()
   return node
 }
 
 export function advertisedAddrs(node) {
-  return node.getMultiaddrs().map((addr) => addr.toString())
+  return unique(node.getMultiaddrs().map((addr) => addr.toString()))
 }
 
-export function requireListeningTransport(node, binding, relayAddrs = []) {
+export function relayReservationAddrs(node) {
+  return advertisedAddrs(node).filter((addr) => addr.includes('/p2p-circuit'))
+}
+
+export function directListenAddrs(node) {
+  return advertisedAddrs(node).filter((addr) => !addr.includes('/p2p-circuit'))
+}
+
+export function requireListeningTransport(node, binding) {
   const peerId = node?.peerId?.toString?.() ?? ''
-  const listenAddrs = advertisedAddrs(node)
+  const listenAddrs = directListenAddrs(node)
+  const relayAddrs = relayReservationAddrs(node)
   const supportedBindings = binding?.binding ? [binding.binding] : []
   const streamProtocol = `${binding?.streamProtocol ?? ''}`.trim()
   const a2aProtocolVersion = `${binding?.a2aProtocolVersion ?? ''}`.trim()
-  const relayMultiaddrs = relayAddrs.map((value) => `${value}`.trim()).filter(Boolean)
 
   if (!peerId) {
-    throw new Error('local libp2p listener is not ready: peerId is unavailable')
+    throw new Error('local gateway is not ready: peerId is unavailable')
   }
-  if (listenAddrs.length === 0) {
-    throw new Error('local libp2p listener is not ready: no listenAddrs were published')
+  if (listenAddrs.length === 0 && relayAddrs.length === 0) {
+    throw new Error('local gateway is not ready: no direct or relay-backed addresses were published')
   }
   if (!streamProtocol) {
-    throw new Error('local libp2p listener is not ready: streamProtocol is unavailable')
+    throw new Error('local gateway is not ready: streamProtocol is unavailable')
   }
   if (supportedBindings.length === 0) {
-    throw new Error('local libp2p listener is not ready: supportedBindings are unavailable')
+    throw new Error('local gateway is not ready: supportedBindings are unavailable')
   }
 
   return {
     peerId,
+    dialAddrs: relayAddrs.length > 0 ? relayAddrs : listenAddrs,
     listenAddrs,
-    relayAddrs: relayMultiaddrs,
+    relayAddrs,
     supportedBindings,
     streamProtocol,
     a2aProtocolVersion
   }
+}
+
+export async function waitForPublishedTransport(node, binding, {
+  requireRelayReservation = false,
+  timeoutMs = DEFAULT_TRANSPORT_READY_TIMEOUT_MS
+} = {}) {
+  const startedAt = Date.now()
+  let lastError = null
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const transport = requireListeningTransport(node, binding)
+      if (requireRelayReservation && transport.relayAddrs.length === 0) {
+        throw new Error('waiting for relay reservation-backed transport')
+      }
+      return transport
+    } catch (error) {
+      lastError = error
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+  }
+
+  throw lastError ?? new Error('gateway transport did not become ready before timeout')
+}
+
+function isDirectConnection(connection) {
+  const remoteAddr = connection?.remoteAddr?.toString?.() ?? ''
+  return !remoteAddr.includes('/p2p-circuit') && connection?.limits == null
+}
+
+function chooseDialAddrs(transport) {
+  return unique(
+    transport?.dialAddrs?.length
+      ? transport.dialAddrs
+      : transport?.relayAddrs?.length
+        ? transport.relayAddrs
+        : transport?.listenAddrs ?? []
+  )
+}
+
+async function waitForDirectConnection(node, peerId, timeoutMs = DEFAULT_DIRECT_UPGRADE_TIMEOUT_MS) {
+  const remotePeer = peerIdFromString(peerId)
+  const startedAt = Date.now()
+  let relayedConnection = null
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const connections = node.getConnections(remotePeer)
+    const directConnection = connections.find(isDirectConnection)
+    if (directConnection) {
+      return directConnection
+    }
+    relayedConnection = connections.find((connection) => connection?.remoteAddr?.toString?.().includes('/p2p-circuit'))
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+
+  if (relayedConnection) {
+    try {
+      await relayedConnection.close()
+    } catch {
+      // best-effort cleanup only
+    }
+  }
+  throw new Error(`direct P2P upgrade did not complete for ${peerId}`)
+}
+
+export async function dialProtocol(node, transport, {
+  requireDirect = true,
+  timeoutMs = DEFAULT_DIRECT_UPGRADE_TIMEOUT_MS
+} = {}) {
+  if (!transport?.streamProtocol) {
+    throw new Error('target transport is missing streamProtocol')
+  }
+  if (!transport?.peerId?.trim()) {
+    throw new Error('target transport is missing peerId')
+  }
+
+  const dialAddrs = chooseDialAddrs(transport)
+  if (dialAddrs.length === 0) {
+    throw new Error('target transport is missing dialAddrs')
+  }
+
+  let lastError = null
+  for (const value of dialAddrs) {
+    try {
+      await node.dial(multiaddr(value))
+      break
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  if (lastError && node.getConnections(peerIdFromString(transport.peerId)).length === 0) {
+    throw lastError
+  }
+
+  const connections = node.getConnections(peerIdFromString(transport.peerId))
+  const connection = requireDirect
+    ? await waitForDirectConnection(node, transport.peerId, timeoutMs)
+    : connections[0]
+
+  if (!connection) {
+    throw new Error(`no connection was available for ${transport.peerId}`)
+  }
+
+  return connection.newStream([transport.streamProtocol])
 }
 
 export async function writeLine(stream, line) {
@@ -89,20 +257,4 @@ export async function readSingleLine(stream) {
 
 export function pickTransport(connectTicketResponse) {
   return connectTicketResponse?.targetTransport ?? connectTicketResponse?.agentCard?.preferredTransport
-}
-
-export async function dialProtocol(node, transport) {
-  if (!transport?.streamProtocol) {
-    throw new Error('target transport is missing streamProtocol')
-  }
-  const addrs = transport.listenAddrs ?? []
-  let lastError = null
-  for (const value of addrs) {
-    try {
-      return await node.dialProtocol(multiaddr(value), transport.streamProtocol)
-    } catch (error) {
-      lastError = error
-    }
-  }
-  throw lastError ?? new Error('no dialable direct target transport address was available')
 }
