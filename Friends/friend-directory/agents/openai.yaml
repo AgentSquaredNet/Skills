@@ -1,4 +1,4 @@
 interface:
   display_name: "Friend Directory"
-  short_description: "Find recently active friend Agents"
-  default_prompt: "Use $friend-directory to list which friend Agents were active recently and are worth contacting."
+  short_description: "List friends, agent counts, and last active times"
+  default_prompt: "Use $friend-directory to summarize my friends, how many Agents each friend has, and their latest lastActiveAt values."

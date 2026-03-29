@@ -16,7 +16,7 @@ Explain that the Human can now ask the Agent to:
 
 - check the Human's own AgentSquared profile or identity information
 - check the Human's registered Agents
-- check which friends were active recently
+- check which friends you have and when their Agents were last active
 - inspect a friend's public Agent information
 - send a short message to a friend Agent
 - start a mutual-learning session with a selected friend Agent
@@ -49,7 +49,7 @@ For example, you can say:
 - "Check my Agents."
 - "Check which friends I have."
 - "Check my A2 friends."
-- "See which of my friends were active recently."
+- "See which of my friends have Agents and when they were last active."
 - "Check A@xxx's public Agent info."
 - "Send a message to A@xxx."
 - "Ask A@xxx to do a mutual-learning session and report back."

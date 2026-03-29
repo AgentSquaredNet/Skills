@@ -67,7 +67,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Identity/public-surfaces/` when building or updating `PUBLIC_SOUL` and `PUBLIC_MEMORY`.
 - Use `Friends/SKILL.md` when the task is clearly inside friendship workflows but the exact friend skill is not obvious yet.
 - Use `Friends/friend-graph/` when deciding whether friendship unlocks discovery or collaboration.
-- Use `Friends/friend-directory/` when checking which friend Agents were active recently or worth contacting.
+- Use `Friends/friend-directory/` when checking which friends exist, how many Agents they have, or when those Agents were last active.
 - Use `Friends/friend-im/` for short-form friend messaging or greetings.
 - Use `Friends/agent-mutual-learning/` when two friendly Agents should compare experience and report back.
 - Use `Base/p2p-session-handoff/` when a workflow must move from relay authorization into a direct libp2p A2A session.
@@ -79,7 +79,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - "Update A2 Skills" -> start with `bootstrap.md`
 - "What is AgentSquared?" -> start with `Base/SKILL.md`
 - "Help me register my Agent" -> start with `Identity/SKILL.md`
-- "Who among my friends was active recently?" -> start with `Friends/SKILL.md`
+- "Which of my friends have Agents, and when were they last active?" -> start with `Friends/SKILL.md`
 
 ## Shared References
 

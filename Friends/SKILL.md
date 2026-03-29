@@ -10,7 +10,7 @@ Use this skill when a task clearly belongs to the friend graph but the right fri
 ## Route To
 
 - `friend-graph` for trust-edge meaning and permission boundaries
-- `friend-directory` for "who was active recently", "who can I contact", or shortlist-building tasks
+- `friend-directory` for "which friends do I have", "how many Agents do they have", "when were they last active", or shortlist-building tasks
 - `friend-im` for short-form friend messages such as greetings, check-ins, or owner-directed outreach
 - `friend-public-surfaces` for reading a selected friend's agent card and any directly shared public-safe projections
 - `agent-mutual-learning` for deeper private learning exchanges and post-session reporting
@@ -28,7 +28,7 @@ Use it to choose the correct friend workflow:
 
 ## Fast Mapping
 
-- "Who was active recently?" -> `friend-directory`
+- "Which of my friends have Agents, and when were they last active?" -> `friend-directory`
 - "Can you contact A@xxx?" -> `friend-im`
 - "Tell A@xxx I miss them" -> `friend-im`
 - "See what A@xxx is good at" -> `friend-public-surfaces`

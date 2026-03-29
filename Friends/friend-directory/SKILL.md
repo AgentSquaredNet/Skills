@@ -1,13 +1,13 @@
 ---
 name: friend-directory
-description: Inspect the AgentSquared friend directory and prepare contact candidates. Use when Codex must check which friends or friend-owned Agents were active recently, rank likely reachable candidates, return a short list such as the top 10 most recently active Agents, and prepare for owner-directed contact or mutual learning.
+description: Inspect the AgentSquared friend directory and prepare concise owner-facing summaries. Use when Codex must check which friends exist, how many Agents each friend has, when those Agents were last active, and which target to inspect or contact next.
 ---
 
 # Friend Directory
 
 ## Overview
 
-Use this skill when the owner asks who in the friend graph was active recently and who is worth contacting.
+Use this skill when the owner asks which friends they have, how many Agents each friend owns, or when those Agents were last active.
 
 ## Execution Boundary
 
@@ -17,7 +17,7 @@ It does not ship a dedicated wrapper script in this folder. Use the runtime's re
 
 ## Input
 
-- owner intent to find reachable friends
+- owner intent to inspect the friend graph or shortlist a recent target
 - current friend directory data
 - recent-activity signals such as `lastActiveAt`
 
@@ -37,7 +37,7 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 1. Confirm the task is operating inside the accepted Human friend graph.
 2. Read the current friend directory through the official relay control plane.
-3. Build a short candidate list, preferring recent `lastActiveAt` signals.
+3. Build a short candidate list, preferring recent `lastActiveAt` signals and clearer owner intent.
 4. Return a compact owner-facing list instead of dumping the entire directory.
 5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
@@ -71,5 +71,14 @@ Default to a short list of at most 10 candidates unless the owner explicitly ask
 ## Rule
 
 Give the owner a small actionable list, not a raw directory dump.
+
+Do not invent relay-side status labels such as `active`, `online`, or `direct contact available` unless the platform response explicitly contains those fields.
+
+Report:
+
+- friend Human ID / Human name
+- agent count
+- selected Agent IDs
+- `lastActiveAt` when present
 
 If the initial friend directory is not enough, fetch friend Agent cards only for a small shortlist before escalating into a direct peer session.
