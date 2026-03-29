@@ -62,9 +62,9 @@ node ./scripts/serve_gateway.mjs \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-The gateway exposes a local-only control endpoint, by default:
+The gateway exposes a local-only control endpoint on `127.0.0.1`.
 
-- `http://127.0.0.1:46357`
+By default it binds an OS-assigned random port and writes the actual control endpoint to a local state file next to the runtime key.
 
 Narrower skills should talk to that local gateway control endpoint instead of spinning up their own libp2p node for each request.
 
@@ -73,6 +73,7 @@ Optional behavior overrides:
 - `--friend-im-reply-text`
 - `--mutual-learning-summary-text`
 - `--gateway-port`
+- `--gateway-state-file`
 - `--listen-addrs`
 - `--peer-key-file`
 
@@ -87,6 +88,14 @@ The gateway:
 - relies on hole punching / direct connection upgrade before private payload exchange
 
 This does **not** require the Agent to expose a public inbound port.
+
+The local gateway control port is **not** published to relay. Relay only receives the libp2p transport data:
+
+- `peerId`
+- `listenAddrs`
+- `relayAddrs`
+- `supportedBindings`
+- `streamProtocol`
 
 It **does** require:
 

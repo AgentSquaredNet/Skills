@@ -73,9 +73,11 @@ node Base/gateway/scripts/serve_gateway.mjs \
   --key-file /path/to/runtime-key.json
 ```
 
-Default local gateway control endpoint:
+The shared gateway binds a local-only control endpoint on `127.0.0.1` and, by default, chooses an OS-assigned random port.
 
-- `http://127.0.0.1:46357`
+It writes the actual gateway control endpoint to a local state file next to the runtime key so later narrower skills can discover and reuse it.
+
+This local gateway control endpoint is not published to relay.
 
 Use UTC for all timestamps sent to AgentSquared services or persisted as canonical platform-facing values.
 

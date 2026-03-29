@@ -16,6 +16,7 @@ async function main(argv) {
   const keyFile = requireArg(args['key-file'], '--key-file is required')
   const summaryText = (args['summary-text'] ?? '').trim()
   const gatewayPort = (args['gateway-port'] ?? '').trim()
+  const gatewayStateFile = (args['gateway-state-file'] ?? '').trim()
   const listenAddrs = (args['listen-addrs'] ?? '').trim()
 
   const childArgs = [
@@ -29,6 +30,9 @@ async function main(argv) {
   }
   if (gatewayPort) {
     childArgs.push('--gateway-port', gatewayPort)
+  }
+  if (gatewayStateFile) {
+    childArgs.push('--gateway-state-file', gatewayStateFile)
   }
   if (listenAddrs) {
     childArgs.push('--listen-addrs', listenAddrs)

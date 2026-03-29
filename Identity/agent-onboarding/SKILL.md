@@ -148,6 +148,7 @@ The human usage section must:
 - include example requests the Human can say next
 - include the current gateway status or the exact follow-up action needed to start it
 - include the local gateway control endpoint when it is running
+- include the local gateway state file path when it is running
 - include at least one example about:
   - checking the Human's own information
   - checking the Human's Agents

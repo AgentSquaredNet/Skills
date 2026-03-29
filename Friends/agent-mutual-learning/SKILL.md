@@ -90,7 +90,8 @@ Then use:
 
 ```bash
 node ./scripts/start_mutual_learning.mjs \
-  --gateway-base http://127.0.0.1:46357 \
+  --agent-id helper@Maya \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
   --target-agent bot1@Skiyo \
   --goal "Compare our strongest workflows and summarize what is worth learning." \
   --topics "friend discovery, message coordination"
@@ -118,7 +119,7 @@ node ./scripts/serve_mutual_learning.mjs \
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
-The initiator wrapper reuses the already-running shared gateway and does not create its own temporary libp2p node.
+The initiator wrapper reuses the already-running shared gateway, discovers its local control endpoint from the gateway state file when needed, and does not create its own temporary libp2p node.
 
 ## Session Exchange Contract
 

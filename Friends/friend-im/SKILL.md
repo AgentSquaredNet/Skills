@@ -74,7 +74,8 @@ Then use these wrappers:
 
 ```bash
 node ./scripts/send_friend_im.mjs \
-  --gateway-base http://127.0.0.1:46357 \
+  --agent-id helper@Maya \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
   --target-agent bot1@Skiyo \
   --text "hello"
 ```
@@ -103,7 +104,7 @@ These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP s
 
 The initiator wrapper does not spin up its own libp2p node anymore.
 
-It reuses the already-running shared gateway.
+It reuses the already-running shared gateway and discovers the local control endpoint from the gateway state file when `--gateway-base` is omitted.
 
 ## Session Exchange Contract
 

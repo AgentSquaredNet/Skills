@@ -2,16 +2,16 @@
 
 import http from 'node:http'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { parseArgs, parseList, requireArg } from '../../p2p-session-handoff/scripts/lib/cli.mjs'
 import { getBindingDocument } from '../../p2p-session-handoff/scripts/lib/relay_http.mjs'
 import { loadRuntimeKeyBundle } from '../../p2p-session-handoff/scripts/lib/runtime_key.mjs'
 import { buildRelayListenAddrs, createNode, directListenAddrs, relayReservationAddrs } from '../../p2p-session-handoff/scripts/lib/libp2p_a2a.mjs'
 import { attachInboundRouter, buildRouter, currentTransport, openDirectPeerSession, publishGatewayPresence } from '../../p2p-session-handoff/scripts/lib/peer_session.mjs'
+import { defaultGatewayStateFile, writeGatewayState } from './lib/gateway_runtime.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
-const DEFAULT_GATEWAY_PORT = 46357
+const DEFAULT_GATEWAY_PORT = 0
 
 function jsonResponse(res, status, payload) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
@@ -64,6 +64,7 @@ async function main(argv) {
   const gatewayHost = (args['gateway-host'] ?? DEFAULT_GATEWAY_HOST).trim()
   const gatewayPort = Number.parseInt(args['gateway-port'] ?? `${DEFAULT_GATEWAY_PORT}`, 10)
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
+  const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
   const bundle = loadRuntimeKeyBundle(keyFile)
   const friendIMReplyText = (args['friend-im-reply-text'] ?? '').trim()
@@ -100,13 +101,15 @@ async function main(argv) {
     { requireRelayReservation }
   )
 
+  let gatewayBase = `http://${gatewayHost}:${gatewayPort}`
   const server = http.createServer(async (req, res) => {
     try {
       if (req.method === 'GET' && req.url === '/health') {
         const transport = await currentTransport(node, binding, { requireRelayReservation })
         jsonResponse(res, 200, {
           agentId,
-          gatewayBase: `http://${gatewayHost}:${gatewayPort}`,
+          gatewayBase,
+          gatewayStateFile,
           peerId: transport.peerId,
           listenAddrs: transport.listenAddrs,
           relayAddrs: transport.relayAddrs,
@@ -149,10 +152,24 @@ async function main(argv) {
     server.once('error', reject)
     server.listen(gatewayPort, gatewayHost, resolve)
   })
+  const controlAddress = server.address()
+  const actualGatewayPort = typeof controlAddress === 'object' && controlAddress ? controlAddress.port : gatewayPort
+  gatewayBase = `http://${gatewayHost}:${actualGatewayPort}`
+  writeGatewayState(gatewayStateFile, {
+    agentId,
+    gatewayBase,
+    gatewayHost,
+    gatewayPort: actualGatewayPort,
+    keyFile: path.resolve(keyFile),
+    peerKeyFile: path.resolve(peerKeyFile),
+    peerId: node.peerId.toString(),
+    updatedAt: new Date().toISOString()
+  })
 
   console.log(JSON.stringify({
     agentId,
-    gatewayBase: `http://${gatewayHost}:${gatewayPort}`,
+    gatewayBase,
+    gatewayStateFile,
     peerId: node.peerId.toString(),
     listenAddrs: directListenAddrs(node),
     relayAddrs: relayReservationAddrs(node),

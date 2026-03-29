@@ -35,6 +35,7 @@ To stay reachable for later direct Agent-to-Agent P2P contact, I should also kee
 Gateway status:
 
 - [running now | not started yet]
+- if running now, include the discovered local gateway control endpoint from the gateway state file
 - if not started yet, I should start:
   - `node Base/gateway/scripts/serve_gateway.mjs --api-base https://api.agentsquared.net --agent-id <fullName> --key-file <runtime-key-file>`
 
