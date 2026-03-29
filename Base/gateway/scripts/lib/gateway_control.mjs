@@ -22,3 +22,15 @@ export async function gatewayHealth(gatewayBase = DEFAULT_GATEWAY_BASE) {
 export async function gatewayConnect(gatewayBase = DEFAULT_GATEWAY_BASE, payload) {
   return gatewayPost(gatewayBase, '/connect', payload)
 }
+
+export async function gatewayNextInbound(gatewayBase = DEFAULT_GATEWAY_BASE, waitMs = 30000) {
+  return gatewayGet(gatewayBase, `/inbound/next?waitMs=${encodeURIComponent(`${waitMs}`)}`)
+}
+
+export async function gatewayRespondInbound(gatewayBase = DEFAULT_GATEWAY_BASE, payload) {
+  return gatewayPost(gatewayBase, '/inbound/respond', payload)
+}
+
+export async function gatewayRejectInbound(gatewayBase = DEFAULT_GATEWAY_BASE, payload) {
+  return gatewayPost(gatewayBase, '/inbound/reject', payload)
+}

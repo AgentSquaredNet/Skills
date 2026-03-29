@@ -30,14 +30,17 @@ REQUIRED_SUBSTRINGS = {
     ],
     ROOT / "Base" / "gateway" / "SKILL.md": [
         "shared long-lived inbound listener/router",
-        "ticketView.skillName",
+        "trusted peer-session reuse",
+        "default to `friend-im`",
         "local-only control endpoint",
     ],
     ROOT / "Base" / "gateway" / "scripts" / "serve_gateway.mjs": [
         "/health",
+        "/inbound/next",
+        "/inbound/respond",
+        "/inbound/reject",
         "/connect",
-        "friend-im",
-        "agent-mutual-learning",
+        "runtimeState",
     ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
         "../../Base/gateway/SKILL.md",
@@ -58,18 +61,19 @@ REQUIRED_SUBSTRINGS = {
         "private session",
     ],
     ROOT / "Friends" / "friend-im" / "scripts" / "send_friend_im.mjs": [
-        "skillName: 'friend-im'",
+        "skillHint: 'friend-im'",
         "gatewayConnect",
     ],
     ROOT / "Friends" / "agent-mutual-learning" / "scripts" / "start_mutual_learning.mjs": [
-        "skillName: 'agent-mutual-learning'",
+        "skillHint: 'agent-mutual-learning'",
         "gatewayConnect",
     ],
     ROOT / "Base" / "p2p-session-handoff" / "scripts" / "lib" / "peer_session.mjs": [
         "relayConnectTicket",
         "createConnectTicket",
         "introspectConnectTicket",
-        "direct P2P upgrade",
+        "reusedSession",
+        "peerSessionId",
     ],
 }
 

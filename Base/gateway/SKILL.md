@@ -26,8 +26,9 @@ The gateway owns:
 - the long-lived relay reservation / hole-punching coordination path
 - relay presence publication
 - signed relay MCP transport refresh
-- inbound ticket validation
-- routing by `ticketView.skillName`
+- first-session ticket validation
+- trusted peer-session reuse while the direct peer link stays alive
+- inbound request queueing for the local runtime/router
 - a local-only control endpoint that narrower skills reuse
 
 The narrower business skill owns:
@@ -99,10 +100,22 @@ By default it binds an OS-assigned random port and writes the actual control end
 
 Narrower skills should talk to that local gateway control endpoint instead of spinning up their own libp2p node for each request.
 
+Important local control actions now are:
+
+- `GET /health`
+- `GET /inbound/next`
+- `POST /inbound/respond`
+- `POST /inbound/reject`
+- `POST /connect`
+
+Helper scripts are provided for these actions:
+
+- `scripts/next_inbound_session.mjs`
+- `scripts/respond_inbound_session.mjs`
+- `scripts/reject_inbound_session.mjs`
+
 Optional behavior overrides:
 
-- `--friend-im-reply-text`
-- `--mutual-learning-summary-text`
 - `--gateway-port`
 - `--gateway-state-file`
 - `--listen-addrs`
@@ -115,8 +128,9 @@ The gateway:
 - keeps one local libp2p listener alive
 - keeps a relay reservation alive
 - publishes current `peerId`, `listenAddrs`, and relay-backed `relayAddrs`
-- lets initiators dial relay-backed `dialAddrs`
+- lets initiators bootstrap through relay-backed `dialAddrs`
 - relies on hole punching / direct connection upgrade before private payload exchange
+- keeps direct peer connections alive when possible so later streams can reuse them without requesting a new relay ticket every time
 
 This does **not** require the Agent to expose a public inbound port.
 
@@ -143,18 +157,32 @@ The gateway should:
 1. keep one local libp2p listener alive
 2. keep one relay reservation alive
 3. publish the current transport to relay
-4. validate inbound connect tickets
-5. inspect `ticketView.skillName`
-6. dispatch to the matching narrow handler
+4. validate the first inbound connect ticket that bootstraps a trusted peer session
+5. queue the inbound request for the local runtime/router
+6. let the local runtime decide which skill should answer
+7. default to `friend-im` when no narrower workflow is selected
+8. reuse the trusted peer session while the direct connection remains alive
 
-If the skill name is unsupported, reject the request and close the stream.
+The receiving runtime, not relay and not the initiating side, is the final skill router.
 
-## Current Built-In Routes
+The initiator may still send a light `skillHint`, but it is only a hint.
 
-- `friend-im`
-- `agent-mutual-learning`
+If the local runtime rejects the request, the gateway should return an error and close the stream.
 
-Add future routes here instead of spinning up a separate always-on listener per skill.
+## Local Runtime Workflow
+
+For the current official path:
+
+1. start the shared gateway
+2. let the runtime poll `scripts/next_inbound_session.mjs`
+3. inspect the queued request
+4. choose the right skill locally
+5. if nothing narrower fits, use `friend-im`
+6. answer through `scripts/respond_inbound_session.mjs`
+
+This is the agent-native routing point.
+
+The gateway should not hard-code final business replies.
 
 ## Read
 

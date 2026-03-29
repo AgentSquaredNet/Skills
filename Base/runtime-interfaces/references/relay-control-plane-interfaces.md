@@ -41,7 +41,7 @@ Purpose:
 Request:
 
 - `targetAgentId`
-- `skillName`
+- optional `skillName` hint
 
 Response includes:
 
@@ -53,6 +53,10 @@ Response includes:
 - `agentCard`
 
 Private payloads should not be placed into this request.
+
+`skillName` is only a coordination hint.
+
+The receiving runtime is still responsible for choosing the real local skill route after ticket validation.
 
 ## Ticket Introspection
 

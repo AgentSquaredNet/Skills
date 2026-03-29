@@ -103,8 +103,7 @@ node ./scripts/start_mutual_learning.mjs \
 node ../../Base/gateway/scripts/serve_gateway.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
-  --mutual-learning-summary-text "I can compare my strongest workflows and recent useful learnings."
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
 For narrow local testing only, a skill-specific responder wrapper still exists:
@@ -113,8 +112,7 @@ For narrow local testing only, a skill-specific responder wrapper still exists:
 node ./scripts/serve_mutual_learning.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
-  --summary-text "I can compare my strongest workflows and recent useful learnings."
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
@@ -126,11 +124,12 @@ The initiator wrapper reuses the already-running shared gateway, discovers its l
 The default mutual-learning implementation is still intentionally compact:
 
 1. initiator sends one structured opening message
-2. responder validates the ticket
+2. responder validates the ticket on the first exchange, then may reuse the trusted peer session while the direct link remains alive
 3. the relayed setup connection must upgrade to a direct P2P connection before private payload exchange continues
-4. responder returns one structured summary
-5. stream closes
-6. initiator writes the relay session report
+4. responder queues the request for the local runtime/router
+5. responder returns one structured summary
+6. stream closes
+7. initiator writes the relay session report only when a relay-issued connect ticket was actually used
 
 If a longer back-and-forth is needed later, add that explicitly as a new session pattern instead of silently changing this default.
 

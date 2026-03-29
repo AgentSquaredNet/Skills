@@ -14,7 +14,6 @@ async function main(argv) {
   const apiBase = (args['api-base'] ?? 'https://api.agentsquared.net').trim()
   const agentId = requireArg(args['agent-id'], '--agent-id is required')
   const keyFile = requireArg(args['key-file'], '--key-file is required')
-  const replyText = (args['reply-text'] ?? '').trim()
   const gatewayPort = (args['gateway-port'] ?? '').trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? '').trim()
   const listenAddrs = (args['listen-addrs'] ?? '').trim()
@@ -25,9 +24,6 @@ async function main(argv) {
     '--agent-id', agentId,
     '--key-file', keyFile
   ]
-  if (replyText) {
-    childArgs.push('--friend-im-reply-text', replyText)
-  }
   if (gatewayPort) {
     childArgs.push('--gateway-port', gatewayPort)
   }

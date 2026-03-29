@@ -7,7 +7,7 @@ description: Short-form messaging workflow for trusted Agents in the AgentSquare
 
 ## Overview
 
-Use this skill when the owner wants to send a short message to one selected friend Agent.
+Use this skill when the owner wants to send a short message to one selected friend Agent, or when an inbound peer request does not cleanly match a narrower workflow and should fall back to short-form friend messaging.
 
 ## Input
 
@@ -86,8 +86,7 @@ node ./scripts/send_friend_im.mjs \
 node ../../Base/gateway/scripts/serve_gateway.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
-  --friend-im-reply-text "Hi, I received your message."
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
 For narrow local testing only, a skill-specific responder wrapper still exists:
@@ -96,8 +95,7 @@ For narrow local testing only, a skill-specific responder wrapper still exists:
 node ./scripts/serve_friend_im.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
-  --reply-text "Hi, I received your message."
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
@@ -106,17 +104,38 @@ The initiator wrapper does not spin up its own libp2p node anymore.
 
 It reuses the already-running shared gateway and discovers the local control endpoint from the gateway state file when `--gateway-base` is omitted.
 
+For inbound handling, the current official path is:
+
+```bash
+node ../../Base/gateway/scripts/next_inbound_session.mjs \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
+```
+
+Then, after the local agent or owner decides how to answer, respond through:
+
+```bash
+node ./scripts/reply_friend_im.mjs \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --inbound-id <inboundId> \
+  --text "Hi, I received your message."
+```
+
+This is the default fallback route for inbound friend contact when no narrower workflow is selected locally.
+
 ## Session Exchange Contract
 
 After the relay ticket is issued and the direct libp2p session opens:
 
 1. the initiator sends exactly one JSON-RPC request
 2. the request carries the real IM text inside the private message payload
-3. the responder validates `relayConnectTicket`
+3. the responder validates `relayConnectTicket` on the first exchange, then may reuse the trusted peer session while the direct link remains alive
 4. the relayed setup connection must upgrade to a direct P2P connection before private payload exchange continues
-5. the responder returns exactly one JSON-RPC result or error
-6. the stream closes
-7. the initiator writes the relay session report
+5. the responder queues the request for the local runtime or owner
+6. the responder returns exactly one JSON-RPC result or error
+7. the stream closes
+8. the initiator writes the relay session report only when a relay-issued connect ticket was actually used
 
 So for the default official `friend-im` path:
 
@@ -158,7 +177,7 @@ then stop and ask the owner whether to escalate into `../agent-mutual-learning/S
 
 ## Rule
 
-Friend IM is for lightweight contact, not hidden authority transfer.
+Friend IM is the safe default inbound/outbound messaging route, not hidden authority transfer.
 
 Keep the message compact and report back what was sent and what came back.
 

@@ -1,6 +1,6 @@
 import { randomRequestId } from './cli.mjs'
 import { createConnectTicket, introspectConnectTicket, postOnline, reportSession } from './relay_http.mjs'
-import { dialProtocol, readSingleLine, waitForPublishedTransport, writeLine } from './libp2p_a2a.mjs'
+import { currentDirectConnection, dialProtocol, openStreamOnExistingDirectConnection, readSingleLine, waitForPublishedTransport, writeLine } from './libp2p_a2a.mjs'
 
 export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
   return {
@@ -46,20 +46,37 @@ export async function openDirectPeerSession({
   method,
   message,
   activitySummary,
-  report
+  report,
+  sessionStore = null
 }) {
-  // Require direct P2P upgrade before any private payload is treated as delivered.
-  const transport = await currentTransport(node, binding, { requireRelayReservation: true })
-  const ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
-  const targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
-  const stream = await dialProtocol(node, targetTransport, { requireDirect: true })
+  const cachedSession = sessionStore?.trustedSessionByAgent?.(targetAgentId) ?? null
+  const directConnection = cachedSession?.remotePeerId ? currentDirectConnection(node, cachedSession.remotePeerId) : null
+
+  let ticket = null
+  let peerSessionId = `${cachedSession?.peerSessionId ?? ''}`.trim()
+  let targetTransport = cachedSession?.remoteTransport ?? null
+  let stream
+
+  if (cachedSession && directConnection && targetTransport?.streamProtocol) {
+    sessionStore?.touchTrustedSession?.(cachedSession.peerSessionId)
+    stream = await openStreamOnExistingDirectConnection(node, targetTransport)
+  } else {
+    // Require direct P2P upgrade before any private payload is treated as delivered.
+    const transport = await currentTransport(node, binding, { requireRelayReservation: true })
+    ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
+    targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
+    peerSessionId = parseConnectTicketId(ticket.ticket) || randomRequestId('peer')
+    stream = await dialProtocol(node, targetTransport, { requireDirect: true })
+  }
 
   try {
     const request = buildJsonRpcEnvelope({
       method,
       message,
       metadata: {
-        relayConnectTicket: ticket.ticket,
+        relayConnectTicket: ticket?.ticket ?? '',
+        peerSessionId,
+        skillHint: `${skillName ?? ''}`.trim(),
         from: agentId,
         to: targetAgentId
       }
@@ -71,8 +88,18 @@ export async function openDirectPeerSession({
       throw new Error(response.error.message ?? 'remote peer returned an error')
     }
 
+    if (peerSessionId && targetTransport?.peerId) {
+      sessionStore?.rememberTrustedSession?.({
+        peerSessionId,
+        remoteAgentId: targetAgentId,
+        remotePeerId: targetTransport.peerId,
+        remoteTransport: targetTransport,
+        skillHint: `${skillName ?? ''}`.trim()
+      })
+    }
+
     let sessionReport = null
-    if (report) {
+    if (report && ticket?.ticket) {
       sessionReport = await reportSession(apiBase, agentId, bundle, {
         ticket: ticket.ticket,
         taskId: report.taskId,
@@ -82,17 +109,17 @@ export async function openDirectPeerSession({
       }, await currentTransport(node, binding, { requireRelayReservation: true }))
     }
 
-    return { ticket, response, sessionReport }
+    return { ticket, peerSessionId, response, sessionReport, reusedSession: Boolean(cachedSession && directConnection) }
   } finally {
     await stream.close()
   }
 }
 
 export function buildRouter(routes = {}) {
-  return async ({ request, ticketView, agentId }) => {
-    const route = routes[(ticketView?.skillName ?? '').trim()]
+  return async ({ request, ticketView, agentId, suggestedSkill = '' }) => {
+    const route = routes[`${suggestedSkill || ticketView?.skillName || 'friend-im'}`.trim()] ?? routes['friend-im']
     if (!route) {
-      throw new Error(`unsupported inbound skill route: ${ticketView?.skillName ?? ''}`)
+      throw new Error(`unsupported inbound skill route: ${suggestedSkill || ticketView?.skillName || ''}`)
     }
     return route({ request, ticketView, agentId })
   }
@@ -104,44 +131,100 @@ export async function attachInboundRouter({
   bundle,
   node,
   binding,
-  handler
+  handler,
+  sessionStore
 }) {
   node.handle(binding.streamProtocol, async (event) => {
     const stream = event?.stream ?? event
+    const remotePeerId = event?.connection?.remotePeer?.toString?.() ?? ''
     try {
       const rawLine = await readSingleLine(stream)
       const request = JSON.parse(rawLine)
-      const relayConnectTicket = request?.params?.metadata?.relayConnectTicket?.trim()
-      if (!relayConnectTicket) {
-        await writeLine(stream, JSON.stringify({
-          jsonrpc: '2.0',
-          id: request?.id ?? randomRequestId('invalid'),
-          error: { code: 401, message: 'relayConnectTicket is required' }
-        }))
-        return
+      const metadata = request?.params?.metadata ?? {}
+      const relayConnectTicket = `${metadata.relayConnectTicket ?? ''}`.trim()
+      const requestedPeerSessionId = `${metadata.peerSessionId ?? ''}`.trim()
+      let ticketView = null
+      let peerSessionId = requestedPeerSessionId
+      let remoteAgentId = `${metadata.from ?? ''}`.trim()
+      let suggestedSkill = `${metadata.skillHint ?? ''}`.trim()
+
+      if (relayConnectTicket) {
+        ticketView = await introspectConnectTicket(
+          apiBase,
+          agentId,
+          bundle,
+          relayConnectTicket,
+          await currentTransport(node, binding, { requireRelayReservation: true })
+        )
+        peerSessionId = peerSessionId || ticketView.ticketId
+        remoteAgentId = remoteAgentId || ticketView.initiatorAgentId
+        suggestedSkill = suggestedSkill || `${ticketView.skillName ?? ''}`.trim()
+        sessionStore?.rememberTrustedSession?.({
+          peerSessionId,
+          remoteAgentId,
+          remotePeerId,
+          ticketView,
+          skillHint: suggestedSkill
+        })
+      } else {
+        const trustedSession = sessionStore?.trustedSessionById?.(peerSessionId)
+        if (!trustedSession || trustedSession.remotePeerId !== remotePeerId) {
+          await writeLine(stream, JSON.stringify({
+            jsonrpc: '2.0',
+            id: request?.id ?? randomRequestId('invalid'),
+            error: { code: 401, message: 'relayConnectTicket or a trusted peerSessionId is required' }
+          }))
+          return
+        }
+        sessionStore?.touchTrustedSession?.(trustedSession.peerSessionId)
+        remoteAgentId = remoteAgentId || trustedSession.remoteAgentId
+        ticketView = trustedSession.ticketView ?? null
+        suggestedSkill = suggestedSkill || trustedSession.skillHint || 'friend-im'
       }
 
-      const ticketView = await introspectConnectTicket(
-        apiBase,
-        agentId,
-        bundle,
-        relayConnectTicket,
-        await currentTransport(node, binding, { requireRelayReservation: true })
-      )
-      const result = await handler({ request, ticketView, agentId })
+      const inbound = await sessionStore.enqueueInbound({
+        request,
+        ticketView,
+        remotePeerId,
+        remoteAgentId,
+        peerSessionId,
+        suggestedSkill,
+        defaultSkill: 'friend-im'
+      })
+      const result = await inbound.responsePromise
+      const finalResult = typeof result === 'object' && result != null
+        ? {
+            ...result,
+            metadata: {
+              ...(result.metadata ?? {}),
+              peerSessionId
+            }
+          }
+        : { value: result, metadata: { peerSessionId } }
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',
         id: request.id,
-        result
+        result: finalResult
       }))
     } catch (error) {
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',
         id: randomRequestId('error'),
-        error: { code: 500, message: error.message }
+        error: { code: Number.parseInt(`${error.code ?? 500}`, 10) || 500, message: error.message }
       }))
     } finally {
       await stream.close()
     }
   })
+}
+
+function parseConnectTicketId(token) {
+  const parts = `${token ?? ''}`.trim().split('.')
+  if (parts.length < 2) return ''
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
+    return `${payload.tid ?? payload.jti ?? ''}`.trim()
+  } catch {
+    return ''
+  }
 }

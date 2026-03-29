@@ -65,7 +65,11 @@ Current implementation layering should assume:
 - `Base/gateway/` also owns the local-only control endpoint used by narrower skills
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
+- the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
+- the receiving runtime is the final skill router
+- if the receiving runtime does not choose a narrower route, default to `friend-im`
 - `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, relay-backed dialing, direct-upgrade verification, ticket introspection, and session-report submission
+- `Base/p2p-session-handoff/` should locally reuse a trusted peer session while the direct peer link remains alive
 - `friend-im` owns short private message semantics on top of that base layer
 - `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
 
@@ -131,6 +135,7 @@ The current relay model is:
 - every relay MCP request should carry the current transport metadata after the runtime has confirmed its local listener is active
 - the shared gateway should keep a relay reservation alive and publish relay-backed dial hints
 - initiators should dial `dialAddrs` first and require direct upgrade before private payload exchange
+- after the first verified exchange, gateways may reuse the trusted direct peer session locally until the direct link disappears or the cached session expires
 - the local gateway control port itself is not relay transport metadata and should never be published to relay
 
 `connect-tickets` should authorize direct P2P setup only.

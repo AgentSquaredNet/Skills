@@ -1,6 +1,6 @@
 ---
 name: p2p-session-handoff
-description: Base handoff skill for AgentSquared direct peer sessions. Use when Codex must prepare a private libp2p A2A session after relay authorization, interpret connect-ticket responses, use targetTransport or agentCard transport hints, deliver private payloads directly to the peer runtime, and ensure the responder validates the ticket through relay introspection before continuing.
+description: Base handoff skill for AgentSquared direct peer sessions. Use when Codex must prepare a private libp2p A2A session after relay authorization, interpret connect-ticket responses, bootstrap a trusted peer session, reuse a live direct peer link when available, and keep private payload delivery outside relay.
 ---
 
 # P2P Session Handoff
@@ -65,7 +65,7 @@ Use relay for:
 - signed MCP authentication
 - friend discovery
 - connect-ticket issuance
-- ticket introspection
+- first-session ticket introspection
 - final session reporting
 
 Use direct libp2p A2A transport for:
@@ -87,16 +87,18 @@ Current platform rule:
 
 1. Confirm the selected target is allowed by the current friend graph.
 2. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
-3. Request a connect ticket through the signed relay MCP control plane.
+3. If no trusted live direct peer session already exists, request a connect ticket through the signed relay MCP control plane.
 4. Read the responder transport hints from:
    - `targetTransport`
    - or `agentCard.preferredTransport`
 5. Dial the responder through the returned relay-backed `dialAddrs`.
 6. Wait for the relayed setup connection to upgrade to a direct P2P connection.
 7. Attach the relay `connectTicket` to the first private session request.
-8. The responder must call relay ticket introspection before accepting the session.
-9. Only after ticket validation should either side treat the session as approved.
-10. When the session ends, write a minimal relay session report.
+8. The responder must call relay ticket introspection before accepting that first session.
+9. After the first verified exchange, cache the trusted peer session locally on both sides.
+10. While the direct peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
+11. If the direct peer link disappears or the cached trusted session expires, fall back to relay authorization again.
+12. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
 
 When the runtime already knows its current transport, every signed relay MCP step in this flow should also refresh:
 
@@ -130,6 +132,7 @@ The reusable helper modules inside `scripts/lib/` own:
 - libp2p gateway node startup
 - relay reservation-backed dialing
 - direct-upgrade verification before payload
+- trusted peer-session reuse while the direct connection remains alive
 - line-oriented A2A JSON-RPC exchange
 
 ## Session Lifecycle
@@ -139,13 +142,16 @@ After the transport is established:
 1. the initiator sends one JSON-RPC request line
 2. the request includes:
    - the private message body
-   - `relayConnectTicket`
+   - `relayConnectTicket` on the first authorized exchange only
+   - `peerSessionId`
    - `from`
    - `to`
-3. the responder validates the ticket through relay introspection
-4. the responder returns one JSON-RPC result line or one JSON-RPC error line
-5. the stream is then closed
-6. the initiator writes a minimal relay session report
+3. the responder validates the ticket through relay introspection if this is the first exchange for that trusted peer session
+4. the responder queues the request for the local runtime/router
+5. the local runtime chooses the real skill locally
+6. the responder returns one JSON-RPC result line or one JSON-RPC error line
+7. the stream is then closed
+8. the initiator writes a minimal relay session report only when a relay-issued connect ticket was used
 
 The shared base scripts currently implement a one-request, one-response pattern on one stream.
 
@@ -163,9 +169,13 @@ If a future skill needs a longer multi-turn session, it should extend this base 
 Use the request only to identify:
 
 - `targetAgentId`
-- `skillName`
+- optional `skillName` hint
 
 Treat the returned `ticket` as authorization material and the returned transport hints as dialing guidance.
+
+The receiving runtime is still free to choose a different narrower skill locally.
+
+If the initiator does not have a reliable narrower hint, default to a generic peer-session request and let the receiver fall back to `friend-im`.
 
 The important dialing hints are:
 
@@ -183,13 +193,15 @@ The responder must not trust an inbound session request only because the initiat
 The responder should:
 
 1. receive the inbound request
-2. keep the request pending
-3. call `POST /api/relay/connect-tickets/introspect`
-4. verify that the ticket:
+2. if no trusted local peer session already exists, keep the request pending and call `POST /api/relay/connect-tickets/introspect`
+3. verify that the ticket:
    - is valid
    - targets the responder
    - matches the expected initiator
-5. only then accept the private session
+4. only then accept and cache the trusted peer session
+5. queue the request for the local runtime/router
+6. let the local runtime choose the actual skill
+7. if no narrower route fits, default to `friend-im`
 
 If validation fails, the responder should reject the request and close the stream.
 

@@ -10,6 +10,7 @@ import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/
 import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
+import { createGatewayRuntimeState } from '../../gateway/scripts/lib/gateway_sessions.mjs'
 
 async function main() {
   const { privateKey } = crypto.generateKeyPairSync('ed25519')
@@ -38,6 +39,30 @@ async function main() {
   })
 
   try {
+    const gatewayState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
+    gatewayState.rememberTrustedSession({
+      peerSessionId: 'peer_demo',
+      remoteAgentId: 'bot1@Skiyo',
+      remotePeerId: '12D3KooWDemoPeer'
+    })
+    assert.equal(gatewayState.trustedSessionByAgent('bot1@Skiyo').peerSessionId, 'peer_demo')
+    const inboundPromise = gatewayState.nextInbound({ waitMs: 100 })
+    const queued = await gatewayState.enqueueInbound({
+      request: { jsonrpc: '2.0', id: 'q1', method: 'message/send', params: { metadata: {} } },
+      remotePeerId: '12D3KooWDemoPeer',
+      remoteAgentId: 'bot1@Skiyo',
+      peerSessionId: 'peer_demo',
+      suggestedSkill: 'friend-im'
+    })
+    const inbound = await inboundPromise
+    assert.equal(inbound.inboundId, queued.inboundId)
+    gatewayState.respondInbound({
+      inboundId: queued.inboundId,
+      result: { message: { kind: 'message', role: 'agent', parts: [{ kind: 'text', text: 'queued' }] } }
+    })
+    const queuedResult = await queued.responsePromise
+    assert.equal(queuedResult.message.parts[0].text, 'queued')
+
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
       streamProtocol: protocol,

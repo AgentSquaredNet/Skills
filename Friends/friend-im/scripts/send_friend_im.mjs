@@ -17,7 +17,7 @@ async function main(argv) {
 
   const result = await gatewayConnect(gatewayBase, {
     targetAgentId,
-    skillName: 'friend-im',
+    skillHint: 'friend-im',
     method: 'message/send',
     message: {
       kind: 'message',
@@ -34,7 +34,9 @@ async function main(argv) {
 
   console.log(JSON.stringify({
     targetAgentId,
-    ticketExpiresAt: result.ticket.expiresAt,
+    ticketExpiresAt: result.ticket?.expiresAt ?? '',
+    peerSessionId: result.peerSessionId ?? '',
+    reusedSession: Boolean(result.reusedSession),
     response: result.response
   }, null, 2))
 }

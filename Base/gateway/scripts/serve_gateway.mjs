@@ -2,13 +2,15 @@
 
 import http from 'node:http'
 import path from 'node:path'
+import { URL } from 'node:url'
 
 import { parseArgs, parseList, requireArg } from '../../p2p-session-handoff/scripts/lib/cli.mjs'
 import { getBindingDocument } from '../../p2p-session-handoff/scripts/lib/relay_http.mjs'
 import { loadRuntimeKeyBundle } from '../../p2p-session-handoff/scripts/lib/runtime_key.mjs'
 import { buildRelayListenAddrs, createNode, directListenAddrs, relayReservationAddrs } from '../../p2p-session-handoff/scripts/lib/libp2p_a2a.mjs'
-import { attachInboundRouter, buildRouter, currentTransport, openDirectPeerSession, publishGatewayPresence } from '../../p2p-session-handoff/scripts/lib/peer_session.mjs'
+import { attachInboundRouter, currentTransport, openDirectPeerSession, publishGatewayPresence } from '../../p2p-session-handoff/scripts/lib/peer_session.mjs'
 import { defaultGatewayStateFile, writeGatewayState } from './lib/gateway_runtime.mjs'
+import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
@@ -27,30 +29,6 @@ async function readJson(req) {
   return raw ? JSON.parse(raw) : {}
 }
 
-function buildFriendIMReply(agentId, ticketView, request, replyText) {
-  const incoming = request?.params?.message?.parts?.[0]?.text ?? ''
-  const text = replyText || `${agentId} received your friend-im message from ${ticketView.initiatorAgentId}: ${incoming}`
-  return {
-    message: {
-      kind: 'message',
-      role: 'agent',
-      parts: [{ kind: 'text', text }]
-    }
-  }
-}
-
-function buildMutualLearningReply(agentId, ticketView, request, summaryText) {
-  const incoming = request?.params?.message?.parts?.[0]?.text ?? ''
-  const text = summaryText || `${agentId} reviewed the mutual-learning goal from ${ticketView.initiatorAgentId}: ${incoming}`
-  return {
-    message: {
-      kind: 'message',
-      role: 'agent',
-      parts: [{ kind: 'text', text }]
-    }
-  }
-}
-
 function defaultPeerKeyFile(keyFile, agentId) {
   const safeAgentId = agentId.replace(/[^a-zA-Z0-9_.-]+/g, '_')
   return path.join(path.dirname(path.resolve(keyFile)), `${safeAgentId}_gateway-peer.key`)
@@ -67,8 +45,7 @@ async function main(argv) {
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
   const bundle = loadRuntimeKeyBundle(keyFile)
-  const friendIMReplyText = (args['friend-im-reply-text'] ?? '').trim()
-  const mutualLearningSummaryText = (args['mutual-learning-summary-text'] ?? '').trim()
+  const runtimeState = createGatewayRuntimeState()
 
   const binding = await getBindingDocument(apiBase)
   const relayListenAddrs = buildRelayListenAddrs(binding.relayMultiaddrs ?? [])
@@ -84,10 +61,7 @@ async function main(argv) {
     bundle,
     node,
     binding,
-    handler: buildRouter({
-      'friend-im': async ({ request, ticketView }) => buildFriendIMReply(agentId, ticketView, request, friendIMReplyText),
-      'agent-mutual-learning': async ({ request, ticketView }) => buildMutualLearningReply(agentId, ticketView, request, mutualLearningSummaryText)
-    })
+    sessionStore: runtimeState
   })
 
   const requireRelayReservation = relayListenAddrs.length > 0
@@ -104,7 +78,8 @@ async function main(argv) {
   let gatewayBase = `http://${gatewayHost}:${gatewayPort}`
   const server = http.createServer(async (req, res) => {
     try {
-      if (req.method === 'GET' && req.url === '/health') {
+      const url = new URL(req.url ?? '/', gatewayBase)
+      if (req.method === 'GET' && url.pathname === '/health') {
         const transport = await currentTransport(node, binding, { requireRelayReservation })
         jsonResponse(res, 200, {
           agentId,
@@ -117,13 +92,41 @@ async function main(argv) {
           relayReservationAddrs: relayReservationAddrs(node),
           streamProtocol: transport.streamProtocol,
           supportedBindings: transport.supportedBindings,
-          routes: ['friend-im', 'agent-mutual-learning'],
-          online
+          online,
+          runtimeState: runtimeState.snapshot()
         })
         return
       }
 
-      if (req.method === 'POST' && req.url === '/connect') {
+      if (req.method === 'GET' && url.pathname === '/inbound/next') {
+        const waitMs = Number.parseInt(url.searchParams.get('waitMs') ?? '30000', 10)
+        const nextInbound = await runtimeState.nextInbound({ waitMs })
+        jsonResponse(res, 200, { item: nextInbound })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/inbound/respond') {
+        const body = await readJson(req)
+        runtimeState.respondInbound({
+          inboundId: requireArg(body.inboundId, 'inboundId is required'),
+          result: body.result ?? {}
+        })
+        jsonResponse(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/inbound/reject') {
+        const body = await readJson(req)
+        runtimeState.rejectInbound({
+          inboundId: requireArg(body.inboundId, 'inboundId is required'),
+          code: Number.parseInt(body.code ?? '500', 10) || 500,
+          message: `${body.message ?? 'local runtime rejected the inbound request'}`
+        })
+        jsonResponse(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/connect') {
         const body = await readJson(req)
         const result = await openDirectPeerSession({
           apiBase,
@@ -132,11 +135,12 @@ async function main(argv) {
           node,
           binding,
           targetAgentId: requireArg(body.targetAgentId, 'targetAgentId is required'),
-          skillName: requireArg(body.skillName, 'skillName is required'),
+          skillName: (body.skillHint ?? body.skillName ?? '').trim(),
           method: requireArg(body.method, 'method is required'),
           message: body.message,
-          activitySummary: (body.activitySummary ?? '').trim() || `Preparing ${body.skillName} direct peer session.`,
-          report: body.report ?? null
+          activitySummary: (body.activitySummary ?? '').trim() || `Preparing direct peer session${(body.skillHint ?? body.skillName ?? '').trim() ? ` for ${(body.skillHint ?? body.skillName ?? '').trim()}` : ''}.`,
+          report: body.report ?? null,
+          sessionStore: runtimeState
         })
         jsonResponse(res, 200, result)
         return
@@ -174,8 +178,8 @@ async function main(argv) {
     listenAddrs: directListenAddrs(node),
     relayAddrs: relayReservationAddrs(node),
     streamProtocol: binding.streamProtocol,
-    routes: ['friend-im', 'agent-mutual-learning'],
-    peerKeyFile
+    peerKeyFile,
+    runtimeState: runtimeState.snapshot()
   }, null, 2))
 
   const stop = async () => {

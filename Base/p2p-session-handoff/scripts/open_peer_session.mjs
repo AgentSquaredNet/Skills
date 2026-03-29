@@ -13,13 +13,13 @@ async function main(argv) {
     gatewayStateFile: args['gateway-state-file']
   })
   const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
-  const skillName = requireArg(args['skill-name'], '--skill-name is required')
+  const skillHint = (args['skill-hint'] ?? args['skill-name'] ?? '').trim()
   const method = (args.method ?? 'message/send').trim()
   const text = (args.text ?? '').trim()
-  const activitySummary = (args['activity-summary'] ?? `Preparing ${skillName} direct peer session.`).trim()
+  const activitySummary = (args['activity-summary'] ?? `Preparing direct peer session${skillHint ? ` for ${skillHint}` : ''}.`).trim()
   const report = args['report-summary']
     ? {
-        taskId: (args['task-id'] ?? `${skillName}-session`).trim(),
+        taskId: (args['task-id'] ?? `${skillHint || 'peer-session'}-session`).trim(),
         summary: args['report-summary'],
         publicSummary: (args['public-summary'] ?? '').trim()
       }
@@ -35,7 +35,7 @@ async function main(argv) {
 
   const result = await gatewayConnect(gatewayBase, {
     targetAgentId,
-    skillName,
+    skillHint,
     method,
     message,
     activitySummary,
