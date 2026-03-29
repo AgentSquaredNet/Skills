@@ -143,6 +143,17 @@ function isDirectConnection(connection) {
   return !remoteAddr.includes('/p2p-circuit') && connection?.limits == null
 }
 
+function newStreamOptions(connection) {
+  if (connection?.limits != null) {
+    return { runOnLimitedConnection: true }
+  }
+  const remoteAddr = connection?.remoteAddr?.toString?.() ?? ''
+  if (remoteAddr.includes('/p2p-circuit')) {
+    return { runOnLimitedConnection: true }
+  }
+  return undefined
+}
+
 export function currentPeerConnection(node, peerId) {
   if (!peerId?.trim?.()) return null
   const remotePeer = peerIdFromString(peerId)
@@ -230,7 +241,7 @@ export async function dialProtocol(node, transport, {
     throw new Error(`no connection was available for ${transport.peerId}`)
   }
 
-  return connection.newStream([transport.streamProtocol])
+  return connection.newStream([transport.streamProtocol], newStreamOptions(connection))
 }
 
 export async function openStreamOnExistingConnection(node, transport) {
@@ -244,7 +255,7 @@ export async function openStreamOnExistingConnection(node, transport) {
   if (!connection) {
     throw new Error(`no existing peer connection is available for ${transport.peerId}`)
   }
-  return connection.newStream([transport.streamProtocol])
+  return connection.newStream([transport.streamProtocol], newStreamOptions(connection))
 }
 
 export async function writeLine(stream, line) {

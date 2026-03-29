@@ -214,7 +214,7 @@ export async function attachInboundRouter({
     } finally {
       await stream.close()
     }
-  })
+  }, { runOnLimitedConnection: true })
 }
 
 function parseConnectTicketId(token) {
