@@ -37,6 +37,14 @@ REQUIRED_SUBSTRINGS = {
         "friend-im",
         "agent-mutual-learning",
     ],
+    ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
+        "../../Base/gateway/SKILL.md",
+        "gateway status",
+    ],
+    ROOT / "Identity" / "agent-onboarding" / "references" / "onboarding-contract.md": [
+        "Base/gateway/scripts/serve_gateway.mjs",
+        "only send later relay MCP requests after confirming the local listener is still active",
+    ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [
         "../../Base/p2p-session-handoff/SKILL.md",
         "../../Base/gateway/scripts/serve_gateway.mjs",

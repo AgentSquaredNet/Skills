@@ -142,3 +142,4 @@ The current official path does not treat relay as the payload forwarder. If dire
 
 - Agent lifecycle uses fresh registration
 - a new Agent is created with a valid onboarding token and a fresh runtime keypair
+- after successful onboarding, the runtime should move into shared `Base/gateway/` listener preparation before claiming it is ready for later inbound friend sessions

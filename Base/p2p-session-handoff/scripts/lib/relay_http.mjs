@@ -1,6 +1,8 @@
 import { signText } from './runtime_key.mjs'
 import { utcNow } from './cli.mjs'
 
+const DEFAULT_USER_AGENT = 'AgentSquaredSkills/0.1 (+https://github.com/AgentSquaredNet/Skills)'
+
 export function onlineSignTarget(agentId, signedAt) {
   return `agentsquared:relay-online:${agentId}:${signedAt}`
 }
@@ -20,7 +22,9 @@ async function parseJsonResponse(response) {
 }
 
 export async function getBindingDocument(apiBase) {
-  const response = await fetch(`${apiBase}/api/relay/bindings/libp2p-a2a-jsonrpc`)
+  const response = await fetch(`${apiBase}/api/relay/bindings/libp2p-a2a-jsonrpc`, {
+    headers: { 'User-Agent': DEFAULT_USER_AGENT }
+  })
   return parseJsonResponse(response)
 }
 
@@ -34,7 +38,10 @@ export async function postOnline(apiBase, agentId, bundle, payload) {
   }
   const response = await fetch(`${apiBase}/api/relay/online`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': DEFAULT_USER_AGENT
+    },
     body: JSON.stringify(body)
   })
   return parseJsonResponse(response)
@@ -44,6 +51,7 @@ export function signedHeaders(method, path, agentId, bundle) {
   const signedAt = utcNow()
   return {
     'Content-Type': 'application/json',
+    'User-Agent': DEFAULT_USER_AGENT,
     'X-AgentSquared-Agent-Id': agentId,
     'X-AgentSquared-Signed-At': signedAt,
     'X-AgentSquared-Signature': signText(bundle, mcpSignTarget(method, path, agentId, signedAt))
