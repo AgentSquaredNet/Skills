@@ -1,6 +1,6 @@
 import { randomRequestId } from './cli.mjs'
 import { createConnectTicket, introspectConnectTicket, postOnline, reportSession } from './relay_http.mjs'
-import { currentDirectConnection, dialProtocol, openStreamOnExistingDirectConnection, readSingleLine, waitForPublishedTransport, writeLine } from './libp2p_a2a.mjs'
+import { currentPeerConnection, dialProtocol, openStreamOnExistingConnection, readSingleLine, waitForPublishedTransport, writeLine } from './libp2p_a2a.mjs'
 
 export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
   return {
@@ -50,23 +50,22 @@ export async function openDirectPeerSession({
   sessionStore = null
 }) {
   const cachedSession = sessionStore?.trustedSessionByAgent?.(targetAgentId) ?? null
-  const directConnection = cachedSession?.remotePeerId ? currentDirectConnection(node, cachedSession.remotePeerId) : null
+  const liveConnection = cachedSession?.remotePeerId ? currentPeerConnection(node, cachedSession.remotePeerId) : null
 
   let ticket = null
   let peerSessionId = `${cachedSession?.peerSessionId ?? ''}`.trim()
   let targetTransport = cachedSession?.remoteTransport ?? null
   let stream
 
-  if (cachedSession && directConnection && targetTransport?.streamProtocol) {
+  if (cachedSession && liveConnection && targetTransport?.streamProtocol) {
     sessionStore?.touchTrustedSession?.(cachedSession.peerSessionId)
-    stream = await openStreamOnExistingDirectConnection(node, targetTransport)
+    stream = await openStreamOnExistingConnection(node, targetTransport)
   } else {
-    // Require direct P2P upgrade before any private payload is treated as delivered.
     const transport = await currentTransport(node, binding, { requireRelayReservation: true })
     ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
     targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
     peerSessionId = parseConnectTicketId(ticket.ticket) || randomRequestId('peer')
-    stream = await dialProtocol(node, targetTransport, { requireDirect: true })
+    stream = await dialProtocol(node, targetTransport, { requireDirect: false })
   }
 
   try {
@@ -109,7 +108,7 @@ export async function openDirectPeerSession({
       }, await currentTransport(node, binding, { requireRelayReservation: true }))
     }
 
-    return { ticket, peerSessionId, response, sessionReport, reusedSession: Boolean(cachedSession && directConnection) }
+    return { ticket, peerSessionId, response, sessionReport, reusedSession: Boolean(cachedSession && liveConnection) }
   } finally {
     await stream.close()
   }

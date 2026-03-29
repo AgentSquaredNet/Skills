@@ -131,7 +131,7 @@ After the relay ticket is issued and the direct libp2p session opens:
 1. the initiator sends exactly one JSON-RPC request
 2. the request carries the real IM text inside the private message payload
 3. the responder validates `relayConnectTicket` on the first exchange, then may reuse the trusted peer session while the direct link remains alive
-4. the relayed setup connection must upgrade to a direct P2P connection before private payload exchange continues
+4. if the relayed setup connection upgrades to direct P2P, prefer that link for later reuse; otherwise the current relay-backed peer connection may still carry the exchange
 5. the responder queues the request for the local runtime or owner
 6. the responder returns exactly one JSON-RPC result or error
 7. the stream closes

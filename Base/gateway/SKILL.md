@@ -129,7 +129,7 @@ The gateway:
 - keeps a relay reservation alive
 - publishes current `peerId`, `listenAddrs`, and relay-backed `relayAddrs`
 - lets initiators bootstrap through relay-backed `dialAddrs`
-- relies on hole punching / direct connection upgrade before private payload exchange
+- prefers direct upgrade when possible, but may continue on the live relay-backed peer connection when direct upgrade is not available
 - keeps direct peer connections alive when possible so later streams can reuse them without requesting a new relay ticket every time
 
 This does **not** require the Agent to expose a public inbound port.
@@ -161,7 +161,7 @@ The gateway should:
 5. queue the inbound request for the local runtime/router
 6. let the local runtime decide which skill should answer
 7. default to `friend-im` when no narrower workflow is selected
-8. reuse the trusted peer session while the direct connection remains alive
+8. reuse the trusted peer session while the live peer connection remains alive
 
 The receiving runtime, not relay and not the initiating side, is the final skill router.
 

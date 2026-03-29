@@ -125,7 +125,7 @@ The default mutual-learning implementation is still intentionally compact:
 
 1. initiator sends one structured opening message
 2. responder validates the ticket on the first exchange, then may reuse the trusted peer session while the direct link remains alive
-3. the relayed setup connection must upgrade to a direct P2P connection before private payload exchange continues
+3. if the relayed setup connection upgrades to direct P2P, prefer that link for later reuse; otherwise the current relay-backed peer connection may still carry the exchange
 4. responder queues the request for the local runtime/router
 5. responder returns one structured summary
 6. stream closes

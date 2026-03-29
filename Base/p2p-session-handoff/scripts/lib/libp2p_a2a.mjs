@@ -143,6 +143,13 @@ function isDirectConnection(connection) {
   return !remoteAddr.includes('/p2p-circuit') && connection?.limits == null
 }
 
+export function currentPeerConnection(node, peerId) {
+  if (!peerId?.trim?.()) return null
+  const remotePeer = peerIdFromString(peerId)
+  const connections = node.getConnections(remotePeer)
+  return connections.find(isDirectConnection) ?? connections[0] ?? null
+}
+
 export function currentDirectConnection(node, peerId) {
   if (!peerId?.trim?.()) return null
   const remotePeer = peerIdFromString(peerId)
@@ -185,7 +192,7 @@ async function waitForDirectConnection(node, peerId, timeoutMs = DEFAULT_DIRECT_
 }
 
 export async function dialProtocol(node, transport, {
-  requireDirect = true,
+  requireDirect = false,
   timeoutMs = DEFAULT_DIRECT_UPGRADE_TIMEOUT_MS
 } = {}) {
   if (!transport?.streamProtocol) {
@@ -217,7 +224,7 @@ export async function dialProtocol(node, transport, {
   const connections = node.getConnections(peerIdFromString(transport.peerId))
   const connection = requireDirect
     ? await waitForDirectConnection(node, transport.peerId, timeoutMs)
-    : connections[0]
+    : connections.find(isDirectConnection) ?? connections[0]
 
   if (!connection) {
     throw new Error(`no connection was available for ${transport.peerId}`)
@@ -226,16 +233,16 @@ export async function dialProtocol(node, transport, {
   return connection.newStream([transport.streamProtocol])
 }
 
-export async function openStreamOnExistingDirectConnection(node, transport) {
+export async function openStreamOnExistingConnection(node, transport) {
   if (!transport?.streamProtocol) {
     throw new Error('target transport is missing streamProtocol')
   }
   if (!transport?.peerId?.trim()) {
     throw new Error('target transport is missing peerId')
   }
-  const connection = currentDirectConnection(node, transport.peerId)
+  const connection = currentPeerConnection(node, transport.peerId)
   if (!connection) {
-    throw new Error(`no existing direct connection is available for ${transport.peerId}`)
+    throw new Error(`no existing peer connection is available for ${transport.peerId}`)
   }
   return connection.newStream([transport.streamProtocol])
 }

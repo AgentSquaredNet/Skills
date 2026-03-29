@@ -1,6 +1,6 @@
 ---
 name: p2p-session-handoff
-description: Base handoff skill for AgentSquared direct peer sessions. Use when Codex must prepare a private libp2p A2A session after relay authorization, interpret connect-ticket responses, bootstrap a trusted peer session, reuse a live direct peer link when available, and keep private payload delivery outside relay.
+description: Base handoff skill for AgentSquared peer sessions. Use when Codex must prepare a private libp2p A2A session after relay authorization, interpret connect-ticket responses, bootstrap a trusted peer session, reuse a live peer link when available, and prefer direct upgrade without requiring it for every session.
 ---
 
 # P2P Session Handoff
@@ -87,18 +87,19 @@ Current platform rule:
 
 1. Confirm the selected target is allowed by the current friend graph.
 2. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
-3. If no trusted live direct peer session already exists, request a connect ticket through the signed relay MCP control plane.
+3. If no trusted live peer session already exists, request a connect ticket through the signed relay MCP control plane.
 4. Read the responder transport hints from:
    - `targetTransport`
    - or `agentCard.preferredTransport`
 5. Dial the responder through the returned relay-backed `dialAddrs`.
-6. Wait for the relayed setup connection to upgrade to a direct P2P connection.
-7. Attach the relay `connectTicket` to the first private session request.
-8. The responder must call relay ticket introspection before accepting that first session.
-9. After the first verified exchange, cache the trusted peer session locally on both sides.
-10. While the direct peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
-11. If the direct peer link disappears or the cached trusted session expires, fall back to relay authorization again.
-12. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
+6. If the connection upgrades to direct P2P, prefer that path for later reuse.
+7. If direct upgrade does not happen but the relay-backed peer connection is already established, continue the current session on that live peer connection.
+8. Attach the relay `connectTicket` to the first private session request.
+9. The responder must call relay ticket introspection before accepting that first session.
+10. After the first verified exchange, cache the trusted peer session locally on both sides.
+11. While the peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
+12. If the peer link disappears or the cached trusted session expires, fall back to relay authorization again.
+13. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
 
 When the runtime already knows its current transport, every signed relay MCP step in this flow should also refresh:
 
@@ -132,7 +133,7 @@ The reusable helper modules inside `scripts/lib/` own:
 - libp2p gateway node startup
 - relay reservation-backed dialing
 - direct-upgrade verification before payload
-- trusted peer-session reuse while the direct connection remains alive
+- trusted peer-session reuse while the live peer connection remains alive
 - line-oriented A2A JSON-RPC exchange
 
 ## Session Lifecycle
@@ -152,6 +153,11 @@ After the transport is established:
 6. the responder returns one JSON-RPC result line or one JSON-RPC error line
 7. the stream is then closed
 8. the initiator writes a minimal relay session report only when a relay-issued connect ticket was used
+
+Current transport rule:
+
+- direct upgrade is preferred when available
+- a live relay-backed peer connection may still carry the private payload when direct upgrade is not available
 
 The shared base scripts currently implement a one-request, one-response pattern on one stream.
 

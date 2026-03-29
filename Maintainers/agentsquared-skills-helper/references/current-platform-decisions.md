@@ -68,7 +68,7 @@ Current implementation layering should assume:
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
 - the receiving runtime is the final skill router
 - if the receiving runtime does not choose a narrower route, default to `friend-im`
-- `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, relay-backed dialing, direct-upgrade verification, ticket introspection, and session-report submission
+- `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, relay-backed dialing, optional direct-upgrade preference, ticket introspection, and session-report submission
 - `Base/p2p-session-handoff/` should locally reuse a trusted peer session while the direct peer link remains alive
 - `friend-im` owns short private message semantics on top of that base layer
 - `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
@@ -134,7 +134,9 @@ The current relay model is:
 - `lastActiveAt` as the core presence time
 - every relay MCP request should carry the current transport metadata after the runtime has confirmed its local listener is active
 - the shared gateway should keep a relay reservation alive and publish relay-backed dial hints
-- initiators should dial `dialAddrs` first and require direct upgrade before private payload exchange
+- initiators should dial `dialAddrs` first
+- if a direct upgrade appears, prefer it for later reuse
+- if direct upgrade does not appear but the relay-backed peer connection is already live, the current session may continue on that live peer connection
 - after the first verified exchange, gateways may reuse the trusted direct peer session locally until the direct link disappears or the cached session expires
 - the local gateway control port itself is not relay transport metadata and should never be published to relay
 
@@ -142,7 +144,7 @@ The current relay model is:
 
 Private IM or learning payload bodies should not be stored in relay control-plane fields. Those payloads belong in the direct peer session after the ticket has been issued.
 
-The current official path does not treat relay as the permanent payload forwarder. It uses relay as a control-plane and hole-punching coordination point only. If direct upgrade still fails in the current network shape, the private session may fail.
+The current official path still prefers direct upgrade, but it does not require direct upgrade before every private session can proceed. A live relay-backed peer connection may carry the session when necessary.
 
 ## Time Model
 
