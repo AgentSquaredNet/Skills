@@ -10,6 +10,7 @@ import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/
 import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { attachInboundRouter, buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
+import { createInboxStore } from '../../gateway/scripts/lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from '../../gateway/scripts/lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from '../../gateway/scripts/lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from '../../gateway/scripts/lib/local_runtime.mjs'
@@ -180,7 +181,43 @@ async function main() {
       selectedSkill: 'friend-im',
       mailboxKey: 'agent:peer@test'
     })
-    assert.equal(rejectExecution.reject.code, 503)
+    assert.equal(rejectExecution.peerResponse.message.parts[0].text.includes('received your message'), true)
+
+    const inboxStore = createInboxStore({
+      inboxDir: path.join(tempDir, 'gateway-inbox')
+    })
+    const appended = inboxStore.appendEntry({
+      agentId: 'bot1@Skiyo',
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:peer@test',
+      item: {
+        inboundId: 'router3',
+        remoteAgentId: 'peer@Test',
+        peerSessionId: 'peer-router3',
+        request: {
+          params: {
+            message: {
+              parts: [{ kind: 'text', text: 'Hello inbox' }]
+            }
+          }
+        }
+      },
+      ownerReport: {
+        summary: 'peer@Test sent: Hello inbox'
+      },
+      peerResponse: {
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text: 'ack' }]
+        }
+      }
+    })
+    assert.equal(appended.index.unreadCount, 1)
+    assert.equal(inboxStore.readIndex().unread[0].id, 'router3')
+    const marked = inboxStore.markStatus('router3', 'reported')
+    assert.equal(marked.index.unreadCount, 0)
+    assert.equal(marked.index.reportedCount, 1)
 
     const routerProtocol = '/agentsquared/router-test/1.0'
     const responderState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })

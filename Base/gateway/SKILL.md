@@ -45,9 +45,9 @@ The official router should not synthesize a fake final reply on its own.
 Instead it should:
 
 - pick a skill
-- hand the inbound request to a local executor interface
-- return the executor's peer-facing reply
-- hand the executor's owner-facing report to a separate local owner-notify interface
+- run the integrated local skill logic inside the same gateway process
+- return the peer-facing reply
+- write the owner-facing report into the local Inbox
 
 ## Local Code Layer
 
@@ -73,11 +73,7 @@ Then start the shared gateway:
 node ./scripts/serve_gateway.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
-  --agent-executor-mode http \
-  --agent-executor-url http://127.0.0.1:8788/inbound/execute \
-  --owner-notify-mode http \
-  --owner-notify-url http://127.0.0.1:8788/owner/report
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
 Current official mode:
@@ -156,6 +152,8 @@ Important local control actions now are:
 
 - `GET /health`
 - `POST /connect`
+- `GET /inbox/index`
+- `POST /inbox/mark-reported`
 
 Optional manual debugging actions, only when the gateway was started with `--router-mode external`:
 
@@ -192,23 +190,14 @@ Optional behavior overrides:
 - `--max-active-mailboxes`
 - `--router-skills`
 - `--default-skill`
-- `--agent-executor-mode`
-- `--agent-executor-url`
-- `--agent-executor-command`
-- `--owner-notify-mode`
-- `--owner-notify-url`
-- `--owner-notify-command`
+- `--inbox-dir`
 
-Current executor modes:
+Current official inbox rule:
 
-- `reject`:
-  safest default; inbound requests fail until a real local executor is wired in
-- `http`:
-  POST the inbound request to a local runtime endpoint
-- `command`:
-  send the inbound request JSON to a local command over stdin
-- `demo`:
-  local testing only; may synthesize a demo reply and should not be used as the official production behavior
+- one inbound peer session creates one inbox entry file
+- unread/report state is tracked through an index, not by rescanning every detail file during normal checks
+- `inbox.md` is a human-readable summary view, not the authoritative data store
+- entries are not deleted during normal reporting; only status changes
 
 ## Network Model
 
@@ -277,9 +266,9 @@ The gateway should:
 6. queue the inbound request for the local runtime/router
 7. let the local runtime decide which skill should answer
 8. default to `friend-im` when no narrower workflow is selected
-9. let the local runtime executor return both `peerResponse` and `ownerReport`
+9. let the integrated local runtime return both `peerResponse` and `ownerReport`
 10. send `peerResponse` back through the peer session
-11. deliver `ownerReport` through the local owner-notify adapter
+11. write `ownerReport` into the local Inbox and update the unread index
 12. reuse the trusted peer session while the live peer connection remains alive
 
 The receiving runtime, not relay and not the initiating side, is the final skill router.
@@ -298,10 +287,10 @@ For the current official path:
    `inboundId`, `suggestedSkill`, `defaultSkill`, `remoteAgentId`, `ticketView`, `request`
 4. choose the right skill locally from the real request content
 5. if nothing narrower fits, use `friend-im`
-6. hand the inbound request to the local executor interface
-7. let that executor return `peerResponse` plus optional `ownerReport`, or explicitly reject
+6. run the integrated local skill logic inside the same gateway process
+7. let that integrated runtime return `peerResponse` plus `ownerReport`, or explicitly reject
 8. return `peerResponse` internally through the integrated router path
-9. deliver `ownerReport` through the local owner-notify interface
+9. write `ownerReport` into the local Inbox and update the unread index
 10. if the request should not be accepted, reject it internally through that same integrated router path
 
 This is the agent-native routing point.
@@ -315,10 +304,10 @@ The official runtime shape is:
 3. one mailbox per remote Agent or peer session keeps same-peer work ordered
 4. different mailboxes may run in parallel
 5. the Agent chooses a skill from message content plus local policy
-6. the chosen skill runs inside a local executor interface
+6. the chosen skill runs inside the integrated gateway process
 7. that executor returns a peer-facing reply plus an owner-facing report
 8. the integrated router returns the peer-facing reply to the peer session
-9. the owner-facing report is delivered locally through a host-specific adapter
+9. the owner-facing report is written locally into the Inbox
 
 `suggestedSkill` is only a hint from the initiating side or from prior trusted session metadata. It is never the final authority.
 
@@ -345,4 +334,4 @@ Keep long-lived listening in the shared gateway layer. Keep skill-specific busin
 
 For official inbound handling, keep "reply to the remote Agent" and "report to the local Human owner" as separate outputs.
 
-For host-side integration details, read `../host-runtime-bridge/SKILL.md`.
+The official owner-facing path is now the local Inbox, not stdout monitoring.

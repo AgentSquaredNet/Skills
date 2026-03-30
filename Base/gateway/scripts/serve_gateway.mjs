@@ -13,6 +13,7 @@ import { defaultGatewayStateFile, writeGatewayState } from './lib/gateway_runtim
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { createAgentRouter, DEFAULT_ROUTER_DEFAULT_SKILL, DEFAULT_ROUTER_SKILLS } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
+import { createInboxStore, defaultInboxDir } from './lib/gateway_inbox.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
@@ -67,17 +68,19 @@ async function main(argv) {
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
-  const agentExecutorMode = `${args['agent-executor-mode'] ?? 'reject'}`.trim().toLowerCase() || 'reject'
+  const agentExecutorMode = `${args['agent-executor-mode'] ?? 'integrated'}`.trim().toLowerCase() || 'integrated'
   const agentExecutorUrl = `${args['agent-executor-url'] ?? ''}`.trim()
   const agentExecutorCommand = `${args['agent-executor-command'] ?? ''}`.trim()
-  const ownerNotifyMode = `${args['owner-notify-mode'] ?? 'stdout'}`.trim().toLowerCase() || 'stdout'
+  const ownerNotifyMode = `${args['owner-notify-mode'] ?? 'inbox'}`.trim().toLowerCase() || 'inbox'
   const ownerNotifyUrl = `${args['owner-notify-url'] ?? ''}`.trim()
   const ownerNotifyCommand = `${args['owner-notify-command'] ?? ''}`.trim()
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
+  const inboxDir = (args['inbox-dir'] ?? defaultInboxDir(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
   const bundle = loadRuntimeKeyBundle(keyFile)
   const runtimeState = createGatewayRuntimeState()
+  const inboxStore = createInboxStore({ inboxDir })
   const localRuntimeExecutor = createLocalRuntimeExecutor({
     agentId,
     mode: agentExecutorMode,
@@ -88,7 +91,8 @@ async function main(argv) {
     agentId,
     mode: ownerNotifyMode,
     url: ownerNotifyUrl,
-    command: ownerNotifyCommand
+    command: ownerNotifyCommand,
+    inbox: inboxStore
   })
 
   const binding = await getBindingDocument(apiBase)
@@ -431,6 +435,8 @@ async function main(argv) {
             agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
             runtimeState: runtimeState.snapshot()
+            ,
+            inbox: inboxStore.snapshot()
           })
           return
         }
@@ -450,7 +456,8 @@ async function main(argv) {
             routerMode,
             agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
-            runtimeState: runtimeState.snapshot()
+            runtimeState: runtimeState.snapshot(),
+            inbox: inboxStore.snapshot()
           })
           return
         } catch (error) {
@@ -463,10 +470,30 @@ async function main(argv) {
             error: { message: error.message },
             agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
-            runtimeState: runtimeState.snapshot()
+            runtimeState: runtimeState.snapshot(),
+            inbox: inboxStore.snapshot()
           })
           return
         }
+      }
+
+      if (req.method === 'GET' && url.pathname === '/inbox/index') {
+        jsonResponse(res, 200, {
+          index: inboxStore.readIndex(),
+          snapshot: inboxStore.snapshot()
+        })
+        return
+      }
+
+      if (req.method === 'POST' && url.pathname === '/inbox/mark-reported') {
+        const body = await readJson(req)
+        const value = inboxStore.markStatus(requireArg(body.id, 'id is required'), 'reported')
+        jsonResponse(res, 200, {
+          ok: true,
+          entry: value.entry,
+          index: value.index
+        })
+        return
       }
 
       if (req.method === 'GET' && url.pathname === '/inbound/next') {

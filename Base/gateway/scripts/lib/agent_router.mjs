@@ -300,7 +300,8 @@ export function createAgentRouter({
           item,
           selectedSkill,
           mailboxKey,
-          ownerReport: execution.ownerReport
+          ownerReport: execution.ownerReport,
+          peerResponse: execution.peerResponse
         })
       }
 

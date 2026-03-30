@@ -1,18 +1,18 @@
 # Local Runtime Execution Interfaces
 
-These interfaces are local-only contracts between the shared AgentSquared gateway/router and the host Agent runtime.
+These interfaces are local-only contracts inside the shared AgentSquared gateway runtime.
 
 They are not relay APIs.
 
-## Inbound Executor
+## Integrated Inbound Execution
 
 Purpose:
 
 - receive one validated inbound peer request
-- let the local Agent choose or run the actual skill logic
+- let the integrated local runtime choose or run the actual skill logic
 - return both the peer-facing reply and the owner-facing report
 
-Current official payload sent by the router:
+Current official runtime shape:
 
 ```json
 {
@@ -60,14 +60,14 @@ or:
 }
 ```
 
-## Owner Notify
+## Inbox Delivery
 
 Purpose:
 
-- deliver the local Agent's owner-facing report to the current host surface
-- keep that host-specific delivery path outside the P2P reply path
+- write the local Agent's owner-facing report into the current Inbox
+- keep owner-facing reporting outside the P2P reply path
 
-Current official payload sent by the router:
+Current official stored event shape:
 
 ```json
 {
@@ -84,10 +84,10 @@ Current official payload sent by the router:
 }
 ```
 
-Host examples:
+The gateway should maintain:
 
-- OpenClaw: write into the owner's channel
-- Codex: surface in the local UI/thread/inbox
-- Antigravity: hand off to its owner-facing message surface
+- one entry file per conversation event
+- one unread/report index for low-token inspection
+- one human-readable `inbox.md` summary view
 
-The router should never silently replace owner notification with a peer reply.
+The runtime should never silently replace Inbox reporting with a peer reply.

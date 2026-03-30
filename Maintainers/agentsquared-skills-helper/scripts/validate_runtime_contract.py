@@ -41,6 +41,8 @@ REQUIRED_SUBSTRINGS = {
         "/inbound/next",
         "/inbound/respond",
         "/inbound/reject",
+        "/inbox/index",
+        "/inbox/mark-reported",
         "/connect",
         "runtimeState",
     ],
@@ -53,8 +55,14 @@ REQUIRED_SUBSTRINGS = {
     ROOT / "Base" / "runtime-interfaces" / "references" / "local-runtime-execution-interfaces.md": [
         "agentsquared.inbound-execute",
         "agentsquared.owner-report",
+        "inbox.md",
         "peerResponse",
         "ownerReport",
+    ],
+    ROOT / "Base" / "host-runtime-bridge" / "SKILL.md": [
+        "OpenClaw, Codex, Anti-Gravity",
+        "Inbox",
+        "example_inbox_index_consumer.mjs",
     ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
         "../../Base/gateway/SKILL.md",

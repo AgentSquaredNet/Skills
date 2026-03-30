@@ -34,3 +34,11 @@ export async function gatewayRespondInbound(gatewayBase = DEFAULT_GATEWAY_BASE, 
 export async function gatewayRejectInbound(gatewayBase = DEFAULT_GATEWAY_BASE, payload) {
   return gatewayPost(gatewayBase, '/inbound/reject', payload)
 }
+
+export async function gatewayInboxIndex(gatewayBase = DEFAULT_GATEWAY_BASE) {
+  return gatewayGet(gatewayBase, '/inbox/index')
+}
+
+export async function gatewayMarkInboxReported(gatewayBase = DEFAULT_GATEWAY_BASE, payload) {
+  return gatewayPost(gatewayBase, '/inbox/mark-reported', payload)
+}

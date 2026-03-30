@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 
 import { requestJson } from '../../../p2p-session-handoff/scripts/lib/http_json.mjs'
-import { buildSkillResult } from './agent_router.mjs'
+import { buildSkillResult, extractInboundText } from './agent_router.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -16,6 +16,14 @@ function buildTextMessageResult(text, metadata = {}) {
     },
     metadata
   }
+}
+
+function excerpt(text, maxLength = 180) {
+  const compact = clean(text).replace(/\s+/g, ' ').trim()
+  if (!compact) {
+    return ''
+  }
+  return compact.length > maxLength ? `${compact.slice(0, maxLength - 3)}...` : compact
 }
 
 function normalizePeerResponse(value, metadata = {}) {
@@ -155,11 +163,11 @@ async function runJsonCommand(command, payload) {
 
 export function createLocalRuntimeExecutor({
   agentId,
-  mode = 'reject',
+  mode = 'integrated',
   url = '',
   command = ''
 } = {}) {
-  const normalizedMode = clean(mode).toLowerCase() || 'reject'
+  const normalizedMode = clean(mode).toLowerCase() || 'integrated'
   const normalizedUrl = clean(url)
   const normalizedCommand = clean(command)
 
@@ -195,6 +203,19 @@ export function createLocalRuntimeExecutor({
     )
   }
 
+  async function executeIntegrated(context) {
+    const peerResponse = normalizeExecutionResult({
+      peerResponse: buildSkillResult(context.selectedSkill, context.item),
+      ownerReport: {
+        summary: buildOwnerSummary(context),
+        selectedSkill: context.selectedSkill,
+        remoteAgentId: clean(context.item?.remoteAgentId),
+        inboxStatus: 'unread'
+      }
+    }, context)
+    return peerResponse
+  }
+
   async function executeDemo(context) {
     return normalizeExecutionResult({
       peerResponse: buildSkillResult(context.selectedSkill, context.item),
@@ -218,6 +239,8 @@ export function createLocalRuntimeExecutor({
     ? executeViaHttp
     : normalizedMode === 'command'
       ? executeViaCommand
+      : normalizedMode === 'integrated'
+        ? executeIntegrated
       : normalizedMode === 'demo'
         ? executeDemo
         : rejectExecution
@@ -230,11 +253,12 @@ export function createLocalRuntimeExecutor({
 
 export function createOwnerNotifier({
   agentId,
-  mode = 'stdout',
+  mode = 'inbox',
   url = '',
-  command = ''
+  command = '',
+  inbox = null
 } = {}) {
-  const normalizedMode = clean(mode).toLowerCase() || 'stdout'
+  const normalizedMode = clean(mode).toLowerCase() || 'inbox'
   const normalizedUrl = clean(url)
   const normalizedCommand = clean(command)
 
@@ -282,10 +306,32 @@ export function createOwnerNotifier({
     return { delivered: false, mode: 'none' }
   }
 
+  async function notifyViaInbox(context) {
+    if (!inbox?.appendEntry) {
+      throw new Error('inbox store is required when --owner-notify-mode inbox is used')
+    }
+    const value = inbox.appendEntry({
+      agentId,
+      selectedSkill: context.selectedSkill,
+      mailboxKey: context.mailboxKey,
+      item: context.item,
+      ownerReport: context.ownerReport,
+      peerResponse: context.peerResponse ?? null
+    })
+    return {
+      delivered: true,
+      mode: 'inbox',
+      entryId: value.entry.id,
+      unreadCount: value.index.unreadCount
+    }
+  }
+
   const notify = normalizedMode === 'http'
     ? notifyViaHttp
     : normalizedMode === 'command'
       ? notifyViaCommand
+      : normalizedMode === 'inbox'
+        ? notifyViaInbox
       : normalizedMode === 'none'
         ? noopNotify
         : notifyViaStdout
@@ -294,4 +340,20 @@ export function createOwnerNotifier({
   notify.url = normalizedUrl
   notify.command = normalizedCommand
   return notify
+}
+
+function buildOwnerSummary(context) {
+  const remoteAgentId = clean(context?.item?.remoteAgentId) || 'unknown'
+  const selectedSkill = clean(context?.selectedSkill) || 'friend-im'
+  const incoming = excerpt(extractInboundText(context?.item))
+  if (selectedSkill === 'agent-mutual-learning') {
+    if (incoming) {
+      return `${remoteAgentId} sent a mutual-learning request: ${incoming}`
+    }
+    return `${remoteAgentId} opened a mutual-learning request.`
+  }
+  if (incoming) {
+    return `${remoteAgentId} sent a message: ${incoming}`
+  }
+  return `${remoteAgentId} opened an inbound ${selectedSkill} request.`
 }
