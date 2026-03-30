@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { parseArgs, requireArg } from '../../../Base/p2p-session-handoff/scripts/lib/cli.mjs'
-import { gatewayConnect } from '../../../Base/gateway/scripts/lib/gateway_control.mjs'
-import { resolveGatewayBase } from '../../../Base/gateway/scripts/lib/gateway_runtime.mjs'
+import { parseArgs, requireArg } from '../../../Base/runtime-gateway/scripts/lib/cli.mjs'
+import { gatewayConnect } from '../../../Base/runtime-gateway/scripts/lib/gateway_control.mjs'
+import { resolveGatewayBase } from '../../../Base/runtime-gateway/scripts/lib/gateway_runtime.mjs'
 
 async function main(argv) {
   const args = parseArgs(argv)

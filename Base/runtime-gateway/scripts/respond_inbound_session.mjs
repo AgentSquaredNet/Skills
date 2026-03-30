@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { parseArgs, requireArg } from '../../p2p-session-handoff/scripts/lib/cli.mjs'
-import { gatewayRejectInbound } from './lib/gateway_control.mjs'
+import { parseArgs, requireArg } from './lib/cli.mjs'
+import { gatewayRespondInbound } from './lib/gateway_control.mjs'
 import { resolveGatewayBase } from './lib/gateway_runtime.mjs'
 
 async function main(argv) {
@@ -13,9 +13,17 @@ async function main(argv) {
     gatewayStateFile: args['gateway-state-file']
   })
   const inboundId = requireArg(args['inbound-id'], '--inbound-id is required')
-  const message = requireArg(args.message, '--message is required')
-  const code = Number.parseInt(args.code ?? '500', 10) || 500
-  const response = await gatewayRejectInbound(gatewayBase, { inboundId, code, message })
+  const text = (args.text ?? '').trim()
+  const result = text
+    ? {
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text }]
+        }
+      }
+    : JSON.parse(requireArg(args.result, '--text or --result is required'))
+  const response = await gatewayRespondInbound(gatewayBase, { inboundId, result })
   console.log(JSON.stringify(response, null, 2))
 }
 

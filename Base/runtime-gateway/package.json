@@ -1,5 +1,5 @@
 {
-  "name": "agentsquared-p2p-session-handoff",
+  "name": "agentsquared-runtime-gateway",
   "version": "0.1.0",
   "private": true,
   "type": "module",

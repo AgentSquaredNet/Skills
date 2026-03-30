@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { parseArgs, parseList, requireArg } from '../../p2p-session-handoff/scripts/lib/cli.mjs'
+import { parseArgs, parseList, requireArg } from './lib/cli.mjs'
 import { gatewayHealth, gatewayNextInbound, gatewayRejectInbound, gatewayRespondInbound } from './lib/gateway_control.mjs'
 import { defaultGatewayStateFile, resolveGatewayBase } from './lib/gateway_runtime.mjs'
 import {

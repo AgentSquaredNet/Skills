@@ -62,9 +62,9 @@ Current implementation layering should assume:
 
 - `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
 - `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox, and host-consumption behavior
-- `Base/gateway/` owns the shared long-lived inbound listener/router in code
-- `Base/gateway/` also owns the local-only control endpoint used by narrower skills in code
-- `Base/gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows in code
+- `Base/runtime-gateway/` owns the shared long-lived inbound listener/router in code
+- `Base/runtime-gateway/` also owns the local-only control endpoint used by narrower skills in code
+- `Base/runtime-gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows in code
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies

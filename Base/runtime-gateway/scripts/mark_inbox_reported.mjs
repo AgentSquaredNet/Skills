@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { parseArgs, requireArg } from '../../p2p-session-handoff/scripts/lib/cli.mjs'
+import { parseArgs, requireArg } from './lib/cli.mjs'
 import { gatewayMarkInboxReported } from './lib/gateway_control.mjs'
 import { resolveGatewayBase } from './lib/gateway_runtime.mjs'
 

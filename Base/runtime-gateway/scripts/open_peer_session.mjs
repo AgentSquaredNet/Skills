@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { parseArgs, requireArg } from './lib/cli.mjs'
-import { gatewayConnect } from '../../gateway/scripts/lib/gateway_control.mjs'
-import { resolveGatewayBase } from '../../gateway/scripts/lib/gateway_runtime.mjs'
+import { gatewayConnect } from './lib/gateway_control.mjs'
+import { resolveGatewayBase } from './lib/gateway_runtime.mjs'
 
 async function main(argv) {
   const args = parseArgs(argv)

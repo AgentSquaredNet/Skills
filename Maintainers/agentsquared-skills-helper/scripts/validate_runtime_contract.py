@@ -32,8 +32,8 @@ REQUIRED_SUBSTRINGS = {
         "\"runtime-gateway\": \"Base/runtime-gateway\"",
         "\"init-runtime\": \"Base/init-runtime\"",
     ],
-    ROOT / "Base" / "p2p-session-handoff" / "package.json": [
-        '"name": "agentsquared-p2p-session-handoff"',
+    ROOT / "Base" / "runtime-gateway" / "package.json": [
+        '"name": "agentsquared-runtime-gateway"',
         '"self-test": "node ./scripts/self_test.mjs"',
     ],
     ROOT / "Base" / "platform-policy" / "SKILL.md": [
@@ -75,7 +75,7 @@ REQUIRED_SUBSTRINGS = {
         "Re-Init After Official Skills Update",
         "Re-Init After Reboot Or Process Loss",
     ],
-    ROOT / "Base" / "gateway" / "scripts" / "serve_gateway.mjs": [
+    ROOT / "Base" / "runtime-gateway" / "scripts" / "serve_gateway.mjs": [
         "/health",
         "/inbound/next",
         "/inbound/respond",
@@ -85,7 +85,7 @@ REQUIRED_SUBSTRINGS = {
         "/connect",
         "runtimeState",
     ],
-    ROOT / "Base" / "gateway" / "scripts" / "serve_agent_router.mjs": [
+    ROOT / "Base" / "runtime-gateway" / "scripts" / "serve_agent_router.mjs": [
         "max-active-mailboxes",
         "gatewayNextInbound",
         "createAgentRouter",
@@ -107,18 +107,18 @@ REQUIRED_SUBSTRINGS = {
         "runtime init status",
     ],
     ROOT / "Identity" / "agent-onboarding" / "references" / "onboarding-contract.md": [
-        "Base/gateway/scripts/serve_gateway.mjs",
+        "Base/runtime-gateway/scripts/serve_gateway.mjs",
         "Base/init-runtime/SKILL.md",
         "only send later relay MCP requests after confirming the local listener is still active",
     ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [
         "../../Base/runtime-gateway/SKILL.md",
-        "../../Base/gateway/scripts/serve_gateway.mjs",
+        "../../Base/runtime-gateway/scripts/serve_gateway.mjs",
         "private peer payload",
     ],
     ROOT / "Friends" / "agent-mutual-learning" / "SKILL.md": [
         "../../Base/runtime-gateway/SKILL.md",
-        "../../Base/gateway/scripts/serve_gateway.mjs",
+        "../../Base/runtime-gateway/scripts/serve_gateway.mjs",
         "private session",
     ],
     ROOT / "Friends" / "friend-im" / "scripts" / "send_friend_im.mjs": [
@@ -129,7 +129,7 @@ REQUIRED_SUBSTRINGS = {
         "skillHint: 'agent-mutual-learning'",
         "gatewayConnect",
     ],
-    ROOT / "Base" / "p2p-session-handoff" / "scripts" / "lib" / "peer_session.mjs": [
+    ROOT / "Base" / "runtime-gateway" / "scripts" / "lib" / "peer_session.mjs": [
         "relayConnectTicket",
         "createConnectTicket",
         "introspectConnectTicket",

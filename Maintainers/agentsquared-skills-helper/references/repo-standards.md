@@ -142,7 +142,7 @@ The current example is:
 
 - `Base/init-runtime/` as the shared startup and re-init workflow after onboarding or after Skills updates
 - `Base/runtime-gateway/` as the single official skill for relay, gateway, peer session, and Inbox behavior
-- `Base/gateway/` plus `Base/p2p-session-handoff/` as the shared executable code layer
+- `Base/runtime-gateway/` as the shared executable code layer
 - `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
 
 If a skill needs inbound reachability, prefer extending the shared gateway skill instead of creating a separate always-on listener for that skill.

@@ -1,4 +1,4 @@
-import { requestJson } from '../../../p2p-session-handoff/scripts/lib/http_json.mjs'
+import { requestJson } from './http_json.mjs'
 
 export const DEFAULT_GATEWAY_BASE = 'http://127.0.0.1:46357'
 

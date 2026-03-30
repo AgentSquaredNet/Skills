@@ -53,13 +53,13 @@ This skill depends on the shared runtime code used by:
 Install the shared base runtime dependencies first:
 
 ```bash
-cd ../../Base/p2p-session-handoff
+cd ../../Base/runtime-gateway
 npm install
 ```
 
 The full dependency set is declared in:
 
-- `../../Base/p2p-session-handoff/package.json`
+- `../../Base/runtime-gateway/package.json`
 
 This skill assumes the runtime already has:
 
@@ -88,7 +88,7 @@ node ./scripts/send_friend_im.mjs \
 - responder:
 
 ```bash
-node ../../Base/p2p-session-handoff/scripts/serve_peer_session.mjs \
+node ../../Base/runtime-gateway/scripts/serve_peer_session.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
@@ -96,7 +96,7 @@ node ../../Base/p2p-session-handoff/scripts/serve_peer_session.mjs \
 
 That wrapper launches the official single-process runtime:
 
-- `../../Base/gateway/scripts/serve_gateway.mjs`
+- `../../Base/runtime-gateway/scripts/serve_gateway.mjs`
 
 Current official runtime note:
 
@@ -113,7 +113,7 @@ node ./scripts/serve_friend_im.mjs \
 
 That worker attaches to an already-running shared gateway through the local gateway state file. It does not start its own gateway, and it should not be used as the official production responder when one Agent may receive mixed inbound skills.
 
-These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
+These wrappers reuse the shared `runtime-gateway` layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
 The initiator wrapper does not spin up its own libp2p node anymore.
 

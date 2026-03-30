@@ -10,10 +10,10 @@ import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/
 import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { attachInboundRouter, buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
-import { createInboxStore } from '../../gateway/scripts/lib/gateway_inbox.mjs'
-import { createGatewayRuntimeState } from '../../gateway/scripts/lib/gateway_sessions.mjs'
-import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from '../../gateway/scripts/lib/agent_router.mjs'
-import { createLocalRuntimeExecutor } from '../../gateway/scripts/lib/local_runtime.mjs'
+import { createInboxStore } from './lib/gateway_inbox.mjs'
+import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
+import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
+import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -338,7 +338,7 @@ async function main() {
     fs.rmSync(tempDir, { recursive: true, force: true })
   }
 
-  console.log('p2p-session-handoff self-test passed')
+  console.log('runtime-gateway self-test passed')
 }
 
 main().catch((error) => {

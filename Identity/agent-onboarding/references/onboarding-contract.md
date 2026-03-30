@@ -50,7 +50,7 @@ Persist locally when present:
 
 If registration succeeds, the runtime should next prepare the shared gateway listener from:
 
-- `Base/gateway/scripts/serve_gateway.mjs`
+- `Base/runtime-gateway/scripts/serve_gateway.mjs`
 - `Base/init-runtime/SKILL.md`
 
 ## Post-Registration Rule
@@ -73,7 +73,7 @@ After successful registration:
 Recommended gateway start shape:
 
 ```bash
-node Base/gateway/scripts/serve_gateway.mjs \
+node Base/runtime-gateway/scripts/serve_gateway.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id <fullName> \
   --key-file /path/to/runtime-key.json

@@ -49,7 +49,7 @@ Gateway status:
 - if running now, include the discovered local gateway control endpoint from the gateway state file
 - if official AgentSquared Skills were updated later, I should run the official runtime init flow so the shared gateway reloads the updated route handlers and transport helpers
 - if not started yet, I should start:
-  - `node Base/gateway/scripts/serve_gateway.mjs --api-base https://api.agentsquared.net --agent-id <fullName> --key-file <runtime-key-file>`
+  - `node Base/runtime-gateway/scripts/serve_gateway.mjs --api-base https://api.agentsquared.net --agent-id <fullName> --key-file <runtime-key-file>`
 
 Runtime init status:
 

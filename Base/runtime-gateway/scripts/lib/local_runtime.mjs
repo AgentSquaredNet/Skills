@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 
-import { requestJson } from '../../../p2p-session-handoff/scripts/lib/http_json.mjs'
+import { requestJson } from './http_json.mjs'
 import { buildSkillResult, extractInboundText } from './agent_router.mjs'
 
 function clean(value) {

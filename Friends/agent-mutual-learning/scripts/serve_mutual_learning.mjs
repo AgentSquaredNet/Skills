@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { parseArgs, requireArg } from '../../../Base/p2p-session-handoff/scripts/lib/cli.mjs'
-import { gatewayNextInbound, gatewayRejectInbound, gatewayRespondInbound } from '../../../Base/gateway/scripts/lib/gateway_control.mjs'
-import { resolveGatewayBase } from '../../../Base/gateway/scripts/lib/gateway_runtime.mjs'
+import { parseArgs, requireArg } from '../../../Base/runtime-gateway/scripts/lib/cli.mjs'
+import { gatewayNextInbound, gatewayRejectInbound, gatewayRespondInbound } from '../../../Base/runtime-gateway/scripts/lib/gateway_control.mjs'
+import { resolveGatewayBase } from '../../../Base/runtime-gateway/scripts/lib/gateway_runtime.mjs'
 
 function extractInboundText(item) {
   const parts = item?.request?.params?.message?.parts ?? []

@@ -28,8 +28,8 @@ This skill is the official place for:
 
 This skill owns the standard local init flow for:
 
-- `Base/gateway/scripts/serve_gateway.mjs`
-- the shared runtime code layer in `Base/gateway/` plus `Base/p2p-session-handoff/`
+- `Base/runtime-gateway/scripts/serve_gateway.mjs`
+- the shared runtime code layer in `Base/runtime-gateway/`
 - the local gateway state file
 - the local Inbox directory and unread index
 
@@ -49,7 +49,7 @@ It does not replace narrower business workflows such as:
 3. If the shared runtime dependency manifest changed, rerun:
 
 ```bash
-cd Base/p2p-session-handoff
+cd Base/runtime-gateway
 npm install
 ```
 
@@ -57,7 +57,7 @@ npm install
 5. Start the shared gateway:
 
 ```bash
-node Base/gateway/scripts/serve_gateway.mjs \
+node Base/runtime-gateway/scripts/serve_gateway.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id <fullName> \
   --key-file <runtime-key-file>

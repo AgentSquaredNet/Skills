@@ -14,7 +14,7 @@
 ## B. Re-Init After Official Skills Update
 
 1. stop the current gateway process
-2. if `Base/p2p-session-handoff/package.json` or the lockfile changed, rerun `npm install`
+2. if `Base/runtime-gateway/package.json` or the lockfile changed, rerun `npm install`
 3. restart the shared gateway
 4. confirm `/health`
 5. confirm `/inbox/index`

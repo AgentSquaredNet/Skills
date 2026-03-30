@@ -1,4 +1,4 @@
-import { randomRequestId, utcNow } from '../../../p2p-session-handoff/scripts/lib/cli.mjs'
+import { randomRequestId, utcNow } from './cli.mjs'
 
 const DEFAULT_WAIT_MS = 30000
 const DEFAULT_INBOUND_TIMEOUT_MS = 5 * 60 * 1000

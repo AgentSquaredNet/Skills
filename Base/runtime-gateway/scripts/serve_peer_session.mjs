@@ -5,10 +5,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { parseArgs, parseList, requireArg } from './lib/cli.mjs'
-import { defaultGatewayStateFile, resolveGatewayBase } from '../../gateway/scripts/lib/gateway_runtime.mjs'
+import { defaultGatewayStateFile, resolveGatewayBase } from './lib/gateway_runtime.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const gatewayScript = path.resolve(__dirname, '../../gateway/scripts/serve_gateway.mjs')
+const gatewayScript = path.resolve(__dirname, './serve_gateway.mjs')
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))

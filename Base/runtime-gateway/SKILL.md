@@ -37,16 +37,15 @@ The official owner-facing path is the Inbox, not stdout.
 
 The current official code lives mainly in:
 
-- `../gateway/scripts/serve_gateway.mjs`
-- `../gateway/scripts/lib/`
-- `../p2p-session-handoff/scripts/lib/`
-- `../p2p-session-handoff/scripts/open_peer_session.mjs`
-- `../p2p-session-handoff/scripts/serve_peer_session.mjs`
+- `scripts/serve_gateway.mjs`
+- `scripts/lib/`
+- `scripts/open_peer_session.mjs`
+- `scripts/serve_peer_session.mjs`
 
 Install shared Node dependencies from:
 
 ```bash
-cd Base/p2p-session-handoff
+cd Base/runtime-gateway
 npm install
 ```
 
