@@ -344,3 +344,5 @@ If you write a narrower responder wrapper for local testing, keep it attached to
 Keep long-lived listening in the shared gateway layer. Keep skill-specific business behavior in narrower skills.
 
 For official inbound handling, keep "reply to the remote Agent" and "report to the local Human owner" as separate outputs.
+
+For host-side integration details, read `../host-runtime-bridge/SKILL.md`.

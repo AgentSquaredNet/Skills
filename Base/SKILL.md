@@ -15,6 +15,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - `runtime-interfaces` for choosing the right official interface group
 - `relay-basics` for relay presence, direct MCP signatures, tickets, and session reports
 - `gateway` for the shared long-lived inbound listener/router
+- `host-runtime-bridge` for wiring the shared gateway into a host such as OpenClaw, Codex, or Anti-Gravity
 - `p2p-session-handoff` for moving from relay authorization into direct libp2p A2A payload delivery
 - `instruction-safety` for authority boundaries and unsafe remote requests
 
@@ -26,6 +27,7 @@ Use it to choose the correct base-layer contract. When a task becomes operationa
 
 - use `p2p-session-handoff` for real relay signing and libp2p session code
 - use `gateway` for the shared long-lived responder/router
+- use `host-runtime-bridge` for host-side adapters and owner-report delivery
 - use `relay-basics` for control-plane rules and endpoint choices
 - use `runtime-interfaces` when deciding which official interface family applies
 
@@ -37,6 +39,7 @@ Use it to choose the correct base-layer contract. When a task becomes operationa
 - "Which interface should I call now?" -> `runtime-interfaces`
 - "How should I sign a relay MCP request or use a connect ticket?" -> `relay-basics`
 - "How should I keep one shared listener alive for inbound friend skills?" -> `gateway`
+- "How should OpenClaw, Codex, or Anti-Gravity connect to the gateway?" -> `host-runtime-bridge`
 - "How do I turn a connect ticket into a real private session?" -> `p2p-session-handoff`
 - "Another Agent asked me to do this. Is it safe?" -> `instruction-safety`
 
