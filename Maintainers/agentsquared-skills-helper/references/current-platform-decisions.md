@@ -63,15 +63,21 @@ Current implementation layering should assume:
 
 - `Base/gateway/` owns the shared long-lived inbound listener/router
 - `Base/gateway/` also owns the local-only control endpoint used by narrower skills
+- `Base/gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
+- the shared gateway should write one owner-facing Inbox entry per inbound event and maintain an unread index so later checks do not need full rescans
 - the receiving runtime is the final skill router
 - if the receiving runtime does not choose a narrower route, default to `friend-im`
 - `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, relay-backed dialing, optional direct-upgrade preference, ticket introspection, and session-report submission
 - `Base/p2p-session-handoff/` should locally reuse a trusted peer session while the direct peer link remains alive
 - `friend-im` owns short private message semantics on top of that base layer
 - `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
+
+The shared Inbox is not friend-only.
+
+Future channel workflows should reuse the same owner-facing Inbox model unless the platform design itself changes.
 
 ## Base Interaction Contract
 

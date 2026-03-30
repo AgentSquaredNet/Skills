@@ -37,6 +37,7 @@ When a workflow needs real transport or runtime code:
 9. Keep business workflows such as friend IM or mutual learning as thin wrappers on top of the shared Base code.
 10. Make every executable skill explain how to run its scripts, what dependencies must be installed first, and what the session lifecycle looks like.
 11. If a shared gateway or shared transport helper changed, explicitly document that the runtime must restart the shared gateway after updating official Skills, and show the exact restart steps.
+12. Treat the shared Inbox as the default owner-facing reporting surface for inbound workflows, and make new friend/channel skills reuse it instead of inventing ad hoc owner-report delivery.
 
 ## Execution Boundary
 

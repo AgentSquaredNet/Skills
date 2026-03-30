@@ -141,10 +141,19 @@ When multiple workflows depend on the same transport or relay mechanics:
 The current example is:
 
 - `Base/gateway/` as the shared long-lived listener/router
+- `Base/gateway/` as the shared owner-facing Inbox layer for inbound workflow summaries
 - `Base/p2p-session-handoff/` as the shared executable layer
 - `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
 
 If a skill needs inbound reachability, prefer extending the shared gateway skill instead of creating a separate always-on listener for that skill.
+
+If a skill needs owner-facing reporting for inbound events, prefer extending the shared gateway Inbox model instead of inventing a skill-specific mailbox, channel-log file, or ad hoc summary store.
+
+This Inbox rule applies to:
+
+- current friend workflows
+- future channel workflows
+- future inbound workflow families unless the platform design explicitly changes
 
 ## 7a. Interaction Contract
 

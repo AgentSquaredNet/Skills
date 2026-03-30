@@ -64,6 +64,14 @@ REQUIRED_SUBSTRINGS = {
         "Inbox",
         "example_inbox_index_consumer.mjs",
     ],
+    ROOT / "Maintainers" / "agentsquared-skills-helper" / "references" / "current-platform-decisions.md": [
+        "shared Inbox",
+        "Future channel workflows should reuse the same owner-facing Inbox model",
+    ],
+    ROOT / "Maintainers" / "agentsquared-skills-helper" / "references" / "repo-standards.md": [
+        "shared gateway Inbox model",
+        "future channel workflows",
+    ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
         "../../Base/gateway/SKILL.md",
         "gateway status",
