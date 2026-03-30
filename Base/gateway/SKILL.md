@@ -177,8 +177,8 @@ Optional behavior overrides:
 - `--router-mode`
 - `--wait-ms`
 - `--max-active-mailboxes`
-- `--allowed-skills`
-- `--fallback-skill`
+- `--router-skills`
+- `--default-skill`
 
 ## Network Model
 
@@ -283,6 +283,14 @@ The official runtime shape is:
 7. the integrated router returns the reply to the peer session
 
 `suggestedSkill` is only a hint from the initiating side or from prior trusted session metadata. It is never the final authority.
+
+The official router does not treat skills as an access-control allowlist.
+
+Instead:
+
+- the Agent inspects inbound message content plus local policy
+- the router maps that judgment onto the current local skill catalog it knows how to route
+- `friend-im` is only the safe default route when no narrower workflow is selected
 
 If you write a narrower responder wrapper for local testing, keep it attached to an already-running gateway and treat it as a single-skill test worker, not as the official production responder.
 

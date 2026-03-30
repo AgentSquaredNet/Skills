@@ -4,8 +4,8 @@ import { parseArgs, parseList, requireArg } from '../../p2p-session-handoff/scri
 import { gatewayHealth, gatewayNextInbound, gatewayRejectInbound, gatewayRespondInbound } from './lib/gateway_control.mjs'
 import { resolveGatewayBase } from './lib/gateway_runtime.mjs'
 import {
-  DEFAULT_FALLBACK_SKILL,
-  DEFAULT_SUPPORTED_SKILLS,
+  DEFAULT_ROUTER_DEFAULT_SKILL,
+  DEFAULT_ROUTER_SKILLS,
   createAgentRouter
 } from './lib/agent_router.mjs'
 
@@ -21,16 +21,16 @@ async function main(argv) {
   })
   const waitMs = Math.max(0, Number.parseInt(args['wait-ms'] ?? '30000', 10) || 30000)
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
-  const allowedSkills = parseList(args['allowed-skills'], DEFAULT_SUPPORTED_SKILLS)
-  const fallbackSkill = (args['fallback-skill'] ?? DEFAULT_FALLBACK_SKILL).trim() || DEFAULT_FALLBACK_SKILL
+  const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
+  const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
 
   const health = await gatewayHealth(gatewayBase)
   console.log(JSON.stringify({
     agentId,
     gatewayBase,
     peerId: health?.peerId ?? '',
-    allowedSkills,
-    fallbackSkill,
+    routerSkills,
+    defaultSkill,
     maxActiveMailboxes,
     routerMode: health?.routerMode ?? ''
   }, null, 2))
@@ -42,8 +42,8 @@ async function main(argv) {
 
   const router = createAgentRouter({
     maxActiveMailboxes,
-    allowedSkills,
-    fallbackSkill,
+    routerSkills,
+    defaultSkill,
     onRespond(item, result) {
       return gatewayRespondInbound(gatewayBase, {
         inboundId: item.inboundId,

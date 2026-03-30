@@ -35,8 +35,8 @@ async function main(argv) {
   const listenAddrs = (args['listen-addrs'] ?? '').trim()
   const waitMs = (args['wait-ms'] ?? '').trim()
   const maxActiveMailboxes = (args['max-active-mailboxes'] ?? '').trim()
-  const allowedSkills = parseList(args['allowed-skills'], [])
-  const fallbackSkill = (args['fallback-skill'] ?? '').trim()
+  const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], [])
+  const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? '').trim()
   const routerMode = (args['router-mode'] ?? '').trim()
   const discoveredStateFile = gatewayStateFile || defaultGatewayStateFile(keyFile, agentId)
 
@@ -61,11 +61,11 @@ async function main(argv) {
   if (maxActiveMailboxes) {
     childArgs.push('--max-active-mailboxes', maxActiveMailboxes)
   }
-  if (allowedSkills.length > 0) {
-    childArgs.push('--allowed-skills', allowedSkills.join(','))
+  if (routerSkills.length > 0) {
+    childArgs.push('--router-skills', routerSkills.join(','))
   }
-  if (fallbackSkill) {
-    childArgs.push('--fallback-skill', fallbackSkill)
+  if (defaultSkill) {
+    childArgs.push('--default-skill', defaultSkill)
   }
   if (routerMode) {
     childArgs.push('--router-mode', routerMode)

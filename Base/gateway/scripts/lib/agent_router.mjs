@@ -2,8 +2,8 @@ function clean(value) {
   return `${value ?? ''}`.trim()
 }
 
-export const DEFAULT_FALLBACK_SKILL = 'friend-im'
-export const DEFAULT_SUPPORTED_SKILLS = ['friend-im', 'agent-mutual-learning']
+export const DEFAULT_ROUTER_DEFAULT_SKILL = 'friend-im'
+export const DEFAULT_ROUTER_SKILLS = ['friend-im', 'agent-mutual-learning']
 
 const MUTUAL_LEARNING_PATTERNS = [
   /mutual[- ]learning/i,
@@ -14,7 +14,7 @@ const MUTUAL_LEARNING_PATTERNS = [
   /\btopics?\s*:/i
 ]
 
-export function normalizeAllowedSkills(skills = DEFAULT_SUPPORTED_SKILLS) {
+export function normalizeRouterSkills(skills = DEFAULT_ROUTER_SKILLS) {
   const seen = new Set()
   const out = []
   for (const value of skills) {
@@ -25,7 +25,7 @@ export function normalizeAllowedSkills(skills = DEFAULT_SUPPORTED_SKILLS) {
     seen.add(skill)
     out.push(skill)
   }
-  return out.length > 0 ? out : [...DEFAULT_SUPPORTED_SKILLS]
+  return out.length > 0 ? out : [...DEFAULT_ROUTER_SKILLS]
 }
 
 export function extractInboundText(item) {
@@ -71,26 +71,26 @@ export function inferSkillFromContent(item) {
 }
 
 export function chooseInboundSkill(item, {
-  allowedSkills = DEFAULT_SUPPORTED_SKILLS,
-  fallbackSkill = DEFAULT_FALLBACK_SKILL
+  routerSkills = DEFAULT_ROUTER_SKILLS,
+  defaultSkill = DEFAULT_ROUTER_DEFAULT_SKILL
 } = {}) {
-  const allowed = normalizeAllowedSkills(allowedSkills)
-  const allowedSet = new Set(allowed)
+  const knownSkills = normalizeRouterSkills(routerSkills)
+  const knownSkillSet = new Set(knownSkills)
   const contentSkill = clean(inferSkillFromContent(item))
   const suggestedSkill = clean(item?.suggestedSkill)
-  const defaultSkill = clean(item?.defaultSkill)
-  const fallback = clean(fallbackSkill) || DEFAULT_FALLBACK_SKILL
+  const requestDefaultSkill = clean(item?.defaultSkill)
+  const localDefaultSkill = clean(defaultSkill) || DEFAULT_ROUTER_DEFAULT_SKILL
 
   const candidates = [
     contentSkill,
     suggestedSkill,
-    defaultSkill,
-    fallback,
-    DEFAULT_FALLBACK_SKILL
+    requestDefaultSkill,
+    localDefaultSkill,
+    DEFAULT_ROUTER_DEFAULT_SKILL
   ]
 
   for (const candidate of candidates) {
-    if (candidate && allowedSet.has(candidate)) {
+    if (candidate && knownSkillSet.has(candidate)) {
       return candidate
     }
   }
@@ -249,8 +249,8 @@ export function createMailboxScheduler({
 
 export function createAgentRouter({
   maxActiveMailboxes = 8,
-  allowedSkills = DEFAULT_SUPPORTED_SKILLS,
-  fallbackSkill = DEFAULT_FALLBACK_SKILL,
+  routerSkills = DEFAULT_ROUTER_SKILLS,
+  defaultSkill = DEFAULT_ROUTER_DEFAULT_SKILL,
   onRespond,
   onReject
 } = {}) {
@@ -261,15 +261,15 @@ export function createAgentRouter({
     throw new Error('onReject is required')
   }
 
-  const normalizedAllowedSkills = normalizeAllowedSkills(allowedSkills)
-  const normalizedFallbackSkill = clean(fallbackSkill) || DEFAULT_FALLBACK_SKILL
+  const normalizedRouterSkills = normalizeRouterSkills(routerSkills)
+  const normalizedDefaultSkill = clean(defaultSkill) || DEFAULT_ROUTER_DEFAULT_SKILL
 
   const scheduler = createMailboxScheduler({
     maxActiveMailboxes,
     async handleItem(item, { mailboxKey }) {
       const selectedSkill = chooseInboundSkill(item, {
-        allowedSkills: normalizedAllowedSkills,
-        fallbackSkill: normalizedFallbackSkill
+        routerSkills: normalizedRouterSkills,
+        defaultSkill: normalizedDefaultSkill
       })
       if (!selectedSkill) {
         await onReject(item, {
@@ -290,8 +290,8 @@ export function createAgentRouter({
   })
 
   return {
-    allowedSkills: normalizedAllowedSkills,
-    fallbackSkill: normalizedFallbackSkill,
+    routerSkills: normalizedRouterSkills,
+    defaultSkill: normalizedDefaultSkill,
     enqueue(item) {
       return scheduler.enqueue(item)
     },
@@ -300,8 +300,8 @@ export function createAgentRouter({
     },
     snapshot() {
       return {
-        allowedSkills: normalizedAllowedSkills,
-        fallbackSkill: normalizedFallbackSkill,
+        routerSkills: normalizedRouterSkills,
+        defaultSkill: normalizedDefaultSkill,
         scheduler: scheduler.snapshot()
       }
     }

@@ -11,7 +11,7 @@ import { buildRelayListenAddrs, createNode, directListenAddrs, relayReservationA
 import { attachInboundRouter, currentTransport, openDirectPeerSession, publishGatewayPresence } from '../../p2p-session-handoff/scripts/lib/peer_session.mjs'
 import { defaultGatewayStateFile, writeGatewayState } from './lib/gateway_runtime.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
-import { createAgentRouter, DEFAULT_FALLBACK_SKILL, DEFAULT_SUPPORTED_SKILLS } from './lib/agent_router.mjs'
+import { createAgentRouter, DEFAULT_ROUTER_DEFAULT_SKILL, DEFAULT_ROUTER_SKILLS } from './lib/agent_router.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
@@ -64,8 +64,8 @@ async function main(argv) {
   const routerMode = `${args['router-mode'] ?? 'integrated'}`.trim().toLowerCase() === 'external' ? 'external' : 'integrated'
   const routerWaitMs = Math.max(0, Number.parseInt(args['wait-ms'] ?? `${DEFAULT_ROUTER_WAIT_MS}`, 10) || DEFAULT_ROUTER_WAIT_MS)
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
-  const allowedSkills = parseList(args['allowed-skills'], DEFAULT_SUPPORTED_SKILLS)
-  const fallbackSkill = (args['fallback-skill'] ?? DEFAULT_FALLBACK_SKILL).trim() || DEFAULT_FALLBACK_SKILL
+  const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
+  const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
@@ -87,8 +87,8 @@ async function main(argv) {
   const integratedRouter = routerMode === 'integrated'
     ? createAgentRouter({
         maxActiveMailboxes,
-        allowedSkills,
-        fallbackSkill,
+        routerSkills,
+        defaultSkill,
         onRespond(item, result) {
           runtimeState.respondInbound({
             inboundId: item.inboundId,
@@ -183,8 +183,8 @@ async function main(argv) {
       ? integratedRouter.snapshot()
       : {
           mode: 'external',
-          allowedSkills,
-          fallbackSkill
+          routerSkills,
+          defaultSkill
         }
   }
 
