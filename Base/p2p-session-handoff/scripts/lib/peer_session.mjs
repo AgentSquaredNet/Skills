@@ -55,6 +55,12 @@ export async function openDirectPeerSession({
   let ticket = null
   let peerSessionId = `${cachedSession?.peerSessionId ?? ''}`.trim()
   let targetTransport = cachedSession?.remoteTransport ?? null
+  if (!targetTransport && cachedSession?.remotePeerId) {
+    targetTransport = {
+      peerId: cachedSession.remotePeerId,
+      streamProtocol: binding.streamProtocol
+    }
+  }
   let stream
 
   if (cachedSession && liveConnection && targetTransport?.streamProtocol) {
@@ -105,7 +111,7 @@ export async function openDirectPeerSession({
         status: report.status ?? 'completed',
         summary: report.summary,
         publicSummary: report.publicSummary ?? ''
-      }, await currentTransport(node, binding, { requireRelayReservation: true }))
+      }, await bestEffortCurrentTransport(node, binding))
     }
 
     return { ticket, peerSessionId, response, sessionReport, reusedSession: Boolean(cachedSession && liveConnection) }
@@ -153,7 +159,7 @@ export async function attachInboundRouter({
           agentId,
           bundle,
           relayConnectTicket,
-          await currentTransport(node, binding, { requireRelayReservation: true })
+          await bestEffortCurrentTransport(node, binding)
         )
         peerSessionId = peerSessionId || ticketView.ticketId
         remoteAgentId = remoteAgentId || ticketView.initiatorAgentId
@@ -162,6 +168,10 @@ export async function attachInboundRouter({
           peerSessionId,
           remoteAgentId,
           remotePeerId,
+          remoteTransport: {
+            peerId: remotePeerId,
+            streamProtocol: binding.streamProtocol
+          },
           ticketView,
           skillHint: suggestedSkill
         })
@@ -215,6 +225,14 @@ export async function attachInboundRouter({
       await stream.close()
     }
   }, { runOnLimitedConnection: true })
+}
+
+async function bestEffortCurrentTransport(node, binding) {
+  try {
+    return await currentTransport(node, binding)
+  } catch {
+    return null
+  }
 }
 
 function parseConnectTicketId(token) {

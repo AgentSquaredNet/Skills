@@ -11,6 +11,11 @@ import { createNode, dialProtocol, readSingleLine, requireListeningTransport, wr
 import { buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createGatewayRuntimeState } from '../../gateway/scripts/lib/gateway_sessions.mjs'
+import { chooseInboundSkill, createMailboxScheduler } from '../../gateway/scripts/lib/agent_router.mjs'
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 async function main() {
   const { privateKey } = crypto.generateKeyPairSync('ed25519')
@@ -62,6 +67,55 @@ async function main() {
     })
     const queuedResult = await queued.responsePromise
     assert.equal(queuedResult.message.parts[0].text, 'queued')
+
+    assert.equal(chooseInboundSkill({
+      suggestedSkill: '',
+      defaultSkill: 'friend-im',
+      request: {
+        method: 'message/send',
+        params: {
+          message: {
+            parts: [{ kind: 'text', text: 'Compare our strongest workflows and skills worth learning.' }]
+          }
+        }
+      }
+    }), 'agent-mutual-learning')
+    assert.equal(chooseInboundSkill({
+      suggestedSkill: '',
+      defaultSkill: 'friend-im',
+      request: {
+        method: 'message/send',
+        params: {
+          message: {
+            parts: [{ kind: 'text', text: 'Hello there' }]
+          }
+        }
+      }
+    }), 'friend-im')
+
+    const schedulerEvents = []
+    const scheduler = createMailboxScheduler({
+      maxActiveMailboxes: 2,
+      async handleItem(item, { mailboxKey }) {
+        schedulerEvents.push(`start:${mailboxKey}:${item.inboundId}`)
+        await sleep(item.delayMs)
+        schedulerEvents.push(`finish:${mailboxKey}:${item.inboundId}`)
+      }
+    })
+    const b1 = scheduler.enqueue({ inboundId: 'b1', remoteAgentId: 'B@Test', delayMs: 50 })
+    const b2 = scheduler.enqueue({ inboundId: 'b2', remoteAgentId: 'B@Test', delayMs: 10 })
+    const c1 = scheduler.enqueue({ inboundId: 'c1', remoteAgentId: 'C@Test', delayMs: 10 })
+    await Promise.all([b1, b2, c1])
+    await scheduler.whenIdle()
+    const startB1 = schedulerEvents.indexOf('start:agent:b@test:b1')
+    const finishB1 = schedulerEvents.indexOf('finish:agent:b@test:b1')
+    const startB2 = schedulerEvents.indexOf('start:agent:b@test:b2')
+    const startC1 = schedulerEvents.indexOf('start:agent:c@test:c1')
+    assert.ok(startB1 >= 0)
+    assert.ok(finishB1 > startB1)
+    assert.ok(startB2 > finishB1)
+    assert.ok(startC1 > startB1)
+    assert.ok(startC1 < finishB1)
 
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',

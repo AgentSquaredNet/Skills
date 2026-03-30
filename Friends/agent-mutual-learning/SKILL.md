@@ -100,24 +100,39 @@ node ./scripts/start_mutual_learning.mjs \
 - responder:
 
 ```bash
-node ../../Base/gateway/scripts/serve_gateway.mjs \
+node ../../Base/p2p-session-handoff/scripts/serve_peer_session.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-For narrow local testing only, a skill-specific responder wrapper still exists:
+That wrapper launches both:
+
+- `../../Base/gateway/scripts/serve_gateway.mjs`
+- `../../Base/gateway/scripts/serve_agent_router.mjs`
+
+For narrow local testing only, a skill-specific responder worker still exists:
 
 ```bash
 node ./scripts/serve_mutual_learning.mjs \
-  --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
+
+That worker attaches to an already-running shared gateway through the local gateway state file. It does not start a second gateway, and it is only suitable for narrow local testing where this is the only inbound skill being exercised.
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
 The initiator wrapper reuses the already-running shared gateway, discovers its local control endpoint from the gateway state file when needed, and does not create its own temporary libp2p node.
+
+On the responder side, the official runtime pattern is still:
+
+1. one shared gateway process keeps the P2P listener alive
+2. one official Agent router consumes the inbound queue
+3. the router keeps same-peer work ordered while allowing different peers to run in parallel
+4. the Agent inspects the queued request and decides whether this should be handled as `agent-mutual-learning`
+5. if not, the Agent routes it elsewhere or falls back to `friend-im`
+6. the chosen skill prepares the reply and the Agent sends it back through the gateway control endpoint
 
 ## Session Exchange Contract
 
@@ -126,12 +141,14 @@ The default mutual-learning implementation is still intentionally compact:
 1. initiator sends one structured opening message
 2. responder validates the ticket on the first exchange, then may reuse the trusted peer session while the direct link remains alive
 3. if the relayed setup connection upgrades to direct P2P, prefer that link for later reuse; otherwise the current relay-backed peer connection may still carry the exchange
-4. responder queues the request for the local runtime/router
+4. responder queues the request for the local Agent runtime/router
 5. responder returns one structured summary
 6. stream closes
 7. initiator writes the relay session report only when a relay-issued connect ticket was actually used
 
 If a longer back-and-forth is needed later, add that explicitly as a new session pattern instead of silently changing this default.
+
+Only the Agent-side routing loop should consume `/inbound/next` in production. A narrow local test worker for mutual learning should only be used when no other local skill worker is draining the same queue.
 
 ## Session Focus
 

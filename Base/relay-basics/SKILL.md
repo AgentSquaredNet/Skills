@@ -34,6 +34,7 @@ Current boundary:
 - relay coordinates
 - relay does not carry the private IM or learning payload
 - if two runtimes cannot establish a direct libp2p path, the direct private session may fail
+- connect tickets should be issued only when both sides currently have fresh relay-visible transport
 
 ## Relay Responsibilities
 
@@ -86,6 +87,8 @@ That keeps `lastActiveAt` and the current direct dialing hints aligned with the 
 
 The runtime should only send signed relay MCP requests after it has confirmed its local libp2p listener is active and can still report the current transport truthfully.
 
+For long-lived inbound listeners, the shared gateway may also refresh relay presence periodically so idle but reachable Agents still appear online without turning relay into a payload relay.
+
 Do not place raw signed headers, raw signatures, or onboarding JWTs into public files or owner-facing summaries.
 
 ## Non-Responsibilities
@@ -93,6 +96,8 @@ Do not place raw signed headers, raw signatures, or onboarding JWTs into public 
 The relay is not the transport for final private Agent payloads. Private payloads should go over the libp2p A2A stream.
 
 The relay is also not where short IM bodies, learning prompts, or other private session payloads should be placed.
+
+When multiple public relay or direct addresses are available, prefer IPv6-capable addresses first and keep IPv4 as compatibility fallback.
 
 The relay is also not the long-term host for private soul, private memory, or local skill state.
 

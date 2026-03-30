@@ -1,0 +1,248 @@
+function clean(value) {
+  return `${value ?? ''}`.trim()
+}
+
+export const DEFAULT_FALLBACK_SKILL = 'friend-im'
+export const DEFAULT_SUPPORTED_SKILLS = ['friend-im', 'agent-mutual-learning']
+
+const MUTUAL_LEARNING_PATTERNS = [
+  /mutual[- ]learning/i,
+  /\bcompare\b/i,
+  /\bworkflow(?:s)?\b/i,
+  /\bskills?\b/i,
+  /\blearn(?:ing)?\b/i,
+  /\btopics?\s*:/i
+]
+
+export function normalizeAllowedSkills(skills = DEFAULT_SUPPORTED_SKILLS) {
+  const seen = new Set()
+  const out = []
+  for (const value of skills) {
+    const skill = clean(value)
+    if (!skill || seen.has(skill)) {
+      continue
+    }
+    seen.add(skill)
+    out.push(skill)
+  }
+  return out.length > 0 ? out : [...DEFAULT_SUPPORTED_SKILLS]
+}
+
+export function extractInboundText(item) {
+  const parts = item?.request?.params?.message?.parts ?? []
+  const texts = parts
+    .filter((part) => clean(part?.kind) === 'text')
+    .map((part) => clean(part?.text))
+    .filter(Boolean)
+  return texts.join('\n').trim()
+}
+
+export function resolveMailboxKey(item) {
+  const remoteAgentId = clean(item?.remoteAgentId)
+  if (remoteAgentId) {
+    return `agent:${remoteAgentId.toLowerCase()}`
+  }
+  const peerSessionId = clean(item?.peerSessionId)
+  if (peerSessionId) {
+    return `session:${peerSessionId}`
+  }
+  const inboundId = clean(item?.inboundId)
+  if (inboundId) {
+    return `inbound:${inboundId}`
+  }
+  return 'inbound:unknown'
+}
+
+export function inferSkillFromContent(item) {
+  const text = extractInboundText(item)
+  if (!text) {
+    return ''
+  }
+  let score = 0
+  for (const pattern of MUTUAL_LEARNING_PATTERNS) {
+    if (pattern.test(text)) {
+      score += 1
+    }
+  }
+  if (score >= 2) {
+    return 'agent-mutual-learning'
+  }
+  return 'friend-im'
+}
+
+export function chooseInboundSkill(item, {
+  allowedSkills = DEFAULT_SUPPORTED_SKILLS,
+  fallbackSkill = DEFAULT_FALLBACK_SKILL
+} = {}) {
+  const allowed = normalizeAllowedSkills(allowedSkills)
+  const allowedSet = new Set(allowed)
+  const contentSkill = clean(inferSkillFromContent(item))
+  const suggestedSkill = clean(item?.suggestedSkill)
+  const defaultSkill = clean(item?.defaultSkill)
+  const fallback = clean(fallbackSkill) || DEFAULT_FALLBACK_SKILL
+
+  const candidates = [
+    contentSkill,
+    suggestedSkill,
+    defaultSkill,
+    fallback,
+    DEFAULT_FALLBACK_SKILL
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate && allowedSet.has(candidate)) {
+      return candidate
+    }
+  }
+  return ''
+}
+
+export function buildFriendImReplyText(item) {
+  const incoming = extractInboundText(item)
+  if (!incoming) {
+    return 'Hi, I received your message.'
+  }
+  const compact = incoming.replace(/\s+/g, ' ').trim()
+  const excerpt = compact.length > 140 ? `${compact.slice(0, 137)}...` : compact
+  return `Hi, I received your message: ${excerpt}`
+}
+
+export function buildMutualLearningReplyText(item) {
+  const goal = extractInboundText(item)
+  const summary = goal
+    ? `I reviewed your learning request: ${goal.replace(/\s+/g, ' ').trim().slice(0, 180)}`
+    : 'I reviewed your learning request.'
+  return `${summary}\nCurrent recommendation: compare concrete workflows first, then summarize reusable lessons without exposing private memory.`
+}
+
+export function buildSkillResult(skill, item) {
+  let text = ''
+  if (skill === 'agent-mutual-learning') {
+    text = buildMutualLearningReplyText(item)
+  } else {
+    text = buildFriendImReplyText(item)
+  }
+  return {
+    message: {
+      kind: 'message',
+      role: 'agent',
+      parts: [{ kind: 'text', text }]
+    },
+    metadata: {
+      selectedSkill: skill
+    }
+  }
+}
+
+export function createMailboxScheduler({
+  maxActiveMailboxes = 8,
+  mailboxKeyForItem = resolveMailboxKey,
+  handleItem
+} = {}) {
+  if (typeof handleItem !== 'function') {
+    throw new Error('handleItem is required')
+  }
+
+  const mailboxes = new Map()
+  const idleWaiters = []
+  let activeMailboxes = 0
+
+  function pendingCount() {
+    let count = 0
+    for (const mailbox of mailboxes.values()) {
+      count += mailbox.queue.length
+      if (mailbox.running) {
+        count += 1
+      }
+    }
+    return count
+  }
+
+  function flushIdleWaitersIfNeeded() {
+    if (activeMailboxes !== 0 || pendingCount() !== 0) {
+      return
+    }
+    while (idleWaiters.length > 0) {
+      const resolve = idleWaiters.shift()
+      resolve?.()
+    }
+  }
+
+  function runMailbox(mailboxKey, mailbox) {
+    if (mailbox.running || mailbox.queue.length === 0 || activeMailboxes >= maxActiveMailboxes) {
+      return
+    }
+    mailbox.running = true
+    activeMailboxes += 1
+
+    const loop = async () => {
+      try {
+        while (mailbox.queue.length > 0) {
+          const entry = mailbox.queue.shift()
+          try {
+            const result = await handleItem(entry.item, { mailboxKey })
+            entry.resolve(result)
+          } catch (error) {
+            entry.reject(error)
+          }
+        }
+      } finally {
+        mailbox.running = false
+        activeMailboxes = Math.max(0, activeMailboxes - 1)
+        if (mailbox.queue.length === 0) {
+          mailboxes.delete(mailboxKey)
+        }
+        pump()
+        flushIdleWaitersIfNeeded()
+      }
+    }
+
+    loop().catch(() => {})
+  }
+
+  function pump() {
+    for (const [mailboxKey, mailbox] of mailboxes.entries()) {
+      if (activeMailboxes >= maxActiveMailboxes) {
+        return
+      }
+      runMailbox(mailboxKey, mailbox)
+    }
+  }
+
+  function enqueue(item) {
+    const mailboxKey = mailboxKeyForItem(item)
+    if (!mailboxes.has(mailboxKey)) {
+      mailboxes.set(mailboxKey, { running: false, queue: [] })
+    }
+    const mailbox = mailboxes.get(mailboxKey)
+    return new Promise((resolve, reject) => {
+      mailbox.queue.push({ item, resolve, reject })
+      pump()
+    })
+  }
+
+  function whenIdle() {
+    if (activeMailboxes === 0 && pendingCount() === 0) {
+      return Promise.resolve()
+    }
+    return new Promise((resolve) => {
+      idleWaiters.push(resolve)
+    })
+  }
+
+  return {
+    enqueue,
+    whenIdle,
+    snapshot() {
+      return {
+        activeMailboxes,
+        pendingItems: pendingCount(),
+        mailboxes: [...mailboxes.entries()].map(([mailboxKey, mailbox]) => ({
+          mailboxKey,
+          running: mailbox.running,
+          queued: mailbox.queue.length
+        }))
+      }
+    }
+  }
+}

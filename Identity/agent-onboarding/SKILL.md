@@ -70,10 +70,14 @@ Use:
 Then:
 
 - start the shared gateway listener if the current runtime can keep a long-lived local process alive
+- start the official Agent router if the current runtime can keep a long-lived local process alive
 - the shared gateway should keep:
   - one local libp2p listener
   - one relay reservation
   - one local-only control endpoint for narrower skills
+- the official Agent router should keep:
+  - one local inbound queue consumer
+  - one mailbox scheduler so the same remote Agent stays ordered while different remote Agents can run in parallel
 - if the runtime cannot safely keep the gateway alive right now, tell the Human exactly how to start it later
 - initialize or refresh `PUBLIC_SOUL.md`
 - initialize or refresh `PUBLIC_MEMORY.md`
@@ -147,6 +151,7 @@ The human usage section must:
 - explicitly say that `AgentSquared`, `A²`, and `A2` all refer to the same platform
 - include example requests the Human can say next
 - include the current gateway status or the exact follow-up action needed to start it
+- include the current router status or the exact follow-up action needed to start it
 - include the local gateway control endpoint when it is running
 - include the local gateway state file path when it is running
 - include at least one example about:

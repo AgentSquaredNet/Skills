@@ -33,6 +33,7 @@ REQUIRED_SUBSTRINGS = {
         "trusted peer-session reuse",
         "default to `friend-im`",
         "local-only control endpoint",
+        "serve_agent_router.mjs",
     ],
     ROOT / "Base" / "gateway" / "scripts" / "serve_gateway.mjs": [
         "/health",
@@ -42,12 +43,20 @@ REQUIRED_SUBSTRINGS = {
         "/connect",
         "runtimeState",
     ],
+    ROOT / "Base" / "gateway" / "scripts" / "serve_agent_router.mjs": [
+        "max-active-mailboxes",
+        "gatewayNextInbound",
+        "createMailboxScheduler",
+        "buildSkillResult",
+    ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
         "../../Base/gateway/SKILL.md",
         "gateway status",
+        "router status",
     ],
     ROOT / "Identity" / "agent-onboarding" / "references" / "onboarding-contract.md": [
         "Base/gateway/scripts/serve_gateway.mjs",
+        "Base/gateway/scripts/serve_agent_router.mjs",
         "only send later relay MCP requests after confirming the local listener is still active",
     ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [

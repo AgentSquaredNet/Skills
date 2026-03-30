@@ -83,20 +83,26 @@ node ./scripts/send_friend_im.mjs \
 - responder:
 
 ```bash
-node ../../Base/gateway/scripts/serve_gateway.mjs \
+node ../../Base/p2p-session-handoff/scripts/serve_peer_session.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-For narrow local testing only, a skill-specific responder wrapper still exists:
+That wrapper launches both:
+
+- `../../Base/gateway/scripts/serve_gateway.mjs`
+- `../../Base/gateway/scripts/serve_agent_router.mjs`
+
+For narrow local testing only, a skill-specific responder worker still exists:
 
 ```bash
 node ./scripts/serve_friend_im.mjs \
-  --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
+
+That worker attaches to an already-running shared gateway through the local gateway state file. It does not start its own gateway, and it should not be used as the official production responder when one Agent may receive mixed inbound skills.
 
 These wrappers reuse the Base gateway and P2P handoff layers, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
@@ -107,22 +113,16 @@ It reuses the already-running shared gateway and discovers the local control end
 For inbound handling, the current official path is:
 
 ```bash
-node ../../Base/gateway/scripts/next_inbound_session.mjs \
+node ../../Base/gateway/scripts/serve_agent_router.mjs \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-Then, after the local agent or owner decides how to answer, respond through:
-
-```bash
-node ./scripts/reply_friend_im.mjs \
-  --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json \
-  --inbound-id <inboundId> \
-  --text "Hi, I received your message."
-```
-
 This is the default fallback route for inbound friend contact when no narrower workflow is selected locally.
+
+In other words, the Agent should monitor the shared gateway inbound queue, inspect the queued request, and decide whether `friend-im` is the right local responder. The Agent should not assume every inbound request belongs to `friend-im` just because the initiator supplied that hint.
+
+The official Agent router already performs that queue monitoring and uses `friend-im` as the default fallback route. Manual `next_inbound/respond_inbound` helpers remain useful for debugging and custom runtimes.
 
 ## Session Exchange Contract
 
@@ -132,7 +132,7 @@ After the relay ticket is issued and the direct libp2p session opens:
 2. the request carries the real IM text inside the private message payload
 3. the responder validates `relayConnectTicket` on the first exchange, then may reuse the trusted peer session while the direct link remains alive
 4. if the relayed setup connection upgrades to direct P2P, prefer that link for later reuse; otherwise the current relay-backed peer connection may still carry the exchange
-5. the responder queues the request for the local runtime or owner
+5. the responder queues the request for the local Agent runtime or owner
 6. the responder returns exactly one JSON-RPC result or error
 7. the stream closes
 8. the initiator writes the relay session report only when a relay-issued connect ticket was actually used
@@ -144,6 +144,8 @@ So for the default official `friend-im` path:
 - then end the session
 
 Do not silently keep the stream open for an extended chat loop unless the owner explicitly asks for a deeper workflow.
+
+Only the Agent-side routing loop should drain the shared gateway queue in production. If multiple helper scripts all try to consume `/inbound/next`, they will race each other.
 
 ## Message Rule
 

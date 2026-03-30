@@ -21,6 +21,28 @@ function unique(values = []) {
   return [...new Set(values.map((value) => `${value}`.trim()).filter(Boolean))]
 }
 
+function addrPriority(value) {
+  const text = `${value}`.trim().toLowerCase()
+  if (text.includes('/dns6/')) return 0
+  if (text.includes('/ip6/')) return 1
+  if (text.includes('/dnsaddr/')) return 2
+  if (text.includes('/dns4/')) return 3
+  if (text.includes('/ip4/')) return 4
+  return 5
+}
+
+function prioritizeAddrs(values = []) {
+  return unique(values)
+    .map((value, index) => ({ value, index, priority: addrPriority(value) }))
+    .sort((left, right) => {
+      if (left.priority !== right.priority) {
+        return left.priority - right.priority
+      }
+      return left.index - right.index
+    })
+    .map((item) => item.value)
+}
+
 function ensureParentDir(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
 }
@@ -41,7 +63,7 @@ async function loadOrCreatePeerPrivateKey(peerKeyFile) {
 }
 
 export function buildRelayListenAddrs(relayMultiaddrs = []) {
-  return unique(relayMultiaddrs.map((value) => `${value}`.trim()).filter(Boolean).map((value) => `${value}/p2p-circuit`))
+  return prioritizeAddrs(relayMultiaddrs.map((value) => `${value}`.trim()).filter(Boolean).map((value) => `${value}/p2p-circuit`))
 }
 
 export async function createNode({
@@ -72,15 +94,15 @@ export async function createNode({
 }
 
 export function advertisedAddrs(node) {
-  return unique(node.getMultiaddrs().map((addr) => addr.toString()))
+  return prioritizeAddrs(node.getMultiaddrs().map((addr) => addr.toString()))
 }
 
 export function relayReservationAddrs(node) {
-  return advertisedAddrs(node).filter((addr) => addr.includes('/p2p-circuit'))
+  return prioritizeAddrs(advertisedAddrs(node).filter((addr) => addr.includes('/p2p-circuit')))
 }
 
 export function directListenAddrs(node) {
-  return advertisedAddrs(node).filter((addr) => !addr.includes('/p2p-circuit'))
+  return prioritizeAddrs(advertisedAddrs(node).filter((addr) => !addr.includes('/p2p-circuit')))
 }
 
 export function requireListeningTransport(node, binding) {
@@ -106,7 +128,7 @@ export function requireListeningTransport(node, binding) {
 
   return {
     peerId,
-    dialAddrs: relayAddrs.length > 0 ? relayAddrs : listenAddrs,
+    dialAddrs: prioritizeAddrs(relayAddrs.length > 0 ? relayAddrs : listenAddrs),
     listenAddrs,
     relayAddrs,
     supportedBindings,
@@ -168,7 +190,7 @@ export function currentDirectConnection(node, peerId) {
 }
 
 function chooseDialAddrs(transport) {
-  return unique(
+  return prioritizeAddrs(
     transport?.dialAddrs?.length
       ? transport.dialAddrs
       : transport?.relayAddrs?.length

@@ -14,6 +14,7 @@ import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
+const DEFAULT_PRESENCE_REFRESH_MS = 2 * 60 * 1000
 
 function jsonResponse(res, status, payload) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
@@ -41,6 +42,7 @@ async function main(argv) {
   const keyFile = requireArg(args['key-file'], '--key-file is required')
   const gatewayHost = (args['gateway-host'] ?? DEFAULT_GATEWAY_HOST).trim()
   const gatewayPort = Number.parseInt(args['gateway-port'] ?? `${DEFAULT_GATEWAY_PORT}`, 10)
+  const presenceRefreshMs = Math.max(0, Number.parseInt(args['presence-refresh-ms'] ?? `${DEFAULT_PRESENCE_REFRESH_MS}`, 10) || DEFAULT_PRESENCE_REFRESH_MS)
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
@@ -65,7 +67,7 @@ async function main(argv) {
   })
 
   const requireRelayReservation = relayListenAddrs.length > 0
-  const online = await publishGatewayPresence(
+  let online = await publishGatewayPresence(
     apiBase,
     agentId,
     bundle,
@@ -74,6 +76,23 @@ async function main(argv) {
     'Gateway listener ready for trusted direct sessions.',
     { requireRelayReservation }
   )
+  const presenceTimer = presenceRefreshMs > 0
+    ? setInterval(async () => {
+        try {
+          online = await publishGatewayPresence(
+            apiBase,
+            agentId,
+            bundle,
+            node,
+            binding,
+            'Gateway listener ready for trusted direct sessions.',
+            { requireRelayReservation }
+          )
+        } catch (error) {
+          console.error(`gateway presence refresh failed: ${error.message}`)
+        }
+      }, presenceRefreshMs)
+    : null
 
   let gatewayBase = `http://${gatewayHost}:${gatewayPort}`
   const server = http.createServer(async (req, res) => {
@@ -183,6 +202,9 @@ async function main(argv) {
   }, null, 2))
 
   const stop = async () => {
+    if (presenceTimer) {
+      clearInterval(presenceTimer)
+    }
     await new Promise((resolve) => server.close(resolve))
     await node.stop()
     process.exit(0)

@@ -87,6 +87,7 @@ Current platform rule:
 
 1. Confirm the selected target is allowed by the current friend graph.
 2. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
+   - when both IPv6-capable and IPv4-capable dial targets are available, prefer the IPv6-capable target first
 3. If no trusted live peer session already exists, request a connect ticket through the signed relay MCP control plane.
 4. Read the responder transport hints from:
    - `targetTransport`
@@ -100,6 +101,8 @@ Current platform rule:
 11. While the peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
 12. If the peer link disappears or the cached trusted session expires, fall back to relay authorization again.
 13. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
+
+The relay remains control-plane-only in this flow. If the peer session cannot be established, fail the session instead of silently turning relay into a payload forwarder.
 
 When the runtime already knows its current transport, every signed relay MCP step in this flow should also refresh:
 
@@ -120,8 +123,10 @@ Use:
   - as a local wrapper that talks to the already-running shared gateway
 - `node ../../Base/gateway/scripts/serve_gateway.mjs`
   - to keep the shared responder gateway alive
+- `node ../../Base/gateway/scripts/serve_agent_router.mjs`
+  - to run the official Agent-side inbound router
 - `node ./scripts/serve_peer_session.mjs`
-  - only as a compatibility wrapper that launches the shared gateway
+  - as a convenience wrapper that launches both the shared gateway and the official Agent router
 
 The reusable helper modules inside `scripts/lib/` own:
 
@@ -149,10 +154,13 @@ After the transport is established:
    - `to`
 3. the responder validates the ticket through relay introspection if this is the first exchange for that trusted peer session
 4. the responder queues the request for the local runtime/router
-5. the local runtime chooses the real skill locally
-6. the responder returns one JSON-RPC result line or one JSON-RPC error line
-7. the stream is then closed
-8. the initiator writes a minimal relay session report only when a relay-issued connect ticket was used
+5. the local runtime routes the request through one Agent-side router
+6. requests from the same remote Agent or the same peer session stay ordered inside one mailbox
+7. requests from different remote Agents may be processed in parallel
+8. the local runtime chooses the real skill locally
+9. the responder returns one JSON-RPC result line or one JSON-RPC error line
+10. the stream is then closed
+11. the initiator writes a minimal relay session report only when a relay-issued connect ticket was used
 
 Current transport rule:
 

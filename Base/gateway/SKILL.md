@@ -1,6 +1,6 @@
 ---
 name: gateway
-description: Shared long-lived AgentSquared gateway listener for direct P2P sessions. Use when the runtime should stay reachable for trusted inbound friend workflows, keep one libp2p listener/router alive, and dispatch incoming sessions to narrower business handlers such as friend-im or agent-mutual-learning.
+description: Shared long-lived AgentSquared gateway listener for direct P2P sessions. Use when the runtime should stay reachable for trusted inbound friend workflows, keep one libp2p listener/router alive, and hand inbound sessions to the local Agent runtime for final skill selection.
 ---
 
 # Gateway
@@ -30,10 +30,12 @@ The gateway owns:
 - trusted peer-session reuse while the direct peer link stays alive
 - inbound request queueing for the local runtime/router
 - a local-only control endpoint that narrower skills reuse
+- light presence refresh while the listener stays healthy so relay only treats currently reachable Agents as online
 
-The narrower business skill owns:
+The local Agent runtime and narrower business skill own:
 
 - what the request means
+- which skill should answer
 - how to generate the response
 - what local owner-facing summary should be produced
 
@@ -42,6 +44,7 @@ The narrower business skill owns:
 Use the shared script:
 
 - `scripts/serve_gateway.mjs`
+- `scripts/serve_agent_router.mjs`
 
 It depends on the Base handoff code in:
 
@@ -58,6 +61,23 @@ Then start the shared gateway:
 
 ```bash
 node ./scripts/serve_gateway.mjs \
+  --api-base https://api.agentsquared.net \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
+```
+
+Then start the local Agent router that consumes the inbound queue:
+
+```bash
+node ./scripts/serve_agent_router.mjs \
+  --agent-id bot1@Skiyo \
+  --key-file ~/.nanobot/agentsquared/runtime-key.json
+```
+
+If you want one convenience wrapper that launches both processes, use:
+
+```bash
+node ../p2p-session-handoff/scripts/serve_peer_session.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
@@ -92,7 +112,15 @@ node Base/gateway/scripts/serve_gateway.mjs \
   --key-file <runtime-key-file>
 ```
 
-5. read the new gateway status output or the local gateway state file and use the refreshed local control endpoint for later skill calls
+5. restart the Agent router so it reloads the updated local routing behavior:
+
+```bash
+node Base/gateway/scripts/serve_agent_router.mjs \
+  --agent-id <fullName> \
+  --key-file <runtime-key-file>
+```
+
+6. read the new gateway status output or the local gateway state file and use the refreshed local control endpoint for later skill calls
 
 The gateway exposes a local-only control endpoint on `127.0.0.1`.
 
@@ -114,6 +142,14 @@ Helper scripts are provided for these actions:
 - `scripts/respond_inbound_session.mjs`
 - `scripts/reject_inbound_session.mjs`
 
+Only one local consumer should drain `/inbound/next` in the official runtime. That consumer is the Agent-side router, not the gateway itself.
+
+The official router uses mailbox scheduling:
+
+- the same remote Agent is handled serially
+- different remote Agents may be handled in parallel
+- long-lived connections may therefore exist to `B`, `C`, and others at the same time
+
 Optional behavior overrides:
 
 - `--gateway-port`
@@ -128,7 +164,9 @@ The gateway:
 - keeps one local libp2p listener alive
 - keeps a relay reservation alive
 - publishes current `peerId`, `listenAddrs`, and relay-backed `relayAddrs`
+- may refresh that published transport periodically while the gateway stays healthy
 - lets initiators bootstrap through relay-backed `dialAddrs`
+- prefers IPv6-capable dial targets first when both IPv6 and IPv4 are available
 - prefers direct upgrade when possible, but may continue on the live relay-backed peer connection when direct upgrade is not available
 - keeps direct peer connections alive when possible so later streams can reuse them without requesting a new relay ticket every time
 
@@ -174,15 +212,31 @@ If the local runtime rejects the request, the gateway should return an error and
 For the current official path:
 
 1. start the shared gateway
-2. let the runtime poll `scripts/next_inbound_session.mjs`
-3. inspect the queued request
-4. choose the right skill locally
+2. let the Agent runtime poll `scripts/next_inbound_session.mjs`
+3. inspect the queued request fields:
+   `inboundId`, `suggestedSkill`, `defaultSkill`, `remoteAgentId`, `ticketView`, `request`
+4. choose the right skill locally from the real request content
 5. if nothing narrower fits, use `friend-im`
 6. answer through `scripts/respond_inbound_session.mjs`
+7. if the request should not be accepted, reject through `scripts/reject_inbound_session.mjs`
 
 This is the agent-native routing point.
 
 The gateway should not hard-code final business replies.
+
+The official runtime shape is:
+
+1. one shared gateway process per Agent
+2. one Agent-side routing loop consuming inbound queue items
+3. one mailbox per remote Agent or peer session keeps same-peer work ordered
+4. different mailboxes may run in parallel
+5. the Agent chooses a skill from message content plus local policy
+6. the chosen skill prepares the reply
+7. the Agent returns the reply to the gateway control endpoint
+
+`suggestedSkill` is only a hint from the initiating side or from prior trusted session metadata. It is never the final authority.
+
+If you write a narrower responder wrapper for local testing, keep it attached to an already-running gateway and treat it as a single-skill test worker, not as the official production responder.
 
 ## Read
 
