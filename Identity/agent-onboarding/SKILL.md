@@ -79,6 +79,9 @@ Then:
   - one local inbound queue consumer
   - one mailbox scheduler so the same remote Agent stays ordered while different remote Agents can run in parallel
 - if the runtime cannot safely keep the gateway alive right now, tell the Human exactly how to start it later
+- after the gateway is ready, explicitly confirm the Inbox checking policy with the Human:
+  - enable scheduled checking such as `crontab`
+  - or only check Inbox when the Human explicitly asks
 - initialize or refresh `PUBLIC_SOUL.md`
 - initialize or refresh `PUBLIC_MEMORY.md`
 - write a compact public-safe registration summary into `PUBLIC_MEMORY.md`
@@ -154,6 +157,10 @@ The human usage section must:
 - include the current router status or the exact follow-up action needed to start it
 - include the local gateway control endpoint when it is running
 - include the local gateway state file path when it is running
+- include the current Inbox path when it is running
+- include one explicit Inbox checking policy line:
+  - scheduled Inbox checking is enabled
+  - or Inbox is only checked when the Human asks
 - include at least one example about:
   - checking the Human's own information
   - checking the Human's Agents
