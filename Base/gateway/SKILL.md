@@ -67,15 +67,12 @@ node ./scripts/serve_gateway.mjs \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-Then start the local Agent router that consumes the inbound queue:
+Current official mode:
 
-```bash
-node ./scripts/serve_agent_router.mjs \
-  --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json
-```
+- `serve_gateway.mjs` already includes the official Agent router in the same long-lived process
+- do not start a second `serve_agent_router.mjs` process in normal production use
 
-If you want one convenience wrapper that launches both processes, use:
+If you want one convenience wrapper that launches the official single-process runtime, use:
 
 ```bash
 node ../p2p-session-handoff/scripts/serve_peer_session.mjs \
@@ -83,6 +80,13 @@ node ../p2p-session-handoff/scripts/serve_peer_session.mjs \
   --agent-id bot1@Skiyo \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
+
+That wrapper now launches the single integrated gateway process only.
+
+Compatibility note:
+
+- `scripts/serve_agent_router.mjs` still exists only for explicit `--router-mode external` compatibility
+- it is no longer part of the default official runtime shape
 
 ## After Skills Updates
 
@@ -97,7 +101,6 @@ Why:
 Current official rule:
 
 - after any official Skills update that changes shared Node code or routing behavior, restart the shared gateway
-- restart the Agent router in the same maintenance window
 - if `package.json` or lockfiles changed, run `npm install` again before restarting
 - do not treat `npm cache clean` or deleting global Node caches as a required step
 
@@ -128,15 +131,7 @@ node Base/gateway/scripts/serve_gateway.mjs \
   --key-file <runtime-key-file>
 ```
 
-5. restart the Agent router so it reloads the updated local routing behavior:
-
-```bash
-node Base/gateway/scripts/serve_agent_router.mjs \
-  --agent-id <fullName> \
-  --key-file <runtime-key-file>
-```
-
-6. read the new gateway status output or the local gateway state file and use the refreshed local control endpoint for later skill calls
+5. read the new gateway status output or the local gateway state file and use the refreshed local control endpoint for later skill calls
 
 The gateway exposes a local-only control endpoint on `127.0.0.1`.
 
@@ -147,10 +142,13 @@ Narrower skills should talk to that local gateway control endpoint instead of sp
 Important local control actions now are:
 
 - `GET /health`
+- `POST /connect`
+
+Optional manual debugging actions, only when the gateway was started with `--router-mode external`:
+
 - `GET /inbound/next`
 - `POST /inbound/respond`
 - `POST /inbound/reject`
-- `POST /connect`
 
 Helper scripts are provided for these actions:
 
@@ -158,7 +156,7 @@ Helper scripts are provided for these actions:
 - `scripts/respond_inbound_session.mjs`
 - `scripts/reject_inbound_session.mjs`
 
-Only one local consumer should drain `/inbound/next` in the official runtime. That consumer is the Agent-side router, not the gateway itself.
+Only one local consumer should drain `/inbound/next`. In the current official runtime, that consumer is already embedded inside `serve_gateway.mjs`.
 
 The official router uses mailbox scheduling:
 
@@ -176,12 +174,18 @@ Optional behavior overrides:
 - `--health-check-ms`
 - `--transport-check-timeout-ms`
 - `--failures-before-recover`
+- `--router-mode`
+- `--wait-ms`
+- `--max-active-mailboxes`
+- `--allowed-skills`
+- `--fallback-skill`
 
 ## Network Model
 
 The gateway:
 
 - keeps one local libp2p listener alive
+- keeps one integrated Agent router alive in the same process by default
 - keeps a relay reservation alive
 - publishes current `peerId`, `listenAddrs`, and relay-backed `relayAddrs`
 - may refresh that published transport periodically while the gateway stays healthy
@@ -236,13 +240,14 @@ Examples:
 The gateway should:
 
 1. keep one local libp2p listener alive
-2. keep one relay reservation alive
-3. publish the current transport to relay
-4. validate the first inbound connect ticket that bootstraps a trusted peer session
-5. queue the inbound request for the local runtime/router
-6. let the local runtime decide which skill should answer
-7. default to `friend-im` when no narrower workflow is selected
-8. reuse the trusted peer session while the live peer connection remains alive
+2. keep one integrated Agent router alive in the same process by default
+3. keep one relay reservation alive
+4. publish the current transport to relay
+5. validate the first inbound connect ticket that bootstraps a trusted peer session
+6. queue the inbound request for the local runtime/router
+7. let the local runtime decide which skill should answer
+8. default to `friend-im` when no narrower workflow is selected
+9. reuse the trusted peer session while the live peer connection remains alive
 
 The receiving runtime, not relay and not the initiating side, is the final skill router.
 
@@ -255,13 +260,13 @@ If the local runtime rejects the request, the gateway should return an error and
 For the current official path:
 
 1. start the shared gateway
-2. let the Agent runtime poll `scripts/next_inbound_session.mjs`
+2. let the integrated Agent router consume inbound queue items inside that same process
 3. inspect the queued request fields:
    `inboundId`, `suggestedSkill`, `defaultSkill`, `remoteAgentId`, `ticketView`, `request`
 4. choose the right skill locally from the real request content
 5. if nothing narrower fits, use `friend-im`
-6. answer through `scripts/respond_inbound_session.mjs`
-7. if the request should not be accepted, reject through `scripts/reject_inbound_session.mjs`
+6. return the reply internally through the integrated router path
+7. if the request should not be accepted, reject it internally through that same integrated router path
 
 This is the agent-native routing point.
 
@@ -270,12 +275,12 @@ The gateway should not hard-code final business replies.
 The official runtime shape is:
 
 1. one shared gateway process per Agent
-2. one Agent-side routing loop consuming inbound queue items
+2. one integrated Agent-side routing loop inside that same process
 3. one mailbox per remote Agent or peer session keeps same-peer work ordered
 4. different mailboxes may run in parallel
 5. the Agent chooses a skill from message content plus local policy
 6. the chosen skill prepares the reply
-7. the Agent returns the reply to the gateway control endpoint
+7. the integrated router returns the reply to the peer session
 
 `suggestedSkill` is only a hint from the initiating side or from prior trusted session metadata. It is never the final authority.
 

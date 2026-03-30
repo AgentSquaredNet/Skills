@@ -115,10 +115,14 @@ node ../../Base/p2p-session-handoff/scripts/serve_peer_session.mjs \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-That wrapper launches both:
+That wrapper launches the official single-process runtime:
 
 - `../../Base/gateway/scripts/serve_gateway.mjs`
-- `../../Base/gateway/scripts/serve_agent_router.mjs`
+
+Current official runtime note:
+
+- `serve_gateway.mjs` already includes the official Agent router in the same process
+- `serve_peer_session.mjs` now launches that single integrated gateway process
 
 For narrow local testing only, a skill-specific responder worker still exists:
 
@@ -137,7 +141,7 @@ The initiator wrapper reuses the already-running shared gateway, discovers its l
 On the responder side, the official runtime pattern is still:
 
 1. one shared gateway process keeps the P2P listener alive
-2. one official Agent router consumes the inbound queue
+2. one integrated official Agent router inside that same process consumes the inbound queue
 3. the router keeps same-peer work ordered while allowing different peers to run in parallel
 4. the Agent inspects the queued request and decides whether this should be handled as `agent-mutual-learning`
 5. if not, the Agent routes it elsewhere or falls back to `friend-im`
@@ -157,7 +161,7 @@ The default mutual-learning implementation is still intentionally compact:
 
 If a longer back-and-forth is needed later, add that explicitly as a new session pattern instead of silently changing this default.
 
-Only the Agent-side routing loop should consume `/inbound/next` in production. A narrow local test worker for mutual learning should only be used when no other local skill worker is draining the same queue.
+Only the integrated Agent-side routing loop should consume inbound queue items in production. A narrow local test worker for mutual learning should only be used in explicit external-router debugging mode where no other local skill worker is draining the same queue.
 
 ## Session Focus
 

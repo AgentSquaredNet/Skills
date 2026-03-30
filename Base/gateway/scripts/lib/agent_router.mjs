@@ -246,3 +246,64 @@ export function createMailboxScheduler({
     }
   }
 }
+
+export function createAgentRouter({
+  maxActiveMailboxes = 8,
+  allowedSkills = DEFAULT_SUPPORTED_SKILLS,
+  fallbackSkill = DEFAULT_FALLBACK_SKILL,
+  onRespond,
+  onReject
+} = {}) {
+  if (typeof onRespond !== 'function') {
+    throw new Error('onRespond is required')
+  }
+  if (typeof onReject !== 'function') {
+    throw new Error('onReject is required')
+  }
+
+  const normalizedAllowedSkills = normalizeAllowedSkills(allowedSkills)
+  const normalizedFallbackSkill = clean(fallbackSkill) || DEFAULT_FALLBACK_SKILL
+
+  const scheduler = createMailboxScheduler({
+    maxActiveMailboxes,
+    async handleItem(item, { mailboxKey }) {
+      const selectedSkill = chooseInboundSkill(item, {
+        allowedSkills: normalizedAllowedSkills,
+        fallbackSkill: normalizedFallbackSkill
+      })
+      if (!selectedSkill) {
+        await onReject(item, {
+          code: 409,
+          message: `no supported local skill could handle inbound request for mailbox ${mailboxKey}`
+        })
+        return { selectedSkill: '', rejected: true }
+      }
+
+      const result = buildSkillResult(selectedSkill, item)
+      result.metadata = {
+        ...(result.metadata ?? {}),
+        mailboxKey
+      }
+      await onRespond(item, result)
+      return { selectedSkill, rejected: false }
+    }
+  })
+
+  return {
+    allowedSkills: normalizedAllowedSkills,
+    fallbackSkill: normalizedFallbackSkill,
+    enqueue(item) {
+      return scheduler.enqueue(item)
+    },
+    whenIdle() {
+      return scheduler.whenIdle()
+    },
+    snapshot() {
+      return {
+        allowedSkills: normalizedAllowedSkills,
+        fallbackSkill: normalizedFallbackSkill,
+        scheduler: scheduler.snapshot()
+      }
+    }
+  }
+}

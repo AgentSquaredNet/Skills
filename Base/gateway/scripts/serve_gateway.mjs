@@ -11,6 +11,7 @@ import { buildRelayListenAddrs, createNode, directListenAddrs, relayReservationA
 import { attachInboundRouter, currentTransport, openDirectPeerSession, publishGatewayPresence } from '../../p2p-session-handoff/scripts/lib/peer_session.mjs'
 import { defaultGatewayStateFile, writeGatewayState } from './lib/gateway_runtime.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
+import { createAgentRouter, DEFAULT_FALLBACK_SKILL, DEFAULT_SUPPORTED_SKILLS } from './lib/agent_router.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
@@ -19,6 +20,7 @@ const DEFAULT_HEALTH_CHECK_MS = 15 * 1000
 const DEFAULT_TRANSPORT_CHECK_TIMEOUT_MS = 1500
 const DEFAULT_RECOVERY_IDLE_WAIT_MS = 3000
 const DEFAULT_FAILURES_BEFORE_RECOVER = 2
+const DEFAULT_ROUTER_WAIT_MS = 30000
 
 function nowISO() {
   return new Date().toISOString()
@@ -59,6 +61,11 @@ async function main(argv) {
   const transportCheckTimeoutMs = Math.max(250, Number.parseInt(args['transport-check-timeout-ms'] ?? `${DEFAULT_TRANSPORT_CHECK_TIMEOUT_MS}`, 10) || DEFAULT_TRANSPORT_CHECK_TIMEOUT_MS)
   const recoveryIdleWaitMs = Math.max(0, Number.parseInt(args['recovery-idle-wait-ms'] ?? `${DEFAULT_RECOVERY_IDLE_WAIT_MS}`, 10) || DEFAULT_RECOVERY_IDLE_WAIT_MS)
   const failuresBeforeRecover = Math.max(1, Number.parseInt(args['failures-before-recover'] ?? `${DEFAULT_FAILURES_BEFORE_RECOVER}`, 10) || DEFAULT_FAILURES_BEFORE_RECOVER)
+  const routerMode = `${args['router-mode'] ?? 'integrated'}`.trim().toLowerCase() === 'external' ? 'external' : 'integrated'
+  const routerWaitMs = Math.max(0, Number.parseInt(args['wait-ms'] ?? `${DEFAULT_ROUTER_WAIT_MS}`, 10) || DEFAULT_ROUTER_WAIT_MS)
+  const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
+  const allowedSkills = parseList(args['allowed-skills'], DEFAULT_SUPPORTED_SKILLS)
+  const fallbackSkill = (args['fallback-skill'] ?? DEFAULT_FALLBACK_SKILL).trim() || DEFAULT_FALLBACK_SKILL
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
@@ -77,6 +84,26 @@ async function main(argv) {
   let stopping = false
   let activeOperations = 0
   const idleWaiters = []
+  const integratedRouter = routerMode === 'integrated'
+    ? createAgentRouter({
+        maxActiveMailboxes,
+        allowedSkills,
+        fallbackSkill,
+        onRespond(item, result) {
+          runtimeState.respondInbound({
+            inboundId: item.inboundId,
+            result
+          })
+        },
+        onReject(item, payload) {
+          runtimeState.rejectInbound({
+            inboundId: item.inboundId,
+            code: payload.code,
+            message: payload.message
+          })
+        }
+      })
+    : null
   const lifecycle = {
     generation: 0,
     recovering: false,
@@ -84,7 +111,8 @@ async function main(argv) {
     lastRecoveryReason: '',
     lastHealthyAt: '',
     lastError: '',
-    consecutiveFailures: 0
+    consecutiveFailures: 0,
+    routerMode
   }
 
   function flushIdleWaiters() {
@@ -148,6 +176,16 @@ async function main(argv) {
       hasNode: Boolean(currentNode),
       online
     }
+  }
+
+  function buildRouterSnapshot() {
+    return integratedRouter
+      ? integratedRouter.snapshot()
+      : {
+          mode: 'external',
+          allowedSkills,
+          fallbackSkill
+        }
   }
 
   function writeStateForNode(node) {
@@ -259,6 +297,8 @@ async function main(argv) {
           relayAddrs: relayReservationAddrs(nextNode),
           streamProtocol: binding.streamProtocol,
           peerKeyFile,
+          routerMode,
+          agentRouter: buildRouterSnapshot(),
           lifecycle: buildLifecycleSnapshot(),
           runtimeState: runtimeState.snapshot()
         }, null, 2))
@@ -331,6 +371,30 @@ async function main(argv) {
     }
   }
 
+  async function runIntegratedRouterLoop() {
+    if (!integratedRouter) {
+      return
+    }
+    while (!stopping) {
+      const item = await runtimeState.nextInbound({ waitMs: routerWaitMs })
+      if (!item?.inboundId) {
+        continue
+      }
+      integratedRouter.enqueue(item).catch((error) => {
+        try {
+          runtimeState.rejectInbound({
+            inboundId: item.inboundId,
+            code: Number.parseInt(`${error?.code ?? 500}`, 10) || 500,
+            message: error?.message ?? 'integrated agent router failed to process inbound request'
+          })
+        } catch (rejectError) {
+          console.error(rejectError.message)
+        }
+        console.error(error?.message ?? 'integrated agent router failed to process inbound request')
+      })
+    }
+  }
+
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', gatewayBase)
@@ -340,6 +404,8 @@ async function main(argv) {
             agentId,
             gatewayBase,
             gatewayStateFile,
+            routerMode,
+            agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
             runtimeState: runtimeState.snapshot()
           })
@@ -358,6 +424,8 @@ async function main(argv) {
             relayReservationAddrs: relayReservationAddrs(currentNode),
             streamProtocol: transport.streamProtocol,
             supportedBindings: transport.supportedBindings,
+            routerMode,
+            agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
             runtimeState: runtimeState.snapshot()
           })
@@ -368,7 +436,9 @@ async function main(argv) {
             agentId,
             gatewayBase,
             gatewayStateFile,
+            routerMode,
             error: { message: error.message },
+            agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
             runtimeState: runtimeState.snapshot()
           })
@@ -377,6 +447,10 @@ async function main(argv) {
       }
 
       if (req.method === 'GET' && url.pathname === '/inbound/next') {
+        if (integratedRouter) {
+          jsonResponse(res, 409, { error: { message: 'integrated agent router is active; external inbound polling is disabled' } })
+          return
+        }
         const waitMs = Number.parseInt(url.searchParams.get('waitMs') ?? '30000', 10)
         const nextInbound = await runtimeState.nextInbound({ waitMs })
         jsonResponse(res, 200, { item: nextInbound })
@@ -384,6 +458,10 @@ async function main(argv) {
       }
 
       if (req.method === 'POST' && url.pathname === '/inbound/respond') {
+        if (integratedRouter) {
+          jsonResponse(res, 409, { error: { message: 'integrated agent router is active; external inbound responses are disabled' } })
+          return
+        }
         const body = await readJson(req)
         runtimeState.respondInbound({
           inboundId: requireArg(body.inboundId, 'inboundId is required'),
@@ -394,6 +472,10 @@ async function main(argv) {
       }
 
       if (req.method === 'POST' && url.pathname === '/inbound/reject') {
+        if (integratedRouter) {
+          jsonResponse(res, 409, { error: { message: 'integrated agent router is active; external inbound rejects are disabled' } })
+          return
+        }
         const body = await readJson(req)
         runtimeState.rejectInbound({
           inboundId: requireArg(body.inboundId, 'inboundId is required'),
@@ -451,6 +533,12 @@ async function main(argv) {
     console.error(`gateway initial startup failed: ${error.message}`)
   }
 
+  const integratedRouterLoop = integratedRouter
+    ? runIntegratedRouterLoop().catch((error) => {
+        console.error(`integrated agent router stopped: ${error.message}`)
+      })
+    : null
+
   const presenceTimer = presenceRefreshMs > 0
     ? setInterval(async () => {
         if (stopping || recoveryPromise) {
@@ -499,6 +587,13 @@ async function main(argv) {
     if (recoveryPromise) {
       try {
         await recoveryPromise
+      } catch {
+        // best-effort shutdown only
+      }
+    }
+    if (integratedRouter) {
+      try {
+        await integratedRouter.whenIdle()
       } catch {
         // best-effort shutdown only
       }

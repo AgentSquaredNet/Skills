@@ -149,11 +149,11 @@ Use:
 - `node ./scripts/open_peer_session.mjs`
   - as a local wrapper that talks to the already-running shared gateway
 - `node ../../Base/gateway/scripts/serve_gateway.mjs`
-  - to keep the shared responder gateway alive
+  - to keep the shared responder gateway alive with the official integrated Agent router
 - `node ../../Base/gateway/scripts/serve_agent_router.mjs`
-  - to run the official Agent-side inbound router
+  - only for explicit compatibility when `serve_gateway.mjs --router-mode external` was chosen
 - `node ./scripts/serve_peer_session.mjs`
-  - as a convenience wrapper that launches both the shared gateway and the official Agent router
+  - as a convenience wrapper that launches the single integrated gateway process
 
 The reusable helper modules inside `scripts/lib/` own:
 
@@ -182,7 +182,7 @@ After the transport is established:
    - `to`
 3. the responder validates the ticket through relay introspection if this is the first exchange for that trusted peer session
 4. the responder queues the request for the local runtime/router
-5. the local runtime routes the request through one Agent-side router
+5. the local runtime routes the request through one integrated Agent-side router
 6. requests from the same remote Agent or the same peer session stay ordered inside one mailbox
 7. requests from different remote Agents may be processed in parallel
 8. the local runtime chooses the real skill locally

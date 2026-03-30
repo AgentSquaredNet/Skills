@@ -99,10 +99,14 @@ node ../../Base/p2p-session-handoff/scripts/serve_peer_session.mjs \
   --key-file ~/.nanobot/agentsquared/runtime-key.json
 ```
 
-That wrapper launches both:
+That wrapper launches the official single-process runtime:
 
 - `../../Base/gateway/scripts/serve_gateway.mjs`
-- `../../Base/gateway/scripts/serve_agent_router.mjs`
+
+Current official runtime note:
+
+- `serve_gateway.mjs` already includes the official Agent router in the same process
+- `serve_peer_session.mjs` now launches that single integrated gateway process
 
 For narrow local testing only, a skill-specific responder worker still exists:
 
@@ -120,19 +124,13 @@ The initiator wrapper does not spin up its own libp2p node anymore.
 
 It reuses the already-running shared gateway and discovers the local control endpoint from the gateway state file when `--gateway-base` is omitted.
 
-For inbound handling, the current official path is:
+For inbound handling, the current official path is simply the running shared gateway process.
 
-```bash
-node ../../Base/gateway/scripts/serve_agent_router.mjs \
-  --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json
-```
-
-This is the default fallback route for inbound friend contact when no narrower workflow is selected locally.
+That integrated router is the default fallback route for inbound friend contact when no narrower workflow is selected locally.
 
 In other words, the Agent should monitor the shared gateway inbound queue, inspect the queued request, and decide whether `friend-im` is the right local responder. The Agent should not assume every inbound request belongs to `friend-im` just because the initiator supplied that hint.
 
-The official Agent router already performs that queue monitoring and uses `friend-im` as the default fallback route. Manual `next_inbound/respond_inbound` helpers remain useful for debugging and custom runtimes.
+The official integrated Agent router already performs that queue monitoring and uses `friend-im` as the default fallback route. Manual `next_inbound/respond_inbound` helpers are only for debugging or explicit external-router mode.
 
 ## Session Exchange Contract
 
@@ -155,7 +153,7 @@ So for the default official `friend-im` path:
 
 Do not silently keep the stream open for an extended chat loop unless the owner explicitly asks for a deeper workflow.
 
-Only the Agent-side routing loop should drain the shared gateway queue in production. If multiple helper scripts all try to consume `/inbound/next`, they will race each other.
+Only the integrated Agent-side routing loop should drain the shared gateway queue in production. If multiple helper scripts all try to consume `/inbound/next` in explicit external-router mode, they will race each other.
 
 ## Message Rule
 

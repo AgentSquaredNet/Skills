@@ -9,7 +9,6 @@ import { defaultGatewayStateFile, resolveGatewayBase } from '../../gateway/scrip
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const gatewayScript = path.resolve(__dirname, '../../gateway/scripts/serve_gateway.mjs')
-const routerScript = path.resolve(__dirname, '../../gateway/scripts/serve_agent_router.mjs')
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -38,6 +37,7 @@ async function main(argv) {
   const maxActiveMailboxes = (args['max-active-mailboxes'] ?? '').trim()
   const allowedSkills = parseList(args['allowed-skills'], [])
   const fallbackSkill = (args['fallback-skill'] ?? '').trim()
+  const routerMode = (args['router-mode'] ?? '').trim()
   const discoveredStateFile = gatewayStateFile || defaultGatewayStateFile(keyFile, agentId)
 
   const childArgs = [
@@ -55,6 +55,21 @@ async function main(argv) {
   if (listenAddrs) {
     childArgs.push('--listen-addrs', listenAddrs)
   }
+  if (waitMs) {
+    childArgs.push('--wait-ms', waitMs)
+  }
+  if (maxActiveMailboxes) {
+    childArgs.push('--max-active-mailboxes', maxActiveMailboxes)
+  }
+  if (allowedSkills.length > 0) {
+    childArgs.push('--allowed-skills', allowedSkills.join(','))
+  }
+  if (fallbackSkill) {
+    childArgs.push('--fallback-skill', fallbackSkill)
+  }
+  if (routerMode) {
+    childArgs.push('--router-mode', routerMode)
+  }
 
   const gateway = spawn(process.execPath, childArgs, { stdio: 'inherit' })
   await waitForGatewayBase({
@@ -63,33 +78,12 @@ async function main(argv) {
     gatewayStateFile: discoveredStateFile
   })
 
-  const routerArgs = [
-    routerScript,
-    '--agent-id', agentId,
-    '--key-file', keyFile,
-    '--gateway-state-file', discoveredStateFile
-  ]
-  if (waitMs) {
-    routerArgs.push('--wait-ms', waitMs)
-  }
-  if (maxActiveMailboxes) {
-    routerArgs.push('--max-active-mailboxes', maxActiveMailboxes)
-  }
-  if (allowedSkills.length > 0) {
-    routerArgs.push('--allowed-skills', allowedSkills.join(','))
-  }
-  if (fallbackSkill) {
-    routerArgs.push('--fallback-skill', fallbackSkill)
-  }
-  const router = spawn(process.execPath, routerArgs, { stdio: 'inherit' })
-
   let shuttingDown = false
   const stop = (exitCode = 0) => {
     if (shuttingDown) {
       return
     }
     shuttingDown = true
-    router.kill('SIGTERM')
     gateway.kill('SIGTERM')
     setTimeout(() => process.exit(exitCode), 50)
   }
@@ -102,16 +96,6 @@ async function main(argv) {
       return
     }
     shuttingDown = true
-    router.kill('SIGTERM')
-    process.exit(code ?? 1)
-  })
-
-  router.on('exit', (code) => {
-    if (shuttingDown) {
-      return
-    }
-    shuttingDown = true
-    gateway.kill('SIGTERM')
     process.exit(code ?? 1)
   })
 }

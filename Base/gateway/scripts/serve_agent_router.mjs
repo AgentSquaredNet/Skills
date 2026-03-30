@@ -6,9 +6,7 @@ import { resolveGatewayBase } from './lib/gateway_runtime.mjs'
 import {
   DEFAULT_FALLBACK_SKILL,
   DEFAULT_SUPPORTED_SKILLS,
-  buildSkillResult,
-  chooseInboundSkill,
-  createMailboxScheduler
+  createAgentRouter
 } from './lib/agent_router.mjs'
 
 async function main(argv) {
@@ -33,32 +31,31 @@ async function main(argv) {
     peerId: health?.peerId ?? '',
     allowedSkills,
     fallbackSkill,
-    maxActiveMailboxes
+    maxActiveMailboxes,
+    routerMode: health?.routerMode ?? ''
   }, null, 2))
 
-  const scheduler = createMailboxScheduler({
-    maxActiveMailboxes,
-    async handleItem(item, { mailboxKey }) {
-      const selectedSkill = chooseInboundSkill(item, { allowedSkills, fallbackSkill })
-      if (!selectedSkill) {
-        await gatewayRejectInbound(gatewayBase, {
-          inboundId: item.inboundId,
-          code: 409,
-          message: `no supported local skill could handle inbound request for mailbox ${mailboxKey}`
-        })
-        return { selectedSkill: '', rejected: true }
-      }
+  if ((health?.routerMode ?? '').trim() !== 'external') {
+    console.log('gateway already runs the official integrated Agent router; external router process is not required')
+    return
+  }
 
-      const result = buildSkillResult(selectedSkill, item)
-      result.metadata = {
-        ...(result.metadata ?? {}),
-        mailboxKey
-      }
-      await gatewayRespondInbound(gatewayBase, {
+  const router = createAgentRouter({
+    maxActiveMailboxes,
+    allowedSkills,
+    fallbackSkill,
+    onRespond(item, result) {
+      return gatewayRespondInbound(gatewayBase, {
         inboundId: item.inboundId,
         result
       })
-      return { selectedSkill, rejected: false }
+    },
+    onReject(item, payload) {
+      return gatewayRejectInbound(gatewayBase, {
+        inboundId: item.inboundId,
+        code: payload.code,
+        message: payload.message
+      })
     }
   })
 
@@ -68,7 +65,7 @@ async function main(argv) {
       return
     }
     stopping = true
-    await scheduler.whenIdle()
+    await router.whenIdle()
     process.exit(0)
   }
 
@@ -91,7 +88,7 @@ async function main(argv) {
     if (!item?.inboundId) {
       continue
     }
-    scheduler.enqueue(item).catch(async (error) => {
+    router.enqueue(item).catch(async (error) => {
       try {
         await gatewayRejectInbound(gatewayBase, {
           inboundId: item.inboundId,
