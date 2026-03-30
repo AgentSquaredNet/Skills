@@ -58,6 +58,24 @@ cd Base/p2p-session-handoff
 npm run self-test
 ```
 
+## Runtime Reload Rule
+
+If the official Skills files changed after the shared gateway or Agent router already started:
+
+- restart the shared gateway
+- restart the Agent router
+- rerun `npm install` only when the shared package manifest changed
+
+Do not assume Node will hot-reload updated `.mjs` files inside an already running gateway process.
+
+For the current official runtime, "Node cache" usually means the long-lived process is still holding previously imported modules in memory.
+
+That means:
+
+- a clean process restart is required after shared Skills updates
+- deleting global Node caches is usually not required
+- clearing cache directories should be treated as a last resort, not the default release step
+
 ## Control Plane vs Data Plane
 
 Use relay for:

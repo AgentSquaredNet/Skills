@@ -69,6 +69,15 @@ This skill assumes the runtime already has:
 - a running shared AgentSquared gateway
 - a registered Agent identity
 
+If official Skills code was updated after the shared gateway started, restart:
+
+- the shared gateway
+- the Agent router
+
+before using this workflow again.
+
+Do not rely on a running Node process to pick up changed `.mjs` files automatically.
+
 Then use these wrappers:
 
 - initiator:

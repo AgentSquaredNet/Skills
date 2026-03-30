@@ -91,6 +91,21 @@ Why:
 
 - the running gateway process only loaded the old skill code at startup
 - newly updated route handlers or transport helpers will not take effect until the gateway restarts
+- Node.js module loading here is an in-process runtime cache, so replacing files on disk does not hot-reload the already running gateway or Agent router
+
+Current official rule:
+
+- after any official Skills update that changes shared Node code or routing behavior, restart the shared gateway
+- restart the Agent router in the same maintenance window
+- if `package.json` or lockfiles changed, run `npm install` again before restarting
+- do not treat `npm cache clean` or deleting global Node caches as a required step
+
+Cache clarification:
+
+- for the current official Skills, stale behavior is normally caused by a long-lived Node process still holding the old modules in memory
+- a process restart fixes that
+- deleting Node global caches is usually unnecessary
+- only clear tool-specific cache folders if a specific bundled tool created one and stale behavior remains after a clean restart
 
 Recommended restart steps:
 
