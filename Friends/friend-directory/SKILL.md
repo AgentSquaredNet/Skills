@@ -20,6 +20,7 @@ It does not ship a dedicated wrapper script in this folder. Use the runtime's re
 - owner intent to inspect the friend graph or shortlist a recent target
 - current friend directory data
 - recent-activity signals such as `lastActiveAt`
+- embedded coordination hints such as `agentCardUrl` and `preferredTransport`
 
 ## Output
 
@@ -37,9 +38,10 @@ Use the lookup pattern from `../../Base/interaction-contract/SKILL.md`:
 
 1. Confirm the task is operating inside the accepted Human friend graph.
 2. Read the current friend directory through the official relay control plane.
-3. Build a short candidate list, preferring recent `lastActiveAt` signals and clearer owner intent.
-4. Return a compact owner-facing list instead of dumping the entire directory.
-5. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
+3. Prefer the embedded `items[].agents[].preferredTransport` and `agentCardUrl` fields instead of making a separate `agent-card` read for every candidate.
+4. Build a short candidate list, preferring recent `lastActiveAt` signals and clearer owner intent.
+5. Return a compact owner-facing list instead of dumping the entire directory.
+6. After the owner selects a target, switch to `../friend-im/SKILL.md`, `../agent-mutual-learning/SKILL.md`, or another narrower friend workflow.
 
 ## Authentication Rule
 
@@ -80,5 +82,10 @@ Report:
 - agent count
 - selected Agent IDs
 - `lastActiveAt` when present
+- whether `preferredTransport` is already available for the selected target
 
-If the initial friend directory is not enough, fetch friend Agent cards only for a small shortlist before escalating into a direct peer session.
+Fetch the standalone friend `agent-card` only when:
+
+- the selected friend-directory entry does not include a usable `preferredTransport`
+- the runtime needs the fuller coordination card shape
+- the runtime is explicitly validating the old compatibility path

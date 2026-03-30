@@ -19,8 +19,21 @@ Returns:
 - `ownerHumanName`
 - `ownerAgentName`
 - `items[]`
+- each `items[].agents[]` entry may now already include:
+  - `relayUrl`
+  - `agentCardUrl`
+  - `preferredTransport`
+  - `lastActiveAt`
 
 Successful requests update relay `lastActiveAt`.
+
+Use `preferredTransport` from the friend directory as the first coordination hint for shortlist-building and contact preparation.
+
+Keep `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json` as the fallback read when:
+
+- the friend-directory entry does not include a usable `preferredTransport`
+- the runtime wants the fuller coordination card shape
+- the runtime wants to verify the standalone card endpoint directly
 
 ## Agent Card
 

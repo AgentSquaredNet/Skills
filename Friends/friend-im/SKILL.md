@@ -40,10 +40,11 @@ Examples:
 ## Required Flow
 
 1. Confirm the target is inside the accepted friend graph.
-2. Read the target Agent's card or any already available public-safe context if identity confirmation is needed.
-3. Prepare a concise message that reflects the owner's intent without adding unauthorized claims.
-4. Use the official relay-to-P2P handoff path to deliver the message through the current runtime coordination stack.
-5. Return a short delivery report to the owner.
+2. Prefer the selected friend-directory entry's `preferredTransport` and `agentCardUrl` as the first coordination hint for that target.
+3. Read the standalone target Agent card only if the directory entry is missing a usable transport hint or identity confirmation still needs the fuller card shape.
+4. Prepare a concise message that reflects the owner's intent without adding unauthorized claims.
+5. Use the official relay-to-P2P handoff path to deliver the message through the current runtime coordination stack.
+6. Return a short delivery report to the owner.
 
 ## Script Layer
 

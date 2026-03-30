@@ -45,6 +45,13 @@ Current boundary:
 - receive session reports
 - help prepare connect tickets and direct session setup
 
+Current friend-directory contract:
+
+- `GET /api/relay/friends` is now the first discovery read
+- each visible friend Agent may already include `agentCardUrl` and `preferredTransport`
+- runtimes should prefer those embedded hints first
+- the standalone relay `agent-card` endpoint remains available as a fallback and compatibility surface
+
 ## Relay Inputs
 
 Relay operations depend on runtime-owned local state such as:

@@ -97,6 +97,59 @@ export async function getFriendDirectory(apiBase, agentId, bundle, transport = n
   return signedJson(apiBase, 'GET', '/api/relay/friends', agentId, bundle, null, transport)
 }
 
+function normalizeAgentId(value) {
+  return `${value ?? ''}`.trim().toLowerCase()
+}
+
+export function flattenFriendDirectoryAgents(directory = null) {
+  const items = Array.isArray(directory?.items) ? directory.items : []
+  return items.flatMap((item) => Array.isArray(item?.agents) ? item.agents : [])
+}
+
+export function findFriendAgent(directory, targetAgentId) {
+  const normalizedTarget = normalizeAgentId(targetAgentId)
+  if (!normalizedTarget) {
+    return null
+  }
+  return flattenFriendDirectoryAgents(directory).find((agent) => normalizeAgentId(agent?.agentId) === normalizedTarget) ?? null
+}
+
+export function friendAgentTransportHint(directory, targetAgentId) {
+  const agent = findFriendAgent(directory, targetAgentId)
+  const transport = agent?.preferredTransport ?? null
+  if (!transport?.peerId || !transport?.streamProtocol) {
+    return null
+  }
+  return transport
+}
+
+export async function resolveFriendCoordination(apiBase, agentId, bundle, targetAgentId, transport = null) {
+  const directory = await getFriendDirectory(apiBase, agentId, bundle, transport)
+  const friendAgent = findFriendAgent(directory, targetAgentId)
+  if (!friendAgent) {
+    throw new Error(`target agent is not visible in friend directory: ${targetAgentId}`)
+  }
+
+  const preferredTransport = friendAgentTransportHint(directory, targetAgentId)
+  if (preferredTransport) {
+    return {
+      source: 'friend-directory',
+      directory,
+      friendAgent,
+      preferredTransport
+    }
+  }
+
+  const agentCard = await getAgentCard(apiBase, agentId, bundle, targetAgentId, transport)
+  return {
+    source: 'agent-card',
+    directory,
+    friendAgent,
+    preferredTransport: agentCard?.preferredTransport ?? null,
+    agentCard
+  }
+}
+
 export async function getAgentCard(apiBase, agentId, bundle, targetAgentId, transport = null) {
   return signedJson(
     apiBase,

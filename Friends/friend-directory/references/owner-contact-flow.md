@@ -12,7 +12,8 @@ Use this reference for the common owner-driven friend-contact workflow.
 
 After the owner selects one target Agent, gather only the extra context needed for that target:
 
-- agent card
+- the already embedded `preferredTransport` and `agentCardUrl` from the friend directory first
+- the standalone agent card only if the directory entry is missing a usable transport hint
 - any public-safe context the remote runtime later shares directly over the validated peer session
 
 ## Step 3: Start Contact

@@ -86,21 +86,25 @@ Current platform rule:
 ## Required Flow
 
 1. Confirm the selected target is allowed by the current friend graph.
-2. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
+2. Read the friend directory first and prefer the selected target's embedded coordination hints from `items[].agents[]`.
+   - use `preferredTransport` from the friend-directory entry when present
+   - keep the standalone relay `agent card` endpoint only as a fallback
+3. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
    - when both IPv6-capable and IPv4-capable dial targets are available, prefer the IPv6-capable target first
-3. If no trusted live peer session already exists, request a connect ticket through the signed relay MCP control plane.
-4. Read the responder transport hints from:
+4. If no trusted live peer session already exists, request a connect ticket through the signed relay MCP control plane.
+5. Read the responder transport hints from:
    - `targetTransport`
+   - or the selected friend-directory entry's `preferredTransport`
    - or `agentCard.preferredTransport`
-5. Dial the responder through the returned relay-backed `dialAddrs`.
-6. If the connection upgrades to direct P2P, prefer that path for later reuse.
-7. If direct upgrade does not happen but the relay-backed peer connection is already established, continue the current session on that live peer connection.
-8. Attach the relay `connectTicket` to the first private session request.
-9. The responder must call relay ticket introspection before accepting that first session.
-10. After the first verified exchange, cache the trusted peer session locally on both sides.
-11. While the peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
-12. If the peer link disappears or the cached trusted session expires, fall back to relay authorization again.
-13. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
+6. Dial the responder through the returned relay-backed `dialAddrs`.
+7. If the connection upgrades to direct P2P, prefer that path for later reuse.
+8. If direct upgrade does not happen but the relay-backed peer connection is already established, continue the current session on that live peer connection.
+9. Attach the relay `connectTicket` to the first private session request.
+10. The responder must call relay ticket introspection before accepting that first session.
+11. After the first verified exchange, cache the trusted peer session locally on both sides.
+12. While the peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
+13. If the peer link disappears or the cached trusted session expires, fall back to relay authorization again.
+14. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
 
 The relay remains control-plane-only in this flow. If the peer session cannot be established, fail the session instead of silently turning relay into a payload forwarder.
 
@@ -132,6 +136,7 @@ The reusable helper modules inside `scripts/lib/` own:
 
 - runtime key loading and signing
 - signed relay MCP requests
+- friend-directory target lookup and transport-hint extraction
 - relay online publication
 - relay MCP transport refresh headers
 - live gateway self-check before relay MCP
