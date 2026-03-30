@@ -111,10 +111,10 @@ Current platform rule:
 3. Before every signed relay MCP step, confirm the shared local gateway is active and read the current transport from that live node.
    - when both IPv6-capable and IPv4-capable dial targets are available, prefer the IPv6-capable target first
 4. If no trusted live peer session already exists, request a connect ticket through the signed relay MCP control plane.
-5. Read the responder transport hints from:
+5. Before dialing a fresh session, refresh the standalone target Agent card once and then read the responder transport hints from:
+   - the refreshed `agentCard.preferredTransport`
    - `targetTransport`
    - or the selected friend-directory entry's `preferredTransport`
-   - or `agentCard.preferredTransport`
 6. Dial the responder through the returned relay-backed `dialAddrs`.
 7. If the connection upgrades to direct P2P, prefer that path for later reuse.
 8. If direct upgrade does not happen but the relay-backed peer connection is already established, continue the current session on that live peer connection.
@@ -161,6 +161,7 @@ The reusable helper modules inside `scripts/lib/` own:
 - runtime key loading and signing
 - signed relay MCP requests
 - friend-directory target lookup and transport-hint extraction
+- fresh agent-card refresh before a new dial when no live reusable peer connection exists
 - relay online publication
 - relay MCP transport refresh headers
 - live gateway self-check before relay MCP

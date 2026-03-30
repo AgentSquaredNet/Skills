@@ -1,5 +1,5 @@
 import { randomRequestId } from './cli.mjs'
-import { createConnectTicket, introspectConnectTicket, postOnline, reportSession } from './relay_http.mjs'
+import { createConnectTicket, getAgentCard, introspectConnectTicket, postOnline, reportSession } from './relay_http.mjs'
 import { currentPeerConnection, dialProtocol, openStreamOnExistingConnection, readSingleLine, waitForPublishedTransport, writeLine } from './libp2p_a2a.mjs'
 
 export function buildJsonRpcEnvelope({ id, method, message, metadata = {} }) {
@@ -54,22 +54,44 @@ export async function openDirectPeerSession({
 
   let ticket = null
   let peerSessionId = `${cachedSession?.peerSessionId ?? ''}`.trim()
-  let targetTransport = cachedSession?.remoteTransport ?? null
-  if (!targetTransport && cachedSession?.remotePeerId) {
-    targetTransport = {
-      peerId: cachedSession.remotePeerId,
+  let targetTransport = null
+  let stream = null
+  let reusedSession = false
+
+  if (cachedSession && liveConnection) {
+    const reusableTransport = mergeTargetTransport({
+      primary: cachedSession.remoteTransport,
+      secondary: cachedSession?.remotePeerId
+        ? {
+            peerId: cachedSession.remotePeerId,
+            streamProtocol: binding.streamProtocol
+          }
+        : null,
       streamProtocol: binding.streamProtocol
+    })
+    if (reusableTransport?.peerId && reusableTransport?.streamProtocol) {
+      try {
+        sessionStore?.touchTrustedSession?.(cachedSession.peerSessionId)
+        stream = await openStreamOnExistingConnection(node, reusableTransport)
+        targetTransport = reusableTransport
+        reusedSession = true
+      } catch {
+        stream = null
+        targetTransport = null
+      }
     }
   }
-  let stream
 
-  if (cachedSession && liveConnection && targetTransport?.streamProtocol) {
-    sessionStore?.touchTrustedSession?.(cachedSession.peerSessionId)
-    stream = await openStreamOnExistingConnection(node, targetTransport)
-  } else {
+  if (!stream) {
     const transport = await currentTransport(node, binding, { requireRelayReservation: true })
+    const latestAgentCard = await bestEffortAgentCard(apiBase, agentId, bundle, targetAgentId, transport)
     ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
-    targetTransport = ticket.targetTransport ?? ticket.agentCard?.preferredTransport
+    targetTransport = mergeTargetTransport({
+      primary: latestAgentCard?.preferredTransport ?? null,
+      secondary: ticket.targetTransport ?? ticket.agentCard?.preferredTransport ?? null,
+      tertiary: cachedSession?.remoteTransport ?? null,
+      streamProtocol: binding.streamProtocol
+    })
     peerSessionId = parseConnectTicketId(ticket.ticket) || randomRequestId('peer')
     stream = await dialProtocol(node, targetTransport, { requireDirect: false })
   }
@@ -114,7 +136,7 @@ export async function openDirectPeerSession({
       }, await bestEffortCurrentTransport(node, binding))
     }
 
-    return { ticket, peerSessionId, response, sessionReport, reusedSession: Boolean(cachedSession && liveConnection) }
+    return { ticket, peerSessionId, response, sessionReport, reusedSession }
   } finally {
     await stream.close()
   }
@@ -249,6 +271,66 @@ async function bestEffortCurrentTransport(node, binding) {
   } catch {
     return null
   }
+}
+
+async function bestEffortAgentCard(apiBase, agentId, bundle, targetAgentId, transport) {
+  try {
+    return await getAgentCard(apiBase, agentId, bundle, targetAgentId, transport)
+  } catch {
+    return null
+  }
+}
+
+function mergeTargetTransport({
+  primary = null,
+  secondary = null,
+  tertiary = null,
+  streamProtocol = ''
+} = {}) {
+  const sources = [primary, secondary, tertiary].filter((value) => value && typeof value === 'object')
+  const peerId = firstNonEmpty(sources.map((value) => value.peerId))
+  const protocol = firstNonEmpty(sources.map((value) => value.streamProtocol).concat(streamProtocol))
+  const dialAddrs = unique(
+    sources.flatMap((value) => value.dialAddrs ?? [])
+  )
+  const listenAddrs = unique(
+    sources.flatMap((value) => value.listenAddrs ?? [])
+  )
+  const relayAddrs = unique(
+    sources.flatMap((value) => value.relayAddrs ?? [])
+  )
+  const supportedBindings = unique(
+    sources.flatMap((value) => value.supportedBindings ?? [])
+  )
+  const a2aProtocolVersion = firstNonEmpty(sources.map((value) => value.a2aProtocolVersion))
+
+  if (!peerId || !protocol) {
+    return null
+  }
+
+  return {
+    peerId,
+    streamProtocol: protocol,
+    dialAddrs,
+    listenAddrs,
+    relayAddrs,
+    supportedBindings,
+    a2aProtocolVersion
+  }
+}
+
+function firstNonEmpty(values = []) {
+  for (const value of values) {
+    const cleaned = `${value ?? ''}`.trim()
+    if (cleaned) {
+      return cleaned
+    }
+  }
+  return ''
+}
+
+function unique(values = []) {
+  return [...new Set(values.map((value) => `${value}`.trim()).filter(Boolean))]
 }
 
 function parseConnectTicketId(token) {
