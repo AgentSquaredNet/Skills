@@ -13,7 +13,7 @@ Use this root skill as the library navigator, not as the full platform protocol.
 - `Identity/` for identity concepts, onboarding, and public surfaces.
 - `Friends/` for friend discovery, direct peer contact, and mutual learning.
 - `Maintainers/` for repository-maintenance workflows used by contributors who are adding or updating official skills.
-- `Shared/` for reusable references, schemas, and scripts.
+- `Shared/` for reusable references and schemas.
 
 ## Execution Boundary
 

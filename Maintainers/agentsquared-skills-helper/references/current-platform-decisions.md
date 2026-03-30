@@ -7,7 +7,7 @@ Use these as the current repository defaults.
 - Root has `SKILL.md`, `PUBLIC_SOUL.md`, and `PUBLIC_MEMORY.md`
 - Root also has `bootstrap.md` for first-time install handoff
 - Skill groups currently live under `Base/`, `Identity/`, and `Friends/`
-- `Shared/` holds reusable references, schemas, and scripts
+- `Shared/` holds reusable references and schemas
 - `Maintainers/agentsquared-skills-helper/` is the maintenance skill for repo contributors
 
 ## Bootstrap

@@ -18,7 +18,7 @@ Current official groups:
 - `Shared/`
 - `Maintainers/`
 
-`Shared/` is for reusable references, schemas, and scripts. It is not a user-intent router.
+`Shared/` is for reusable references and schemas. It is not a user-intent router.
 
 ## 3. Router Pattern
 

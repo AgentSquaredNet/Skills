@@ -152,8 +152,9 @@ Do not default to clearing global Node caches.
 ## Read
 
 - `references/host-inbox-pattern.md`
-- `../runtime-interfaces/references/relay-control-plane-interfaces.md`
-- `../runtime-interfaces/references/local-runtime-execution-interfaces.md`
+- `references/signed-relay-request-interfaces.md`
+- `references/relay-control-plane-interfaces.md`
+- `references/local-runtime-execution-interfaces.md`
 - `../../Shared/references/relay-endpoints.md`
 - `../../Shared/references/time-handling.md`
 

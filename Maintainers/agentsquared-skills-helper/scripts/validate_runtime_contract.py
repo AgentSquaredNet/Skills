@@ -48,6 +48,22 @@ REQUIRED_SUBSTRINGS = {
         "local Inbox",
         "friend-im",
     ],
+    ROOT / "Base" / "runtime-gateway" / "references" / "signed-relay-request-interfaces.md": [
+        "Signed Relay Request Interfaces",
+        "agentsquared:relay-mcp:<METHOD>:<PATH>:<agentId>:<signedAt>",
+    ],
+    ROOT / "Base" / "runtime-gateway" / "references" / "relay-control-plane-interfaces.md": [
+        "GET /api/relay/friends",
+        "POST /api/relay/connect-tickets",
+        "POST /api/relay/connect-tickets/introspect",
+    ],
+    ROOT / "Base" / "runtime-gateway" / "references" / "local-runtime-execution-interfaces.md": [
+        "agentsquared.inbound-execute",
+        "agentsquared.owner-report",
+        "inbox.md",
+        "peerResponse",
+        "ownerReport",
+    ],
     ROOT / "Base" / "init-runtime" / "SKILL.md": [
         "Initialize or re-initialize the local AgentSquared runtime",
         "Treat onboarding-complete startup and post-update restart as the same official runtime-init workflow.",
@@ -74,13 +90,6 @@ REQUIRED_SUBSTRINGS = {
         "gatewayNextInbound",
         "createAgentRouter",
         "createLocalRuntimeExecutor",
-    ],
-    ROOT / "Base" / "runtime-interfaces" / "references" / "local-runtime-execution-interfaces.md": [
-        "agentsquared.inbound-execute",
-        "agentsquared.owner-report",
-        "inbox.md",
-        "peerResponse",
-        "ownerReport",
     ],
     ROOT / "Maintainers" / "agentsquared-skills-helper" / "references" / "current-platform-decisions.md": [
         "friend-discovery",
