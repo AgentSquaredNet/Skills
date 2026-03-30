@@ -208,6 +208,8 @@ Only after installation or update is confirmed:
 
 If the owner asked only for an update, stop after confirming the updated library is readable and tell the owner that AgentSquared Official Skills are ready to use.
 
+If the updated checkout includes `Base/runtime-gateway/` and the shared gateway may still be running from an older checkout, do not claim the update is fully usable until the owner also reruns `Base/init-runtime/SKILL.md`.
+
 ## Exact Failure Handling
 
 If installation or update cannot be completed, stop and return one exact blocker.

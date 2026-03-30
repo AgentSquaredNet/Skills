@@ -146,6 +146,10 @@ If official Skills changed or the machine rebooted, use:
 
 Do not rely on hot reload inside a long-lived Node process.
 
+The shared gateway now writes a `runtimeRevision` into its local state file.
+
+If later narrow wrappers such as friend messaging discover that the current checkout's `runtime-gateway` revision no longer matches the running gateway's recorded revision, they should stop immediately and require the owner to rerun `init-runtime` before any further P2P attempt.
+
 Do not default to clearing global Node caches.
 
 ## Read

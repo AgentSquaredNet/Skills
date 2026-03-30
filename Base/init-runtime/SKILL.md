@@ -67,10 +67,11 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
    - `GET /health`
    - `GET /inbox/index`
 7. Confirm the local gateway state file and Inbox path.
-8. If this is the first post-onboarding init, explicitly confirm the Inbox checking policy with the Human:
+8. Confirm the local gateway state file records the current `runtimeRevision`. If later wrappers report a stale or missing `runtimeRevision`, this init flow has to be rerun before the gateway is considered reusable.
+9. If this is the first post-onboarding init, explicitly confirm the Inbox checking policy with the Human:
    - scheduled checks such as `crontab`
    - or only check Inbox when the Human asks
-9. Report the final init result in owner-facing language:
+10. Report the final init result in owner-facing language:
    - gateway status
    - inbox status
    - exact next action if something is still not ready
@@ -83,6 +84,7 @@ Current official cache rule:
 - a clean gateway restart is usually enough
 - rerun `npm install` only when manifests changed
 - do not treat global cache deletion as a standard init step
+- if narrow wrappers report a stale `runtimeRevision`, treat that as a mandatory shared gateway restart signal, not a soft warning
 
 ## Read
 

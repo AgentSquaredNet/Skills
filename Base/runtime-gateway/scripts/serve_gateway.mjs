@@ -9,7 +9,7 @@ import { getBindingDocument } from './lib/relay_http.mjs'
 import { loadRuntimeKeyBundle } from './lib/runtime_key.mjs'
 import { buildRelayListenAddrs, createNode, directListenAddrs, relayReservationAddrs } from './lib/libp2p_a2a.mjs'
 import { attachInboundRouter, currentTransport, openDirectPeerSession, publishGatewayPresence } from './lib/peer_session.mjs'
-import { defaultGatewayStateFile, writeGatewayState } from './lib/gateway_runtime.mjs'
+import { assertGatewayStateFresh, currentRuntimeRevision, defaultGatewayStateFile, readGatewayState, writeGatewayState } from './lib/gateway_runtime.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { createAgentRouter, DEFAULT_ROUTER_DEFAULT_SKILL, DEFAULT_ROUTER_SKILLS } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
@@ -81,6 +81,7 @@ async function main(argv) {
   const bundle = loadRuntimeKeyBundle(keyFile)
   const runtimeState = createGatewayRuntimeState()
   const inboxStore = createInboxStore({ inboxDir })
+  const runtimeRevision = currentRuntimeRevision()
   const localRuntimeExecutor = createLocalRuntimeExecutor({
     agentId,
     mode: agentExecutorMode,
@@ -227,6 +228,8 @@ async function main(argv) {
       keyFile: path.resolve(keyFile),
       peerKeyFile: path.resolve(peerKeyFile),
       peerId: node.peerId.toString(),
+      runtimeRevision,
+      runtimeStartedAt: nowISO(),
       updatedAt: nowISO()
     })
   }
@@ -426,11 +429,25 @@ async function main(argv) {
     try {
       const url = new URL(req.url ?? '/', gatewayBase)
       if (req.method === 'GET' && url.pathname === '/health') {
+        const state = readGatewayState(gatewayStateFile)
+        let revisionStatus
+        try {
+          revisionStatus = assertGatewayStateFresh(state, gatewayStateFile)
+        } catch (error) {
+          revisionStatus = {
+            stale: true,
+            expectedRevision: runtimeRevision,
+            currentRevision: `${state?.runtimeRevision ?? ''}`.trim(),
+            message: error.message
+          }
+        }
         if (recoveryPromise || !currentNode) {
           jsonResponse(res, 503, {
             agentId,
             gatewayBase,
             gatewayStateFile,
+            runtimeRevision,
+            revisionStatus,
             routerMode,
             agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
@@ -446,6 +463,8 @@ async function main(argv) {
             agentId,
             gatewayBase,
             gatewayStateFile,
+            runtimeRevision,
+            revisionStatus,
             peerId: transport.peerId,
             listenAddrs: transport.listenAddrs,
             relayAddrs: transport.relayAddrs,
@@ -466,6 +485,8 @@ async function main(argv) {
             agentId,
             gatewayBase,
             gatewayStateFile,
+            runtimeRevision,
+            revisionStatus,
             routerMode,
             error: { message: error.message },
             agentRouter: buildRouterSnapshot(),
