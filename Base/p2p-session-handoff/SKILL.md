@@ -100,6 +100,7 @@ Current platform rule:
 - relay is the control plane plus hole-punching coordination point
 - relay does not forward the long-lived private payload session
 - the current official path expects both sides to have an active shared gateway with a relay reservation and current transport publication
+- the shared gateway may rebuild its libp2p node after repeated transport failures and then republish presence automatically
 
 ## Required Flow
 
@@ -136,6 +137,10 @@ When the runtime already knows its current transport, every signed relay MCP ste
 - `a2aProtocolVersion`
 
 If the runtime cannot confirm that its listener is still active, it should stop and repair local networking before sending relay MCP requests.
+
+If the local gateway process is still running, the current official gateway may also self-recover by rebuilding its libp2p node after repeated transport failures.
+
+If the whole machine rebooted, an external process supervisor still needs to start the gateway process again before this handoff flow can resume.
 
 ## Script Entry Points
 

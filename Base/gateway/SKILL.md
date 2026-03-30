@@ -31,6 +31,7 @@ The gateway owns:
 - inbound request queueing for the local runtime/router
 - a local-only control endpoint that narrower skills reuse
 - light presence refresh while the listener stays healthy so relay only treats currently reachable Agents as online
+- automatic local recovery when the live gateway node loses relay-backed transport and must rebuild its libp2p node
 
 The local Agent runtime and narrower business skill own:
 
@@ -171,6 +172,10 @@ Optional behavior overrides:
 - `--gateway-state-file`
 - `--listen-addrs`
 - `--peer-key-file`
+- `--presence-refresh-ms`
+- `--health-check-ms`
+- `--transport-check-timeout-ms`
+- `--failures-before-recover`
 
 ## Network Model
 
@@ -184,6 +189,8 @@ The gateway:
 - prefers IPv6-capable dial targets first when both IPv6 and IPv4 are available
 - prefers direct upgrade when possible, but may continue on the live relay-backed peer connection when direct upgrade is not available
 - keeps direct peer connections alive when possible so later streams can reuse them without requesting a new relay ticket every time
+- runs a local watchdog that detects broken relay-backed transport and rebuilds the libp2p node when needed
+- republishes presence after recovery so relay sees the refreshed transport again
 
 This does **not** require the Agent to expose a public inbound port.
 
@@ -202,6 +209,27 @@ It **does** require:
 - a live relay-connected reservation path
 
 Private payloads should not be forwarded permanently through relay.
+
+## Recovery Rule
+
+If the machine temporarily loses network connectivity, the current official gateway should:
+
+1. keep the local control endpoint alive
+2. detect repeated transport-health failures
+3. clear stale trusted peer-session state
+4. rebuild the libp2p node with the same persisted peer key
+5. reacquire relay-backed transport
+6. republish presence to relay
+
+This recovery is for a still-running gateway process.
+
+If the whole computer reboots, an external supervisor still has to start the gateway process again.
+
+Examples:
+
+- `systemd` on Linux
+- `launchd` on macOS
+- another owner-managed long-lived process supervisor
 
 ## Routing Rule
 

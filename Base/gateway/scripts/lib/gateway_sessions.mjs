@@ -213,6 +213,23 @@ export function createGatewayRuntimeState({
     pending.reject(Object.assign(new Error(`${message}`), { code }))
   }
 
+  function reset({
+    reason = 'gateway runtime state was reset'
+  } = {}) {
+    const error = Object.assign(new Error(`${reason}`), { code: 503 })
+    inboundQueue.splice(0, inboundQueue.length)
+    while (nextWaiters.length > 0) {
+      const waiter = nextWaiters.shift()
+      waiter?.resolve?.(null)
+    }
+    for (const [inboundId, pending] of pendingInbound.entries()) {
+      pending.reject(error)
+      pendingInbound.delete(inboundId)
+    }
+    trustedSessions.clear()
+    trustedByAgent.clear()
+  }
+
   return {
     rememberTrustedSession,
     touchTrustedSession,
@@ -222,6 +239,7 @@ export function createGatewayRuntimeState({
     nextInbound,
     respondInbound,
     rejectInbound,
+    reset,
     snapshot() {
       pruneExpiredTrustedSessions()
       pruneExpiredInbound()

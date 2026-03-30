@@ -15,6 +15,18 @@ import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
 const DEFAULT_PRESENCE_REFRESH_MS = 2 * 60 * 1000
+const DEFAULT_HEALTH_CHECK_MS = 15 * 1000
+const DEFAULT_TRANSPORT_CHECK_TIMEOUT_MS = 1500
+const DEFAULT_RECOVERY_IDLE_WAIT_MS = 3000
+const DEFAULT_FAILURES_BEFORE_RECOVER = 2
+
+function nowISO() {
+  return new Date().toISOString()
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 function jsonResponse(res, status, payload) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
@@ -43,6 +55,10 @@ async function main(argv) {
   const gatewayHost = (args['gateway-host'] ?? DEFAULT_GATEWAY_HOST).trim()
   const gatewayPort = Number.parseInt(args['gateway-port'] ?? `${DEFAULT_GATEWAY_PORT}`, 10)
   const presenceRefreshMs = Math.max(0, Number.parseInt(args['presence-refresh-ms'] ?? `${DEFAULT_PRESENCE_REFRESH_MS}`, 10) || DEFAULT_PRESENCE_REFRESH_MS)
+  const healthCheckMs = Math.max(1000, Number.parseInt(args['health-check-ms'] ?? `${DEFAULT_HEALTH_CHECK_MS}`, 10) || DEFAULT_HEALTH_CHECK_MS)
+  const transportCheckTimeoutMs = Math.max(250, Number.parseInt(args['transport-check-timeout-ms'] ?? `${DEFAULT_TRANSPORT_CHECK_TIMEOUT_MS}`, 10) || DEFAULT_TRANSPORT_CHECK_TIMEOUT_MS)
+  const recoveryIdleWaitMs = Math.max(0, Number.parseInt(args['recovery-idle-wait-ms'] ?? `${DEFAULT_RECOVERY_IDLE_WAIT_MS}`, 10) || DEFAULT_RECOVERY_IDLE_WAIT_MS)
+  const failuresBeforeRecover = Math.max(1, Number.parseInt(args['failures-before-recover'] ?? `${DEFAULT_FAILURES_BEFORE_RECOVER}`, 10) || DEFAULT_FAILURES_BEFORE_RECOVER)
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const listenAddrs = parseList(args['listen-addrs'], ['/ip4/0.0.0.0/tcp/0'])
@@ -51,70 +67,313 @@ async function main(argv) {
 
   const binding = await getBindingDocument(apiBase)
   const relayListenAddrs = buildRelayListenAddrs(binding.relayMultiaddrs ?? [])
-  const node = await createNode({
-    listenAddrs,
-    relayListenAddrs,
-    peerKeyFile
-  })
-
-  await attachInboundRouter({
-    apiBase,
-    agentId,
-    bundle,
-    node,
-    binding,
-    sessionStore: runtimeState
-  })
-
   const requireRelayReservation = relayListenAddrs.length > 0
-  let online = await publishGatewayPresence(
-    apiBase,
-    agentId,
-    bundle,
-    node,
-    binding,
-    'Gateway listener ready for trusted direct sessions.',
-    { requireRelayReservation }
-  )
-  const presenceTimer = presenceRefreshMs > 0
-    ? setInterval(async () => {
-        try {
-          online = await publishGatewayPresence(
-            apiBase,
-            agentId,
-            bundle,
-            node,
-            binding,
-            'Gateway listener ready for trusted direct sessions.',
-            { requireRelayReservation }
-          )
-        } catch (error) {
-          console.error(`gateway presence refresh failed: ${error.message}`)
-        }
-      }, presenceRefreshMs)
-    : null
 
   let gatewayBase = `http://${gatewayHost}:${gatewayPort}`
+  let actualGatewayPort = gatewayPort
+  let currentNode = null
+  let online = null
+  let recoveryPromise = null
+  let stopping = false
+  let activeOperations = 0
+  const idleWaiters = []
+  const lifecycle = {
+    generation: 0,
+    recovering: false,
+    lastRecoveryAt: '',
+    lastRecoveryReason: '',
+    lastHealthyAt: '',
+    lastError: '',
+    consecutiveFailures: 0
+  }
+
+  function flushIdleWaiters() {
+    if (activeOperations !== 0) {
+      return
+    }
+    while (idleWaiters.length > 0) {
+      const resolve = idleWaiters.shift()
+      resolve?.(true)
+    }
+  }
+
+  function beginOperation() {
+    activeOperations += 1
+    let done = false
+    return () => {
+      if (done) {
+        return
+      }
+      done = true
+      activeOperations = Math.max(0, activeOperations - 1)
+      flushIdleWaiters()
+    }
+  }
+
+  async function waitForIdle(timeoutMs) {
+    if (activeOperations === 0) {
+      return true
+    }
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        const index = idleWaiters.indexOf(onIdle)
+        if (index >= 0) {
+          idleWaiters.splice(index, 1)
+        }
+        resolve(false)
+      }, timeoutMs)
+      const onIdle = () => {
+        clearTimeout(timer)
+        resolve(true)
+      }
+      idleWaiters.push(onIdle)
+    })
+  }
+
+  function markHealthy() {
+    lifecycle.lastHealthyAt = nowISO()
+    lifecycle.lastError = ''
+    lifecycle.consecutiveFailures = 0
+  }
+
+  function noteFailure(error) {
+    lifecycle.lastError = error?.message ?? `${error ?? 'gateway failure'}`
+    lifecycle.consecutiveFailures += 1
+  }
+
+  function buildLifecycleSnapshot() {
+    return {
+      ...lifecycle,
+      activeOperations,
+      hasNode: Boolean(currentNode),
+      online
+    }
+  }
+
+  function writeStateForNode(node) {
+    if (!gatewayBase || !node?.peerId?.toString?.()) {
+      return
+    }
+    writeGatewayState(gatewayStateFile, {
+      agentId,
+      gatewayBase,
+      gatewayHost,
+      gatewayPort: actualGatewayPort,
+      keyFile: path.resolve(keyFile),
+      peerKeyFile: path.resolve(peerKeyFile),
+      peerId: node.peerId.toString(),
+      updatedAt: nowISO()
+    })
+  }
+
+  async function stopNode(node) {
+    if (!node) {
+      return
+    }
+    try {
+      await node.stop()
+    } catch (error) {
+      console.error(`gateway node stop failed: ${error.message}`)
+    }
+  }
+
+  async function createAttachedNode() {
+    const node = await createNode({
+      listenAddrs,
+      relayListenAddrs,
+      peerKeyFile
+    })
+    await attachInboundRouter({
+      apiBase,
+      agentId,
+      bundle,
+      node,
+      binding,
+      sessionStore: runtimeState
+    })
+    return node
+  }
+
+  async function verifyTransport(node, timeoutMs = transportCheckTimeoutMs) {
+    const transport = await currentTransport(node, binding, {
+      requireRelayReservation,
+      timeoutMs
+    })
+    markHealthy()
+    return transport
+  }
+
+  async function publishPresence(node, activitySummary = 'Gateway listener ready for trusted direct sessions.') {
+    const value = await publishGatewayPresence(
+      apiBase,
+      agentId,
+      bundle,
+      node,
+      binding,
+      activitySummary,
+      { requireRelayReservation }
+    )
+    online = value
+    markHealthy()
+    return value
+  }
+
+  async function recoverGateway(reason) {
+    if (stopping) {
+      throw new Error('gateway is stopping')
+    }
+    if (recoveryPromise) {
+      return recoveryPromise
+    }
+
+    recoveryPromise = (async () => {
+      lifecycle.recovering = true
+      lifecycle.lastRecoveryAt = nowISO()
+      lifecycle.lastRecoveryReason = `${reason}`.trim() || 'gateway recovery'
+
+      const previousNode = currentNode
+      currentNode = null
+      online = null
+
+      await waitForIdle(recoveryIdleWaitMs)
+      runtimeState.reset({
+        reason: `gateway reconnect in progress: ${lifecycle.lastRecoveryReason}`
+      })
+      await stopNode(previousNode)
+
+      let nextNode = null
+      try {
+        nextNode = await createAttachedNode()
+        await publishPresence(nextNode)
+        currentNode = nextNode
+        lifecycle.generation += 1
+        lifecycle.recovering = false
+        writeStateForNode(nextNode)
+        console.log(JSON.stringify({
+          event: lifecycle.generation === 1 ? 'gateway-started' : 'gateway-recovered',
+          agentId,
+          gatewayBase,
+          gatewayStateFile,
+          peerId: nextNode.peerId.toString(),
+          listenAddrs: directListenAddrs(nextNode),
+          relayAddrs: relayReservationAddrs(nextNode),
+          streamProtocol: binding.streamProtocol,
+          peerKeyFile,
+          lifecycle: buildLifecycleSnapshot(),
+          runtimeState: runtimeState.snapshot()
+        }, null, 2))
+        return nextNode
+      } catch (error) {
+        lifecycle.lastError = error.message
+        if (nextNode) {
+          await stopNode(nextNode)
+        }
+        throw error
+      } finally {
+        lifecycle.recovering = false
+        recoveryPromise = null
+      }
+    })()
+
+    return recoveryPromise
+  }
+
+  async function ensureGatewayReady(reason) {
+    if (recoveryPromise) {
+      await recoveryPromise
+    }
+    if (!currentNode) {
+      await recoverGateway(reason)
+    }
+    if (!currentNode) {
+      throw new Error('gateway transport is unavailable')
+    }
+    try {
+      await verifyTransport(currentNode)
+      return currentNode
+    } catch (error) {
+      noteFailure(error)
+      await recoverGateway(`${reason}: ${error.message}`)
+      if (!currentNode) {
+        throw new Error(`gateway transport is unavailable: ${error.message}`)
+      }
+      await verifyTransport(currentNode)
+      return currentNode
+    }
+  }
+
+  async function runHealthCheck(source) {
+    if (recoveryPromise || stopping) {
+      return
+    }
+    if (!currentNode) {
+      try {
+        await recoverGateway(`${source}: no active gateway node`)
+      } catch (error) {
+        noteFailure(error)
+        console.error(`${source} recovery failed: ${error.message}`)
+      }
+      return
+    }
+    try {
+      await verifyTransport(currentNode)
+    } catch (error) {
+      noteFailure(error)
+      console.error(`${source} failed: ${error.message}`)
+      if (lifecycle.consecutiveFailures >= failuresBeforeRecover) {
+        try {
+          await recoverGateway(`${source}: ${error.message}`)
+        } catch (recoveryError) {
+          noteFailure(recoveryError)
+          console.error(`${source} recovery failed: ${recoveryError.message}`)
+        }
+      }
+    }
+  }
+
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', gatewayBase)
       if (req.method === 'GET' && url.pathname === '/health') {
-        const transport = await currentTransport(node, binding, { requireRelayReservation })
-        jsonResponse(res, 200, {
-          agentId,
-          gatewayBase,
-          gatewayStateFile,
-          peerId: transport.peerId,
-          listenAddrs: transport.listenAddrs,
-          relayAddrs: transport.relayAddrs,
-          directListenAddrs: directListenAddrs(node),
-          relayReservationAddrs: relayReservationAddrs(node),
-          streamProtocol: transport.streamProtocol,
-          supportedBindings: transport.supportedBindings,
-          online,
-          runtimeState: runtimeState.snapshot()
-        })
-        return
+        if (recoveryPromise || !currentNode) {
+          jsonResponse(res, 503, {
+            agentId,
+            gatewayBase,
+            gatewayStateFile,
+            lifecycle: buildLifecycleSnapshot(),
+            runtimeState: runtimeState.snapshot()
+          })
+          return
+        }
+        try {
+          const transport = await verifyTransport(currentNode)
+          jsonResponse(res, 200, {
+            agentId,
+            gatewayBase,
+            gatewayStateFile,
+            peerId: transport.peerId,
+            listenAddrs: transport.listenAddrs,
+            relayAddrs: transport.relayAddrs,
+            directListenAddrs: directListenAddrs(currentNode),
+            relayReservationAddrs: relayReservationAddrs(currentNode),
+            streamProtocol: transport.streamProtocol,
+            supportedBindings: transport.supportedBindings,
+            lifecycle: buildLifecycleSnapshot(),
+            runtimeState: runtimeState.snapshot()
+          })
+          return
+        } catch (error) {
+          noteFailure(error)
+          jsonResponse(res, 503, {
+            agentId,
+            gatewayBase,
+            gatewayStateFile,
+            error: { message: error.message },
+            lifecycle: buildLifecycleSnapshot(),
+            runtimeState: runtimeState.snapshot()
+          })
+          return
+        }
       }
 
       if (req.method === 'GET' && url.pathname === '/inbound/next') {
@@ -146,23 +405,29 @@ async function main(argv) {
       }
 
       if (req.method === 'POST' && url.pathname === '/connect') {
-        const body = await readJson(req)
-        const result = await openDirectPeerSession({
-          apiBase,
-          agentId,
-          bundle,
-          node,
-          binding,
-          targetAgentId: requireArg(body.targetAgentId, 'targetAgentId is required'),
-          skillName: (body.skillHint ?? body.skillName ?? '').trim(),
-          method: requireArg(body.method, 'method is required'),
-          message: body.message,
-          activitySummary: (body.activitySummary ?? '').trim() || `Preparing direct peer session${(body.skillHint ?? body.skillName ?? '').trim() ? ` for ${(body.skillHint ?? body.skillName ?? '').trim()}` : ''}.`,
-          report: body.report ?? null,
-          sessionStore: runtimeState
-        })
-        jsonResponse(res, 200, result)
-        return
+        const node = await ensureGatewayReady('connect request')
+        const releaseOperation = beginOperation()
+        try {
+          const body = await readJson(req)
+          const result = await openDirectPeerSession({
+            apiBase,
+            agentId,
+            bundle,
+            node,
+            binding,
+            targetAgentId: requireArg(body.targetAgentId, 'targetAgentId is required'),
+            skillName: (body.skillHint ?? body.skillName ?? '').trim(),
+            method: requireArg(body.method, 'method is required'),
+            message: body.message,
+            activitySummary: (body.activitySummary ?? '').trim() || `Preparing direct peer session${(body.skillHint ?? body.skillName ?? '').trim() ? ` for ${(body.skillHint ?? body.skillName ?? '').trim()}` : ''}.`,
+            report: body.report ?? null,
+            sessionStore: runtimeState
+          })
+          jsonResponse(res, 200, result)
+          return
+        } finally {
+          releaseOperation()
+        }
       }
 
       jsonResponse(res, 404, { error: { message: 'Not found' } })
@@ -176,41 +441,85 @@ async function main(argv) {
     server.listen(gatewayPort, gatewayHost, resolve)
   })
   const controlAddress = server.address()
-  const actualGatewayPort = typeof controlAddress === 'object' && controlAddress ? controlAddress.port : gatewayPort
+  actualGatewayPort = typeof controlAddress === 'object' && controlAddress ? controlAddress.port : gatewayPort
   gatewayBase = `http://${gatewayHost}:${actualGatewayPort}`
-  writeGatewayState(gatewayStateFile, {
-    agentId,
-    gatewayBase,
-    gatewayHost,
-    gatewayPort: actualGatewayPort,
-    keyFile: path.resolve(keyFile),
-    peerKeyFile: path.resolve(peerKeyFile),
-    peerId: node.peerId.toString(),
-    updatedAt: new Date().toISOString()
-  })
 
-  console.log(JSON.stringify({
-    agentId,
-    gatewayBase,
-    gatewayStateFile,
-    peerId: node.peerId.toString(),
-    listenAddrs: directListenAddrs(node),
-    relayAddrs: relayReservationAddrs(node),
-    streamProtocol: binding.streamProtocol,
-    peerKeyFile,
-    runtimeState: runtimeState.snapshot()
-  }, null, 2))
+  try {
+    await recoverGateway('initial startup')
+  } catch (error) {
+    noteFailure(error)
+    console.error(`gateway initial startup failed: ${error.message}`)
+  }
+
+  const presenceTimer = presenceRefreshMs > 0
+    ? setInterval(async () => {
+        if (stopping || recoveryPromise) {
+          return
+        }
+        if (!currentNode) {
+          try {
+            await recoverGateway('presence refresh found no active gateway node')
+          } catch (error) {
+            noteFailure(error)
+            console.error(`gateway presence recovery failed: ${error.message}`)
+          }
+          return
+        }
+        try {
+          await publishPresence(currentNode)
+        } catch (error) {
+          noteFailure(error)
+          console.error(`gateway presence refresh failed: ${error.message}`)
+          if (lifecycle.consecutiveFailures >= failuresBeforeRecover) {
+            try {
+              await recoverGateway(`presence refresh failed: ${error.message}`)
+            } catch (recoveryError) {
+              noteFailure(recoveryError)
+              console.error(`gateway presence recovery failed: ${recoveryError.message}`)
+            }
+          }
+        }
+      }, presenceRefreshMs)
+    : null
+
+  const healthTimer = setInterval(async () => {
+    await runHealthCheck('gateway transport watchdog')
+  }, healthCheckMs)
 
   const stop = async () => {
+    if (stopping) {
+      return
+    }
+    stopping = true
     if (presenceTimer) {
       clearInterval(presenceTimer)
     }
+    clearInterval(healthTimer)
+    await sleep(10)
+    if (recoveryPromise) {
+      try {
+        await recoveryPromise
+      } catch {
+        // best-effort shutdown only
+      }
+    }
     await new Promise((resolve) => server.close(resolve))
-    await node.stop()
+    await stopNode(currentNode)
     process.exit(0)
   }
-  process.on('SIGINT', stop)
-  process.on('SIGTERM', stop)
+
+  process.on('SIGINT', () => {
+    stop().catch((error) => {
+      console.error(error.message)
+      process.exit(1)
+    })
+  })
+  process.on('SIGTERM', () => {
+    stop().catch((error) => {
+      console.error(error.message)
+      process.exit(1)
+    })
+  })
 }
 
 main(process.argv.slice(2)).catch((error) => {
