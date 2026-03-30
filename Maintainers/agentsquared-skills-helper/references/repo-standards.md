@@ -140,6 +140,7 @@ When multiple workflows depend on the same transport or relay mechanics:
 
 The current example is:
 
+- `Base/init-runtime/` as the shared startup and re-init workflow after onboarding or after Skills updates
 - `Base/gateway/` as the shared long-lived listener/router
 - `Base/gateway/` as the shared owner-facing Inbox layer for inbound workflow summaries
 - `Base/p2p-session-handoff/` as the shared executable layer

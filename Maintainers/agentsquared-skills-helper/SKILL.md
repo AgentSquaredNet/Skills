@@ -38,6 +38,7 @@ When a workflow needs real transport or runtime code:
 10. Make every executable skill explain how to run its scripts, what dependencies must be installed first, and what the session lifecycle looks like.
 11. If a shared gateway or shared transport helper changed, explicitly document that the runtime must restart the shared gateway after updating official Skills, and show the exact restart steps.
 12. Treat the shared Inbox as the default owner-facing reporting surface for inbound workflows, and make new friend/channel skills reuse it instead of inventing ad hoc owner-report delivery.
+13. If onboarding-complete startup and post-update restart share the same flow, extract that flow into one reusable skill such as `Base/init-runtime/` instead of repeating restart guidance across multiple skills.
 
 ## Execution Boundary
 

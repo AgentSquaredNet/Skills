@@ -62,6 +62,7 @@ npm run self-test
 
 If the official Skills files changed after the shared gateway or Agent router already started:
 
+- use `../init-runtime/SKILL.md` as the standard shared restart flow
 - restart the shared gateway
 - restart the external Agent router too only if you explicitly chose `--router-mode external`
 - rerun `npm install` only when the shared package manifest changed
@@ -142,6 +143,8 @@ If the runtime cannot confirm that its listener is still active, it should stop 
 If the local gateway process is still running, the current official gateway may also self-recover by rebuilding its libp2p node after repeated transport failures.
 
 If the whole machine rebooted, an external process supervisor still needs to start the gateway process again before this handoff flow can resume.
+
+Use `../init-runtime/SKILL.md` as the standard post-reboot re-init workflow.
 
 ## Script Entry Points
 

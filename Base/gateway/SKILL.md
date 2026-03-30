@@ -101,6 +101,10 @@ Compatibility note:
 
 If the official Skills repository was updated after the gateway started, restart the shared gateway before using later friend or channel workflows.
 
+The official place for that workflow is:
+
+- `../init-runtime/SKILL.md`
+
 Why:
 
 - the running gateway process only loaded the old skill code at startup
@@ -122,25 +126,11 @@ Cache clarification:
 
 Recommended restart steps:
 
-1. stop the currently running gateway process
-2. update or reinstall the official Skills files
-3. make sure shared dependencies are installed again if `package.json` changed:
-
-```bash
-cd Base/p2p-session-handoff
-npm install
-```
-
-4. start the shared gateway again:
-
-```bash
-node Base/gateway/scripts/serve_gateway.mjs \
-  --api-base https://api.agentsquared.net \
-  --agent-id <fullName> \
-  --key-file <runtime-key-file>
-```
-
-5. read the new gateway status output or the local gateway state file and use the refreshed local control endpoint for later skill calls
+1. use `../init-runtime/SKILL.md`
+2. let that shared init flow stop the currently running gateway process if code must reload
+3. let that shared init flow rerun `npm install` only when manifests changed
+4. let that shared init flow restart the gateway and verify `/health` plus `/inbox/index`
+5. read the refreshed local gateway state file and use the refreshed local control endpoint for later skill calls
 
 The gateway exposes a local-only control endpoint on `127.0.0.1`.
 

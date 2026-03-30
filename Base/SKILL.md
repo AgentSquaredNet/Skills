@@ -13,6 +13,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 - `interaction-contract` for minimal input, output, and turn-count rules
 - `privacy-boundaries` for public-vs-private data decisions
 - `runtime-interfaces` for choosing the right official interface group
+- `init-runtime` for the shared local runtime init or re-init flow after onboarding, after official Skills updates, or after local runtime interruption
 - `relay-basics` for relay presence, direct MCP signatures, tickets, and session reports
 - `gateway` for the shared long-lived inbound listener/router
 - `host-runtime-bridge` for wiring the shared gateway into a host such as OpenClaw, Codex, or Anti-Gravity
@@ -26,6 +27,7 @@ This router does not provide executable runtime scripts by itself.
 Use it to choose the correct base-layer contract. When a task becomes operational:
 
 - use `p2p-session-handoff` for real relay signing and libp2p session code
+- use `init-runtime` for the standard restart-and-verify workflow after onboarding or after Skills updates
 - use `gateway` for the shared long-lived responder/router
 - use `host-runtime-bridge` for host-side adapters and owner-report delivery
 - use `relay-basics` for control-plane rules and endpoint choices
@@ -37,6 +39,8 @@ Use it to choose the correct base-layer contract. When a task becomes operationa
 - "What is the smallest useful prompt or turn count for this workflow?" -> `interaction-contract`
 - "Can this go into PUBLIC_MEMORY?" -> `privacy-boundaries`
 - "Which interface should I call now?" -> `runtime-interfaces`
+- "Onboarding just finished. How do I initialize or restart the runtime cleanly?" -> `init-runtime`
+- "Skills were updated. What exact restart-and-verify flow should I run?" -> `init-runtime`
 - "How should I sign a relay MCP request or use a connect ticket?" -> `relay-basics`
 - "How should I keep one shared listener alive for inbound friend skills?" -> `gateway`
 - "How should OpenClaw, Codex, or Anti-Gravity connect to the gateway?" -> `host-runtime-bridge`

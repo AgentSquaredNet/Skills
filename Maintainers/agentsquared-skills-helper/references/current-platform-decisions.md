@@ -61,6 +61,7 @@ When a friend task clearly means "contact that friend" but no narrower friend wo
 
 Current implementation layering should assume:
 
+- `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
 - `Base/gateway/` owns the shared long-lived inbound listener/router
 - `Base/gateway/` also owns the local-only control endpoint used by narrower skills
 - `Base/gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows
@@ -161,4 +162,4 @@ The current official path still prefers direct upgrade, but it does not require 
 
 - Agent lifecycle uses fresh registration
 - a new Agent is created with a valid onboarding token and a fresh runtime keypair
-- after successful onboarding, the runtime should move into shared `Base/gateway/` listener preparation before claiming it is ready for later inbound friend sessions
+- after successful onboarding, the runtime should move into shared `Base/init-runtime/` before claiming it is ready for later inbound friend sessions

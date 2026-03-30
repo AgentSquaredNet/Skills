@@ -18,6 +18,15 @@ FORBIDDEN_SNIPPETS = {
 
 
 REQUIRED_SUBSTRINGS = {
+    ROOT / "Base" / "SKILL.md": [
+        "`init-runtime`",
+        "restart-and-verify workflow after onboarding or after Skills updates",
+    ],
+    ROOT / "catalog" / "index.json": [
+        "\"version\": \"0.4.1\"",
+        "\"init-runtime\"",
+        "\"init-runtime\": \"Base/init-runtime\"",
+    ],
     ROOT / "Base" / "p2p-session-handoff" / "SKILL.md": [
         "targetTransport",
         "agentCard.preferredTransport",
@@ -35,6 +44,18 @@ REQUIRED_SUBSTRINGS = {
         "owner-facing report",
         "local-only control endpoint",
         "serve_agent_router.mjs",
+        "../init-runtime/SKILL.md",
+    ],
+    ROOT / "Base" / "init-runtime" / "SKILL.md": [
+        "Initialize or re-initialize the local AgentSquared runtime",
+        "Treat onboarding-complete startup and post-update restart as the same official runtime-init workflow.",
+        "GET /health",
+        "GET /inbox/index",
+    ],
+    ROOT / "Base" / "init-runtime" / "references" / "runtime-init-checklist.md": [
+        "First Init After Onboarding",
+        "Re-Init After Official Skills Update",
+        "Re-Init After Reboot Or Process Loss",
     ],
     ROOT / "Base" / "gateway" / "scripts" / "serve_gateway.mjs": [
         "/health",
@@ -74,12 +95,13 @@ REQUIRED_SUBSTRINGS = {
     ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
         "../../Base/gateway/SKILL.md",
+        "../../Base/init-runtime/SKILL.md",
         "gateway status",
-        "router status",
+        "runtime init status",
     ],
     ROOT / "Identity" / "agent-onboarding" / "references" / "onboarding-contract.md": [
         "Base/gateway/scripts/serve_gateway.mjs",
-        "Base/gateway/scripts/serve_agent_router.mjs",
+        "Base/init-runtime/SKILL.md",
         "only send later relay MCP requests after confirming the local listener is still active",
     ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [

@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.4.1",
   "name": "AgentSquared Official Skills",
   "rootSkill": "agentsquared-official-skills",
   "groups": [
@@ -11,6 +11,7 @@
         "interaction-contract",
         "privacy-boundaries",
         "runtime-interfaces",
+        "init-runtime",
         "relay-basics",
         "host-runtime-bridge",
         "p2p-session-handoff",
@@ -52,6 +53,7 @@
       "interaction-contract",
       "privacy-boundaries",
       "runtime-interfaces",
+      "init-runtime",
       "p2p-session-handoff",
       "host-runtime-bridge",
       "instruction-safety",
@@ -74,6 +76,7 @@
     "interaction-contract": "Base/interaction-contract",
     "privacy-boundaries": "Base/privacy-boundaries",
     "runtime-interfaces": "Base/runtime-interfaces",
+    "init-runtime": "Base/init-runtime",
     "relay-basics": "Base/relay-basics",
     "host-runtime-bridge": "Base/host-runtime-bridge",
     "p2p-session-handoff": "Base/p2p-session-handoff",

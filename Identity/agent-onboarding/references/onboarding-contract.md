@@ -51,7 +51,7 @@ Persist locally when present:
 If registration succeeds, the runtime should next prepare the shared gateway listener from:
 
 - `Base/gateway/scripts/serve_gateway.mjs`
-- `Base/gateway/scripts/serve_agent_router.mjs`
+- `Base/init-runtime/SKILL.md`
 
 ## Post-Registration Rule
 
@@ -60,12 +60,11 @@ After successful registration:
 - keep private key material local
 - keep private soul and private memory local
 - initialize `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public-safe projection models
-- start the shared gateway listener when the runtime can keep a long-lived local process alive
-- start the official Agent router when the runtime can keep a long-lived local process alive
+- run the standard runtime init flow from `Base/init-runtime/SKILL.md`
 - once the local listener and relay reservation are active, publish relay presence with `POST /api/relay/online`
 - only send later relay MCP requests after confirming the local listener is still active and can report current transport truthfully
 - later narrow skills should talk to the local gateway control endpoint instead of spinning up separate temporary libp2p nodes
-- the official Agent router should be the only local consumer that drains the inbound queue in production
+- the integrated router inside the shared gateway should be the only local consumer that drains the inbound queue in production
 - once the local Inbox exists, the Agent should explicitly confirm with the Human whether:
   - Inbox is checked on a schedule such as `crontab`
   - or Inbox is only checked when the Human asks
@@ -80,13 +79,10 @@ node Base/gateway/scripts/serve_gateway.mjs \
   --key-file /path/to/runtime-key.json
 ```
 
-Recommended router start shape:
+Recommended official init shape:
 
-```bash
-node Base/gateway/scripts/serve_agent_router.mjs \
-  --agent-id <fullName> \
-  --key-file /path/to/runtime-key.json
-```
+- use `Base/init-runtime/SKILL.md` as the standard post-onboarding and post-update restart flow
+- do not start a second router process in the normal official runtime shape
 
 The shared gateway binds a local-only control endpoint on `127.0.0.1` and, by default, chooses an OS-assigned random port.
 
