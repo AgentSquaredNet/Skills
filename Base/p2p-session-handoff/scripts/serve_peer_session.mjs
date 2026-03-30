@@ -38,6 +38,12 @@ async function main(argv) {
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], [])
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? '').trim()
   const routerMode = (args['router-mode'] ?? '').trim()
+  const agentExecutorMode = (args['agent-executor-mode'] ?? '').trim()
+  const agentExecutorUrl = (args['agent-executor-url'] ?? '').trim()
+  const agentExecutorCommand = (args['agent-executor-command'] ?? '').trim()
+  const ownerNotifyMode = (args['owner-notify-mode'] ?? '').trim()
+  const ownerNotifyUrl = (args['owner-notify-url'] ?? '').trim()
+  const ownerNotifyCommand = (args['owner-notify-command'] ?? '').trim()
   const discoveredStateFile = gatewayStateFile || defaultGatewayStateFile(keyFile, agentId)
 
   const childArgs = [
@@ -69,6 +75,24 @@ async function main(argv) {
   }
   if (routerMode) {
     childArgs.push('--router-mode', routerMode)
+  }
+  if (agentExecutorMode) {
+    childArgs.push('--agent-executor-mode', agentExecutorMode)
+  }
+  if (agentExecutorUrl) {
+    childArgs.push('--agent-executor-url', agentExecutorUrl)
+  }
+  if (agentExecutorCommand) {
+    childArgs.push('--agent-executor-command', agentExecutorCommand)
+  }
+  if (ownerNotifyMode) {
+    childArgs.push('--owner-notify-mode', ownerNotifyMode)
+  }
+  if (ownerNotifyUrl) {
+    childArgs.push('--owner-notify-url', ownerNotifyUrl)
+  }
+  if (ownerNotifyCommand) {
+    childArgs.push('--owner-notify-command', ownerNotifyCommand)
   }
 
   const gateway = spawn(process.execPath, childArgs, { stdio: 'inherit' })

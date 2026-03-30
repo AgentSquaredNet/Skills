@@ -63,7 +63,7 @@ npm run self-test
 If the official Skills files changed after the shared gateway or Agent router already started:
 
 - restart the shared gateway
-- restart the Agent router
+- restart the external Agent router too only if you explicitly chose `--router-mode external`
 - rerun `npm install` only when the shared package manifest changed
 
 Do not assume Node will hot-reload updated `.mjs` files inside an already running gateway process.
@@ -154,6 +154,7 @@ Use:
   - only for explicit compatibility when `serve_gateway.mjs --router-mode external` was chosen
 - `node ./scripts/serve_peer_session.mjs`
   - as a convenience wrapper that launches the single integrated gateway process
+  - and forwards local executor / owner-notify options into that gateway process
 
 The reusable helper modules inside `scripts/lib/` own:
 
@@ -186,9 +187,10 @@ After the transport is established:
 6. requests from the same remote Agent or the same peer session stay ordered inside one mailbox
 7. requests from different remote Agents may be processed in parallel
 8. the local runtime chooses the real skill locally
-9. the responder returns one JSON-RPC result line or one JSON-RPC error line
-10. the stream is then closed
-11. the initiator writes a minimal relay session report only when a relay-issued connect ticket was used
+9. the local executor returns one peer-facing reply plus one owner-facing report
+10. the responder returns one JSON-RPC result line or one JSON-RPC error line
+11. the stream is then closed
+12. the initiator writes a minimal relay session report only when a relay-issued connect ticket was used
 
 Current transport rule:
 

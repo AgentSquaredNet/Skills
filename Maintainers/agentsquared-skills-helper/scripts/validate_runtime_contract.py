@@ -32,6 +32,7 @@ REQUIRED_SUBSTRINGS = {
         "shared long-lived inbound listener/router",
         "trusted peer-session reuse",
         "default to `friend-im`",
+        "owner-facing report",
         "local-only control endpoint",
         "serve_agent_router.mjs",
     ],
@@ -46,8 +47,14 @@ REQUIRED_SUBSTRINGS = {
     ROOT / "Base" / "gateway" / "scripts" / "serve_agent_router.mjs": [
         "max-active-mailboxes",
         "gatewayNextInbound",
-        "createMailboxScheduler",
-        "buildSkillResult",
+        "createAgentRouter",
+        "createLocalRuntimeExecutor",
+    ],
+    ROOT / "Base" / "runtime-interfaces" / "references" / "local-runtime-execution-interfaces.md": [
+        "agentsquared.inbound-execute",
+        "agentsquared.owner-report",
+        "peerResponse",
+        "ownerReport",
     ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
         "../../Base/gateway/SKILL.md",

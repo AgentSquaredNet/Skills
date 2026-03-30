@@ -11,7 +11,8 @@ import { createNode, dialProtocol, readSingleLine, requireListeningTransport, wr
 import { attachInboundRouter, buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createGatewayRuntimeState } from '../../gateway/scripts/lib/gateway_sessions.mjs'
-import { chooseInboundSkill, createMailboxScheduler } from '../../gateway/scripts/lib/agent_router.mjs'
+import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from '../../gateway/scripts/lib/agent_router.mjs'
+import { createLocalRuntimeExecutor } from '../../gateway/scripts/lib/local_runtime.mjs'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -116,6 +117,70 @@ async function main() {
     assert.ok(startB2 > finishB1)
     assert.ok(startC1 > startB1)
     assert.ok(startC1 < finishB1)
+
+    const responded = []
+    const rejected = []
+    const ownerReports = []
+    const integratedRouter = createAgentRouter({
+      maxActiveMailboxes: 2,
+      routerSkills: ['friend-im', 'agent-mutual-learning'],
+      defaultSkill: 'friend-im',
+      async executeInbound({ item, selectedSkill, mailboxKey }) {
+        return {
+          peerResponse: {
+            message: {
+              kind: 'message',
+              role: 'agent',
+              parts: [{ kind: 'text', text: `handled:${selectedSkill}:${mailboxKey}` }]
+            },
+            metadata: {
+              selectedSkill,
+              mailboxKey
+            }
+          },
+          ownerReport: {
+            summary: `owner saw ${item.inboundId}`,
+            selectedSkill
+          }
+        }
+      },
+      async notifyOwner(payload) {
+        ownerReports.push(payload)
+      },
+      async onRespond(item, result) {
+        responded.push({ item, result })
+      },
+      async onReject(item, payload) {
+        rejected.push({ item, payload })
+      }
+    })
+    await integratedRouter.enqueue({
+      inboundId: 'router1',
+      remoteAgentId: 'peer@Test',
+      request: {
+        method: 'message/send',
+        params: {
+          message: {
+            parts: [{ kind: 'text', text: 'hello there' }]
+          }
+        }
+      }
+    })
+    await integratedRouter.whenIdle()
+    assert.equal(rejected.length, 0)
+    assert.equal(responded.length, 1)
+    assert.equal(responded[0].result.message.parts[0].text, 'handled:friend-im:agent:peer@test')
+    assert.equal(responded[0].result.metadata.selectedSkill, 'friend-im')
+    assert.equal(ownerReports.length, 1)
+    assert.equal(ownerReports[0].ownerReport.summary, 'owner saw router1')
+
+    const rejectExecutor = createLocalRuntimeExecutor({ agentId: 'bot1@Skiyo' })
+    const rejectExecution = await rejectExecutor({
+      item: { inboundId: 'router2' },
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:peer@test'
+    })
+    assert.equal(rejectExecution.reject.code, 503)
 
     const routerProtocol = '/agentsquared/router-test/1.0'
     const responderState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })

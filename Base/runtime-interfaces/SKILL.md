@@ -38,6 +38,7 @@ This skill routes by interface purpose. It does not replace narrower skills such
 - Relay presence publication: used by the Agent to publish current peer information
 - Signed relay MCP control plane: used by the Agent for friend reads, connect tickets, introspection, and session reporting, and to refresh current transport metadata during successful runtime activity
 - Direct peer-session handoff: used after relay authorization when the runtime must open a private libp2p A2A session
+- Local runtime execution and owner notification: used after one private inbound peer request was accepted locally
 
 Read:
 
@@ -45,6 +46,7 @@ Read:
 - `references/onboarding-interfaces.md`
 - `references/signed-relay-request-interfaces.md`
 - `references/relay-control-plane-interfaces.md`
+- `references/local-runtime-execution-interfaces.md`
 - `references/website-and-human-interfaces.md`
 - `../../Shared/references/time-handling.md`
 
@@ -55,6 +57,7 @@ Read:
 - If the task is "Agent wants relay to remember current peer information", use the relay presence interface.
 - If the task is "Agent reads friend data, prepares tickets, introspects sessions, or reports outcomes", use the signed relay MCP interfaces.
 - If the task is "Agent already has a ticket and now must open a private direct session", use `../../Base/p2p-session-handoff/SKILL.md`.
+- If the task is "gateway/router must hand one validated inbound request to the local Agent runtime and deliver an owner report", use `references/local-runtime-execution-interfaces.md`.
 - Start relay reads and coordination directly with signed relay MCP requests.
 
 ## Human Prompt Rule

@@ -251,9 +251,14 @@ export function createAgentRouter({
   maxActiveMailboxes = 8,
   routerSkills = DEFAULT_ROUTER_SKILLS,
   defaultSkill = DEFAULT_ROUTER_DEFAULT_SKILL,
+  executeInbound,
+  notifyOwner = null,
   onRespond,
   onReject
 } = {}) {
+  if (typeof executeInbound !== 'function') {
+    throw new Error('executeInbound is required')
+  }
   if (typeof onRespond !== 'function') {
     throw new Error('onRespond is required')
   }
@@ -279,13 +284,32 @@ export function createAgentRouter({
         return { selectedSkill: '', rejected: true }
       }
 
-      const result = buildSkillResult(selectedSkill, item)
-      result.metadata = {
-        ...(result.metadata ?? {}),
+      const execution = await executeInbound({
+        item,
+        selectedSkill,
         mailboxKey
+      })
+
+      if (execution?.reject) {
+        await onReject(item, execution.reject)
+        return { selectedSkill, rejected: true }
       }
-      await onRespond(item, result)
-      return { selectedSkill, rejected: false }
+
+      if (execution?.ownerReport != null && typeof notifyOwner === 'function') {
+        await notifyOwner({
+          item,
+          selectedSkill,
+          mailboxKey,
+          ownerReport: execution.ownerReport
+        })
+      }
+
+      await onRespond(item, execution.peerResponse)
+      return {
+        selectedSkill,
+        rejected: false,
+        ownerReportDelivered: execution?.ownerReport != null && typeof notifyOwner === 'function'
+      }
     }
   })
 
@@ -302,6 +326,8 @@ export function createAgentRouter({
       return {
         routerSkills: normalizedRouterSkills,
         defaultSkill: normalizedDefaultSkill,
+        executorMode: `${executeInbound?.mode ?? 'custom'}`.trim() || 'custom',
+        ownerNotifyMode: `${notifyOwner?.mode ?? 'custom'}`.trim() || 'custom',
         scheduler: scheduler.snapshot()
       }
     }

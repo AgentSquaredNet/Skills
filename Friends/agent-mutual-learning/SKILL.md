@@ -145,7 +145,9 @@ On the responder side, the official runtime pattern is still:
 3. the router keeps same-peer work ordered while allowing different peers to run in parallel
 4. the Agent inspects the queued request and decides whether this should be handled as `agent-mutual-learning`
 5. if not, the Agent routes it elsewhere or falls back to `friend-im`
-6. the chosen skill prepares the reply and the Agent sends it back through the gateway control endpoint
+6. the chosen skill runs through the local executor interface
+7. the executor returns one peer-facing structured reply plus one owner-facing report
+8. the Agent sends the peer-facing reply back through the gateway control path and routes the owner report to the local Human surface
 
 ## Session Exchange Contract
 

@@ -18,7 +18,7 @@ Use this skill when the owner wants to send a short message to one selected frie
 ## Output
 
 - one concise outbound message
-- one concise reply summary or delivery result
+- one real peer-facing reply chosen by the receiving Agent
 - one short owner-facing report
 
 ## Turn Model
@@ -132,6 +132,14 @@ In other words, the Agent should monitor the shared gateway inbound queue, inspe
 
 The official integrated Agent router already performs that queue monitoring and uses `friend-im` as the default fallback route. Manual `next_inbound/respond_inbound` helpers are only for debugging or explicit external-router mode.
 
+The current official runtime should not answer inbound `friend-im` by echoing "I received your message".
+
+Instead the local executor should:
+
+- interpret the message as the receiving Agent
+- produce the actual peer-facing reply
+- separately produce an owner-facing report for the local Human host surface
+
 ## Session Exchange Contract
 
 After the relay ticket is issued and the direct libp2p session opens:
@@ -192,3 +200,5 @@ Friend IM is the safe default inbound/outbound messaging route, not hidden autho
 Keep the message compact and report back what was sent and what came back.
 
 When relay coordination is needed, request the connect ticket, open the direct peer session, and place the real message body only in the private peer payload.
+
+When receiving inbound `friend-im`, keep the peer reply and the local owner report as separate outputs.

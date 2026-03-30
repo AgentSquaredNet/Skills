@@ -8,6 +8,7 @@ import {
   DEFAULT_ROUTER_SKILLS,
   createAgentRouter
 } from './lib/agent_router.mjs'
+import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 
 async function main(argv) {
   const args = parseArgs(argv)
@@ -23,6 +24,24 @@ async function main(argv) {
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
+  const agentExecutorMode = `${args['agent-executor-mode'] ?? 'reject'}`.trim().toLowerCase() || 'reject'
+  const agentExecutorUrl = `${args['agent-executor-url'] ?? ''}`.trim()
+  const agentExecutorCommand = `${args['agent-executor-command'] ?? ''}`.trim()
+  const ownerNotifyMode = `${args['owner-notify-mode'] ?? 'stdout'}`.trim().toLowerCase() || 'stdout'
+  const ownerNotifyUrl = `${args['owner-notify-url'] ?? ''}`.trim()
+  const ownerNotifyCommand = `${args['owner-notify-command'] ?? ''}`.trim()
+  const localRuntimeExecutor = createLocalRuntimeExecutor({
+    agentId,
+    mode: agentExecutorMode,
+    url: agentExecutorUrl,
+    command: agentExecutorCommand
+  })
+  const ownerNotifier = createOwnerNotifier({
+    agentId,
+    mode: ownerNotifyMode,
+    url: ownerNotifyUrl,
+    command: ownerNotifyCommand
+  })
 
   const health = await gatewayHealth(gatewayBase)
   console.log(JSON.stringify({
@@ -31,6 +50,8 @@ async function main(argv) {
     peerId: health?.peerId ?? '',
     routerSkills,
     defaultSkill,
+    executorMode: localRuntimeExecutor.mode,
+    ownerNotifyMode: ownerNotifier.mode,
     maxActiveMailboxes,
     routerMode: health?.routerMode ?? ''
   }, null, 2))
@@ -44,6 +65,8 @@ async function main(argv) {
     maxActiveMailboxes,
     routerSkills,
     defaultSkill,
+    executeInbound: localRuntimeExecutor,
+    notifyOwner: ownerNotifier,
     onRespond(item, result) {
       return gatewayRespondInbound(gatewayBase, {
         inboundId: item.inboundId,
