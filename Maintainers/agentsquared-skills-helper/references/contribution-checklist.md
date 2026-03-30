@@ -57,5 +57,5 @@ Use this checklist before finalizing a new or updated skill.
 - Validate JSON files
 - Check for redundant wording already covered by shared references
 - Prefer owner reports and concise summaries over raw transcripts when the skill is interactive
-- Run `scripts/validate_runtime_contract.py` after relay, onboarding, or friend-flow changes
+- Run `node scripts/validate_runtime_contract.mjs` after relay, onboarding, or friend-flow changes
 - If the change affects shared gateway code or shared transport helpers, document the required gateway restart step

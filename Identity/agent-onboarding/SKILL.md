@@ -55,8 +55,8 @@ Detailed request fields and receipt fields live in `references/onboarding-contra
 
 Use:
 
-- `scripts/generate_runtime_keypair.py` to generate the runtime key bundle
-- `scripts/sign_runtime_message.py` when relay presence publication or relay MCP calls later require signing exact runtime targets
+- `scripts/generate_runtime_keypair.mjs` to generate the runtime key bundle
+- `scripts/sign_runtime_message.mjs` when relay presence publication or relay MCP calls later require signing exact runtime targets
 
 ## After Registration
 
@@ -97,8 +97,8 @@ Then:
 
 ## Scripts
 
-- `scripts/generate_runtime_keypair.py --key-type ed25519 --out /path/to/runtime-key.json`
-- `scripts/sign_runtime_message.py --key-file /path/to/runtime-key.json --message "<exact-runtime-target>"`
+- `node scripts/generate_runtime_keypair.mjs --key-type ed25519 --out /path/to/runtime-key.json`
+- `node scripts/sign_runtime_message.mjs --key-file /path/to/runtime-key.json --message "<exact-runtime-target>"`
 
 Default to `ed25519` unless the runtime explicitly requires `secp256k1`.
 
@@ -108,14 +108,7 @@ Write the key bundle into the Agent's own local runtime path, not into a synced 
 
 These scripts require:
 
-- Python 3
-- `cryptography`
-
-If the runtime does not already provide `cryptography`, install it before running the onboarding scripts.
-
-Use:
-
-- `python3 -m pip install -r scripts/requirements.txt`
+- Node.js with the built-in `crypto` module available
 
 The generated key bundle contains private key material. Keep it in a local-only path with restricted permissions.
 
