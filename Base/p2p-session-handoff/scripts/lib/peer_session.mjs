@@ -48,7 +48,7 @@ export async function openDirectPeerSession({
   activitySummary,
   report,
   sessionStore = null,
-  allowTrustedReuse = false
+  allowTrustedReuse = true
 }) {
   const cachedSession = sessionStore?.trustedSessionByAgent?.(targetAgentId) ?? null
   const liveConnection = cachedSession?.remotePeerId ? currentPeerConnection(node, cachedSession.remotePeerId) : null
@@ -56,49 +56,75 @@ export async function openDirectPeerSession({
   let ticket = null
   let peerSessionId = `${cachedSession?.peerSessionId ?? ''}`.trim()
   let targetTransport = null
-  let stream = null
   let reusedSession = false
+  const reusableTransport = allowTrustedReuse && cachedSession && liveConnection
+    ? mergeTargetTransport({
+        primary: cachedSession.remoteTransport,
+        secondary: cachedSession?.remotePeerId
+          ? {
+              peerId: cachedSession.remotePeerId,
+              streamProtocol: binding.streamProtocol
+            }
+          : null,
+        streamProtocol: binding.streamProtocol
+      })
+    : null
 
-  if (allowTrustedReuse && cachedSession && liveConnection) {
-    const reusableTransport = mergeTargetTransport({
-      primary: cachedSession.remoteTransport,
-      secondary: cachedSession?.remotePeerId
-        ? {
-            peerId: cachedSession.remotePeerId,
-            streamProtocol: binding.streamProtocol
+  if (reusableTransport?.peerId && reusableTransport?.streamProtocol) {
+    try {
+      sessionStore?.touchTrustedSession?.(cachedSession.peerSessionId)
+      const reusedResponse = await exchangeOverTransport({
+        node,
+        transport: reusableTransport,
+        request: buildJsonRpcEnvelope({
+          method,
+          message,
+          metadata: {
+            relayConnectTicket: '',
+            peerSessionId,
+            skillHint: `${skillName ?? ''}`.trim(),
+            from: agentId,
+            to: targetAgentId
           }
-        : null,
-      streamProtocol: binding.streamProtocol
-    })
-    if (reusableTransport?.peerId && reusableTransport?.streamProtocol) {
-      try {
-        sessionStore?.touchTrustedSession?.(cachedSession.peerSessionId)
-        stream = await openStreamOnExistingConnection(node, reusableTransport)
-        targetTransport = reusableTransport
-        reusedSession = true
-      } catch {
-        stream = null
-        targetTransport = null
+        }),
+        reuseExistingConnection: true
+      })
+      targetTransport = reusableTransport
+      reusedSession = true
+
+      if (peerSessionId && targetTransport?.peerId) {
+        sessionStore?.rememberTrustedSession?.({
+          peerSessionId,
+          remoteAgentId: targetAgentId,
+          remotePeerId: targetTransport.peerId,
+          remoteTransport: targetTransport,
+          skillHint: `${skillName ?? ''}`.trim()
+        })
+      }
+
+      return { ticket, peerSessionId, response: reusedResponse, sessionReport: null, reusedSession }
+    } catch (error) {
+      if (!isTrustedSessionRetryable(error)) {
+        throw error
       }
     }
   }
 
-  if (!stream) {
-    const transport = await currentTransport(node, binding, { requireRelayReservation: true })
-    const latestAgentCard = await bestEffortAgentCard(apiBase, agentId, bundle, targetAgentId, transport)
-    ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
-    targetTransport = mergeTargetTransport({
-      primary: latestAgentCard?.preferredTransport ?? null,
-      secondary: ticket.targetTransport ?? ticket.agentCard?.preferredTransport ?? null,
-      tertiary: cachedSession?.remoteTransport ?? null,
-      streamProtocol: binding.streamProtocol
-    })
-    peerSessionId = parseConnectTicketId(ticket.ticket) || randomRequestId('peer')
-    stream = await dialProtocol(node, targetTransport, { requireDirect: false })
-  }
+  const transport = await currentTransport(node, binding, { requireRelayReservation: true })
+  const latestAgentCard = await bestEffortAgentCard(apiBase, agentId, bundle, targetAgentId, transport)
+  ticket = await createConnectTicket(apiBase, agentId, bundle, targetAgentId, skillName, transport)
+  targetTransport = mergeTargetTransport({
+    primary: latestAgentCard?.preferredTransport ?? null,
+    secondary: ticket.targetTransport ?? ticket.agentCard?.preferredTransport ?? null,
+    tertiary: cachedSession?.remoteTransport ?? null,
+    streamProtocol: binding.streamProtocol
+  })
+  peerSessionId = parseConnectTicketId(ticket.ticket) || randomRequestId('peer')
 
-  try {
-    const request = buildJsonRpcEnvelope({
+  const response = await exchangeOverTransport({
+    node,
+    transport: targetTransport,
+    request: buildJsonRpcEnvelope({
       method,
       message,
       metadata: {
@@ -109,38 +135,30 @@ export async function openDirectPeerSession({
         to: targetAgentId
       }
     })
-    await writeLine(stream, JSON.stringify(request))
-    const rawResponse = await readSingleLine(stream)
-    const response = JSON.parse(rawResponse)
-    if (response.error) {
-      throw new Error(response.error.message ?? 'remote peer returned an error')
-    }
+  })
 
-    if (peerSessionId && targetTransport?.peerId) {
-      sessionStore?.rememberTrustedSession?.({
-        peerSessionId,
-        remoteAgentId: targetAgentId,
-        remotePeerId: targetTransport.peerId,
-        remoteTransport: targetTransport,
-        skillHint: `${skillName ?? ''}`.trim()
-      })
-    }
-
-    let sessionReport = null
-    if (report && ticket?.ticket) {
-      sessionReport = await reportSession(apiBase, agentId, bundle, {
-        ticket: ticket.ticket,
-        taskId: report.taskId,
-        status: report.status ?? 'completed',
-        summary: report.summary,
-        publicSummary: report.publicSummary ?? ''
-      }, await bestEffortCurrentTransport(node, binding))
-    }
-
-    return { ticket, peerSessionId, response, sessionReport, reusedSession }
-  } finally {
-    await stream.close()
+  if (peerSessionId && targetTransport?.peerId) {
+    sessionStore?.rememberTrustedSession?.({
+      peerSessionId,
+      remoteAgentId: targetAgentId,
+      remotePeerId: targetTransport.peerId,
+      remoteTransport: targetTransport,
+      skillHint: `${skillName ?? ''}`.trim()
+    })
   }
+
+  let sessionReport = null
+  if (report && ticket?.ticket) {
+    sessionReport = await reportSession(apiBase, agentId, bundle, {
+      ticket: ticket.ticket,
+      taskId: report.taskId,
+      status: report.status ?? 'completed',
+      summary: report.summary,
+      publicSummary: report.publicSummary ?? ''
+    }, await bestEffortCurrentTransport(node, binding))
+  }
+
+  return { ticket, peerSessionId, response, sessionReport, reusedSession }
 }
 
 export function buildRouter(routes = {}) {
@@ -274,12 +292,46 @@ async function bestEffortCurrentTransport(node, binding) {
   }
 }
 
+async function exchangeOverTransport({
+  node,
+  transport,
+  request,
+  reuseExistingConnection = false
+}) {
+  const stream = reuseExistingConnection
+    ? await openStreamOnExistingConnection(node, transport)
+    : await dialProtocol(node, transport, { requireDirect: false })
+  try {
+    await writeLine(stream, JSON.stringify(request))
+    const rawResponse = await readSingleLine(stream)
+    const response = JSON.parse(rawResponse)
+    if (response.error) {
+      throw buildJsonRpcError(response.error)
+    }
+    return response
+  } finally {
+    await stream.close()
+  }
+}
+
+function buildJsonRpcError(error = {}) {
+  const out = new Error(`${error.message ?? 'remote peer returned an error'}`)
+  out.code = Number.parseInt(`${error.code ?? 500}`, 10) || 500
+  return out
+}
+
 async function bestEffortAgentCard(apiBase, agentId, bundle, targetAgentId, transport) {
   try {
     return await getAgentCard(apiBase, agentId, bundle, targetAgentId, transport)
   } catch {
     return null
   }
+}
+
+function isTrustedSessionRetryable(error) {
+  const message = `${error?.message ?? ''}`.trim()
+  const code = Number.parseInt(`${error?.code ?? 0}`, 10) || 0
+  return code === 401 || message.includes('relayConnectTicket or a trusted peerSessionId is required')
 }
 
 function mergeTargetTransport({
