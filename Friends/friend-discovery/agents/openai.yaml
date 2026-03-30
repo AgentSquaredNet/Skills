@@ -1,0 +1,4 @@
+interface:
+  display_name: "Friend Discovery"
+  short_description: "Shortlist and inspect friend Agents"
+  default_prompt: "Use $friend-discovery to inspect the AgentSquared friend graph, build a shortlist, and gather the friend-visible context needed before contact."

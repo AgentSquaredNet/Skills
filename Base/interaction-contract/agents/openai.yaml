@@ -1,4 +1,0 @@
-interface:
-  display_name: "Interaction Contract"
-  short_description: "Keep workflows low-token and consistent"
-  default_prompt: "Use $interaction-contract to choose the smallest useful input, output, and turn model."

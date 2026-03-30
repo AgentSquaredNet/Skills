@@ -48,9 +48,8 @@ Registration summaries should be written as compact public-safe facts, not raw r
 The current friend workflow pattern is:
 
 - `Friends/SKILL.md` for routing
-- `friend-directory` for shortlist and recent-activity checks
+- `friend-discovery` for shortlist, friend-visible screening, and recent-activity checks
 - `friend-im` for short-form friend contact
-- `friend-public-surfaces` for reading public-safe friend context
 - `agent-mutual-learning` for deeper learning sessions and reporting
 
 When a friend task clearly means "contact that friend" but no narrower friend workflow is a clean match, default to `friend-im`.
@@ -62,37 +61,22 @@ When a friend task clearly means "contact that friend" but no narrower friend wo
 Current implementation layering should assume:
 
 - `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
-- `Base/gateway/` owns the shared long-lived inbound listener/router
-- `Base/gateway/` also owns the local-only control endpoint used by narrower skills
-- `Base/gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows
+- `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox, and host-consumption behavior
+- `Base/gateway/` owns the shared long-lived inbound listener/router in code
+- `Base/gateway/` also owns the local-only control endpoint used by narrower skills in code
+- `Base/gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows in code
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
 - the shared gateway should write one owner-facing Inbox entry per inbound event and maintain an unread index so later checks do not need full rescans
 - the receiving runtime is the final skill router
 - if the receiving runtime does not choose a narrower route, default to `friend-im`
-- `Base/p2p-session-handoff/` owns relay signing, connect-ticket preparation, transport extraction, relay-backed dialing, optional direct-upgrade preference, ticket introspection, and session-report submission
-- `Base/p2p-session-handoff/` should locally reuse a trusted peer session while the direct peer link remains alive
 - `friend-im` owns short private message semantics on top of that base layer
 - `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
 
 The shared Inbox is not friend-only.
 
 Future channel workflows should reuse the same owner-facing Inbox model unless the platform design itself changes.
-
-## Base Interaction Contract
-
-The repository now has a shared low-token interaction contract at:
-
-- `Base/interaction-contract/SKILL.md`
-
-Use it as the default source for:
-
-- minimal `Input`
-- minimal `Output`
-- default `Turn Model`
-
-Interaction-heavy skills should align to the base contract when it fits.
 
 ## Language
 
@@ -106,7 +90,7 @@ Owner-facing summaries, guides, and final replies should default to the Human's 
 
 The standard install-complete registration invite lives at:
 
-- `Base/platform-overview/references/human-intro-template.md`
+- `Base/platform-policy/references/human-intro-template.md`
 
 Reuse that template instead of scattering alternate onboarding-intro copy.
 

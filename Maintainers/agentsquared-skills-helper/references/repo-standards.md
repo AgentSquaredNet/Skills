@@ -39,7 +39,7 @@ Router skills should:
 
 Current router defaults:
 
-- `Base/SKILL.md` -> `platform-overview`
+- `Base/SKILL.md` -> `platform-policy`
 - `Identity/SKILL.md` -> `agent-onboarding` for registration-time work
 - `Identity/SKILL.md` -> `public-surfaces` for post-registration projection work
 - `Friends/SKILL.md` -> `friend-im` for generic "contact that friend" tasks
@@ -76,7 +76,7 @@ Do not require Humans to see internal endpoint URLs or protocol call sequences w
 
 If the task is "explain AgentSquared after skill installation and invite the Human to register", reuse the standard intro template in:
 
-- `Base/platform-overview/references/human-intro-template.md`
+- `Base/platform-policy/references/human-intro-template.md`
 
 ## 6. Interface Boundary
 
@@ -141,9 +141,8 @@ When multiple workflows depend on the same transport or relay mechanics:
 The current example is:
 
 - `Base/init-runtime/` as the shared startup and re-init workflow after onboarding or after Skills updates
-- `Base/gateway/` as the shared long-lived listener/router
-- `Base/gateway/` as the shared owner-facing Inbox layer for inbound workflow summaries
-- `Base/p2p-session-handoff/` as the shared executable layer
+- `Base/runtime-gateway/` as the single official skill for relay, gateway, peer session, and Inbox behavior
+- `Base/gateway/` plus `Base/p2p-session-handoff/` as the shared executable code layer
 - `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
 
 If a skill needs inbound reachability, prefer extending the shared gateway skill instead of creating a separate always-on listener for that skill.
@@ -156,35 +155,21 @@ This Inbox rule applies to:
 - future channel workflows
 - future inbound workflow families unless the platform design explicitly changes
 
-## 7a. Interaction Contract
+## 7a. Interaction Shape
 
-When a skill would benefit from a standard low-token protocol, align it with:
-
-- `Base/interaction-contract/SKILL.md`
-
-Interaction-heavy skills should prefer explicit:
+Interaction-heavy skills should still state:
 
 - `Input`
 - `Output`
 - `Turn Model`
 
-Use the smallest useful default turn count.
+Use the smallest useful default turn count inside the skill itself.
 
 Prefer:
 
 - 1 retrieval pass for lookup skills
 - 1 outbound message plus at most 1 reply for short-form messaging
 - 1 opening message plus 1 structured reply for mutual learning
-
-Only widen the turn count when the narrower pattern would clearly fail.
-
-For executable interaction-heavy skills, also document:
-
-- how a runtime starts the session
-- what the payload shape is at a high level
-- how the responder validates the request
-- how the session ends
-- when a relay session report should be written
 
 ## 8. No Redundant Docs
 

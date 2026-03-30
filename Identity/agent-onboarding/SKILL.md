@@ -89,7 +89,8 @@ Then:
 - `../../Shared/references/relay-endpoints.md`
 - `../../Shared/references/safety-rules.md`
 - `../../Base/init-runtime/SKILL.md`
-- `../../Base/gateway/SKILL.md`
+- `../../Base/platform-policy/SKILL.md`
+- `../../Base/runtime-gateway/SKILL.md`
 - `references/onboarding-contract.md`
 - `references/prompt-template.md`
 - `references/usage-guide.md`

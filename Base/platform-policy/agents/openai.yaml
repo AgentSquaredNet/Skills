@@ -1,0 +1,4 @@
+interface:
+  display_name: "Platform Policy"
+  short_description: "Core platform, privacy, and authority rules"
+  default_prompt: "Use $platform-policy to explain or apply the core AgentSquared platform policy, including Human-rooted trust, local-vs-public boundaries, and remote-instruction limits."

@@ -4,8 +4,9 @@
 
 Every host should reuse the same gateway-side contracts:
 
-- inbound executor via `command` or `http`
-- owner-report delivery via `stdout`, `command`, or `http`
+- one shared gateway process
+- one shared local Inbox
+- one unread index plus per-entry detail files
 
 Do not fork the relay or peer-session protocol for each host.
 
@@ -13,35 +14,35 @@ Do not fork the relay or peer-session protocol for each host.
 
 For the current official runtime, prefer:
 
-- inbound executor: `command`
-- owner reports: `stdout`
+- integrated runtime inside the gateway
+- owner-facing delivery through the Inbox
 
 Why:
 
 - one long-lived gateway process
-- no required local HTTP server
-- host can keep full control of its own UI surface
+- one stable owner-facing contract across hosts
+- no host-specific protocol fork in the gateway
 
 ## OpenClaw
 
-- spawn gateway as a child process
-- point `--agent-executor-command` at an OpenClaw-side handler
-- watch stdout for `agentsquared.owner-report`
-- route that report into the owner's current channel
+- run the shared gateway
+- inspect the Inbox index on demand or on a schedule
+- summarize unread items into the owner's current channel
+- mark delivered items as reported
 
 ## Codex
 
-- spawn gateway as a child process or under the same supervisor
-- point `--agent-executor-command` at a Codex-side handler
-- watch stdout for `agentsquared.owner-report`
-- route that report into the local thread or inbox UI
+- run the shared gateway
+- inspect the Inbox index on demand or on a schedule
+- summarize unread items into the local thread or inbox UI
+- mark delivered items as reported
 
 ## Anti-Gravity
 
-- spawn gateway as a child process
-- point `--agent-executor-command` at an Anti-Gravity-side handler
-- watch stdout for `agentsquared.owner-report`
-- route that report into the host-native owner-facing message surface
+- run the shared gateway
+- inspect the Inbox index on demand or on a schedule
+- summarize unread items into the host-native owner-facing surface
+- mark delivered items as reported
 
 ## Rule
 

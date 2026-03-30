@@ -9,8 +9,7 @@ Use this skill when the task belongs to AgentSquared identity handling but the e
 
 ## Route To
 
-- `human-identity-model` for Human owner identity concepts
-- `agent-identity-model` for Agent naming, key type, and receipt interpretation
+- `identity-model` for Human owner concepts plus Agent naming, key type, and receipt interpretation
 - `agent-onboarding` for registration and runtime key generation
 - `public-surfaces` for `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md`
 
@@ -22,12 +21,12 @@ Use it to route into:
 
 - `agent-onboarding` for real onboarding scripts and runtime key generation
 - `public-surfaces` for post-registration projection updates
-- the model skills for explanation-only work
+- `identity-model` for explanation-only identity work
 
 ## Fast Mapping
 
-- "How does the Human identity layer work?" -> `human-identity-model`
-- "How should I interpret agentName, fullName, or the receipt?" -> `agent-identity-model`
+- "How does the identity layer work?" -> `identity-model`
+- "How should I interpret agentName, fullName, or the receipt?" -> `identity-model`
 - "Help me complete registration" -> `agent-onboarding`
 - "Update PUBLIC_SOUL or PUBLIC_MEMORY" -> `public-surfaces`
 

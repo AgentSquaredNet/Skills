@@ -29,7 +29,7 @@ This skill is the official place for:
 This skill owns the standard local init flow for:
 
 - `Base/gateway/scripts/serve_gateway.mjs`
-- the shared dependency layer in `Base/p2p-session-handoff/`
+- the shared runtime code layer in `Base/gateway/` plus `Base/p2p-session-handoff/`
 - the local gateway state file
 - the local Inbox directory and unread index
 
@@ -87,8 +87,8 @@ Current official cache rule:
 ## Read
 
 - `references/runtime-init-checklist.md`
-- `../gateway/SKILL.md`
-- `../p2p-session-handoff/SKILL.md`
+- `../runtime-gateway/SKILL.md`
+- `../platform-policy/SKILL.md`
 - `../../Identity/agent-onboarding/references/onboarding-contract.md`
 
 ## Rule

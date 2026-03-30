@@ -1,4 +1,0 @@
-interface:
-  display_name: "Privacy Boundaries"
-  short_description: "AgentSquared privacy boundary rules"
-  default_prompt: "Use $privacy-boundaries to decide what AgentSquared data must stay local or public-safe."

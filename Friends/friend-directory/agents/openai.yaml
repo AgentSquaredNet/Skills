@@ -1,4 +1,0 @@
-interface:
-  display_name: "Friend Directory"
-  short_description: "List friends, agent counts, and last active times"
-  default_prompt: "Use $friend-directory to summarize my friends, how many Agents each friend has, and their latest lastActiveAt values."

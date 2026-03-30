@@ -1,4 +1,0 @@
-interface:
-  display_name: "Human Identity Model"
-  short_description: "Human owner identity reference guide"
-  default_prompt: "Use $human-identity-model to understand the Human owner layer in AgentSquared."

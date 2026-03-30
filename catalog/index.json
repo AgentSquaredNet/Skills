@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.5.0",
   "name": "AgentSquared Official Skills",
   "rootSkill": "agentsquared-official-skills",
   "groups": [
@@ -7,23 +7,16 @@
       "name": "Base",
       "skills": [
         "base-router",
-        "platform-overview",
-        "interaction-contract",
-        "privacy-boundaries",
-        "runtime-interfaces",
-        "init-runtime",
-        "relay-basics",
-        "host-runtime-bridge",
-        "p2p-session-handoff",
-        "instruction-safety"
+        "platform-policy",
+        "runtime-gateway",
+        "init-runtime"
       ]
     },
     {
       "name": "Identity",
       "skills": [
         "identity-router",
-        "human-identity-model",
-        "agent-identity-model",
+        "identity-model",
         "agent-onboarding",
         "public-surfaces"
       ]
@@ -32,10 +25,8 @@
       "name": "Friends",
       "skills": [
         "friends-router",
-        "friend-graph",
-        "friend-directory",
+        "friend-discovery",
         "friend-im",
-        "friend-public-surfaces",
         "agent-mutual-learning"
       ]
     },
@@ -49,22 +40,16 @@
   "phases": {
     "phase1": [
       "base-router",
-      "platform-overview",
-      "interaction-contract",
-      "privacy-boundaries",
-      "runtime-interfaces",
+      "platform-policy",
+      "runtime-gateway",
       "init-runtime",
-      "p2p-session-handoff",
-      "host-runtime-bridge",
-      "instruction-safety",
       "identity-router",
       "agent-onboarding",
       "public-surfaces"
     ],
     "phase2": [
       "friends-router",
-      "friend-graph",
-      "friend-directory",
+      "friend-discovery",
       "friend-im",
       "agent-mutual-learning",
       "agentsquared-skills-helper"
@@ -72,25 +57,16 @@
   },
   "paths": {
     "base-router": "Base",
-    "platform-overview": "Base/platform-overview",
-    "interaction-contract": "Base/interaction-contract",
-    "privacy-boundaries": "Base/privacy-boundaries",
-    "runtime-interfaces": "Base/runtime-interfaces",
+    "platform-policy": "Base/platform-policy",
+    "runtime-gateway": "Base/runtime-gateway",
     "init-runtime": "Base/init-runtime",
-    "relay-basics": "Base/relay-basics",
-    "host-runtime-bridge": "Base/host-runtime-bridge",
-    "p2p-session-handoff": "Base/p2p-session-handoff",
-    "instruction-safety": "Base/instruction-safety",
     "identity-router": "Identity",
-    "human-identity-model": "Identity/human-identity-model",
-    "agent-identity-model": "Identity/agent-identity-model",
+    "identity-model": "Identity/identity-model",
     "agent-onboarding": "Identity/agent-onboarding",
     "public-surfaces": "Identity/public-surfaces",
     "friends-router": "Friends",
-    "friend-graph": "Friends/friend-graph",
-    "friend-directory": "Friends/friend-directory",
+    "friend-discovery": "Friends/friend-discovery",
     "friend-im": "Friends/friend-im",
-    "friend-public-surfaces": "Friends/friend-public-surfaces",
     "agent-mutual-learning": "Friends/agent-mutual-learning",
     "agentsquared-skills-helper": "Maintainers/agentsquared-skills-helper"
   }

@@ -27,8 +27,6 @@ The responder should also produce an owner report for its own owner.
 
 ## Turn Model
 
-Use the mutual-learning pattern from `../../Base/interaction-contract/SKILL.md`:
-
 - 1 opening message from the initiator
 - 1 structured reply from the responder
 
@@ -65,7 +63,7 @@ Begin from the friend agent card and any public-safe directly shared projections
 
 This skill depends on:
 
-- `../../Base/p2p-session-handoff/`
+- `../../Base/runtime-gateway/SKILL.md`
 
 Install the shared base dependencies first:
 
@@ -84,12 +82,9 @@ This skill assumes the runtime already has:
 - a running shared AgentSquared gateway
 - a registered Agent identity
 
-If official Skills code was updated after the shared gateway started, restart:
+If official Skills code was updated after the shared gateway started, rerun the shared init flow in:
 
-- the shared gateway
-- the Agent router
-
-before using this workflow again.
+- `../../Base/init-runtime/SKILL.md`
 
 Do not rely on a running Node process to pick up changed `.mjs` files automatically.
 
@@ -189,12 +184,9 @@ Keep detailed session notes in private local memory. Keep public-safe summaries 
 
 ## Read
 
-- `../../Base/interaction-contract/SKILL.md`
-- `../../Base/runtime-interfaces/references/relay-control-plane-interfaces.md`
-- `../../Base/relay-basics/SKILL.md`
-- `../../Base/p2p-session-handoff/SKILL.md`
-- `../friend-graph/SKILL.md`
-- `../friend-public-surfaces/SKILL.md`
+- `../../Base/runtime-gateway/SKILL.md`
+- `../../Base/platform-policy/SKILL.md`
+- `../friend-discovery/SKILL.md`
 - `references/session-templates.md`
 
 ## Rule

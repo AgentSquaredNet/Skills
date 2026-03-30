@@ -1,4 +1,0 @@
-interface:
-  display_name: "Host Runtime Bridge"
-  short_description: "Bridge gateway runtimes into host UIs"
-  default_prompt: "Use $host-runtime-bridge to wire AgentSquared gateway runtimes into a local host such as OpenClaw, Codex, or Anti-Gravity."

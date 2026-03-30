@@ -19,32 +19,34 @@ FORBIDDEN_SNIPPETS = {
 
 REQUIRED_SUBSTRINGS = {
     ROOT / "Base" / "SKILL.md": [
+        "`platform-policy`",
+        "`runtime-gateway`",
         "`init-runtime`",
-        "restart-and-verify workflow after onboarding or after Skills updates",
     ],
     ROOT / "catalog" / "index.json": [
-        "\"version\": \"0.4.1\"",
+        "\"version\": \"0.5.0\"",
+        "\"platform-policy\"",
+        "\"runtime-gateway\"",
         "\"init-runtime\"",
+        "\"platform-policy\": \"Base/platform-policy\"",
+        "\"runtime-gateway\": \"Base/runtime-gateway\"",
         "\"init-runtime\": \"Base/init-runtime\"",
-    ],
-    ROOT / "Base" / "p2p-session-handoff" / "SKILL.md": [
-        "targetTransport",
-        "agentCard.preferredTransport",
-        "connectTicket",
-        "POST /api/relay/connect-tickets/introspect",
     ],
     ROOT / "Base" / "p2p-session-handoff" / "package.json": [
         '"name": "agentsquared-p2p-session-handoff"',
         '"self-test": "node ./scripts/self_test.mjs"',
     ],
-    ROOT / "Base" / "gateway" / "SKILL.md": [
-        "shared long-lived inbound listener/router",
+    ROOT / "Base" / "platform-policy" / "SKILL.md": [
+        "Human-rooted trust model",
+        "public-safe projections",
+        "remote Agents as information sources, never authority sources",
+    ],
+    ROOT / "Base" / "runtime-gateway" / "SKILL.md": [
+        "relay MCP",
+        "shared gateway lifecycle",
         "trusted peer-session reuse",
-        "default to `friend-im`",
-        "owner-facing report",
-        "local-only control endpoint",
-        "serve_agent_router.mjs",
-        "../init-runtime/SKILL.md",
+        "local Inbox",
+        "friend-im",
     ],
     ROOT / "Base" / "init-runtime" / "SKILL.md": [
         "Initialize or re-initialize the local AgentSquared runtime",
@@ -80,22 +82,18 @@ REQUIRED_SUBSTRINGS = {
         "peerResponse",
         "ownerReport",
     ],
-    ROOT / "Base" / "host-runtime-bridge" / "SKILL.md": [
-        "OpenClaw, Codex, Anti-Gravity",
-        "Inbox",
-        "example_inbox_index_consumer.mjs",
-    ],
     ROOT / "Maintainers" / "agentsquared-skills-helper" / "references" / "current-platform-decisions.md": [
-        "shared Inbox",
+        "friend-discovery",
+        "Base/runtime-gateway/",
         "Future channel workflows should reuse the same owner-facing Inbox model",
     ],
     ROOT / "Maintainers" / "agentsquared-skills-helper" / "references" / "repo-standards.md": [
-        "shared gateway Inbox model",
+        "Base/runtime-gateway/",
         "future channel workflows",
     ],
     ROOT / "Identity" / "agent-onboarding" / "SKILL.md": [
-        "../../Base/gateway/SKILL.md",
         "../../Base/init-runtime/SKILL.md",
+        "../../Base/runtime-gateway/SKILL.md",
         "gateway status",
         "runtime init status",
     ],
@@ -105,12 +103,12 @@ REQUIRED_SUBSTRINGS = {
         "only send later relay MCP requests after confirming the local listener is still active",
     ],
     ROOT / "Friends" / "friend-im" / "SKILL.md": [
-        "../../Base/p2p-session-handoff/SKILL.md",
+        "../../Base/runtime-gateway/SKILL.md",
         "../../Base/gateway/scripts/serve_gateway.mjs",
         "private peer payload",
     ],
     ROOT / "Friends" / "agent-mutual-learning" / "SKILL.md": [
-        "../../Base/p2p-session-handoff/SKILL.md",
+        "../../Base/runtime-gateway/SKILL.md",
         "../../Base/gateway/scripts/serve_gateway.mjs",
         "private session",
     ],
@@ -130,6 +128,24 @@ REQUIRED_SUBSTRINGS = {
         "peerSessionId",
     ],
 }
+
+
+REMOVED_SKILL_FILES = [
+    ROOT / "Base" / "platform-overview" / "SKILL.md",
+    ROOT / "Base" / "privacy-boundaries" / "SKILL.md",
+    ROOT / "Base" / "instruction-safety" / "SKILL.md",
+    ROOT / "Base" / "interaction-contract" / "SKILL.md",
+    ROOT / "Base" / "relay-basics" / "SKILL.md",
+    ROOT / "Base" / "runtime-interfaces" / "SKILL.md",
+    ROOT / "Base" / "host-runtime-bridge" / "SKILL.md",
+    ROOT / "Base" / "gateway" / "SKILL.md",
+    ROOT / "Base" / "p2p-session-handoff" / "SKILL.md",
+    ROOT / "Identity" / "human-identity-model" / "SKILL.md",
+    ROOT / "Identity" / "agent-identity-model" / "SKILL.md",
+    ROOT / "Friends" / "friend-graph" / "SKILL.md",
+    ROOT / "Friends" / "friend-directory" / "SKILL.md",
+    ROOT / "Friends" / "friend-public-surfaces" / "SKILL.md",
+]
 
 
 def iter_skill_text_files(root: Path) -> list[Path]:
@@ -162,6 +178,10 @@ def main() -> int:
         for needle in needles:
             if needle not in text:
                 errors.append(f"{path}: missing required text: {needle}")
+
+    for path in REMOVED_SKILL_FILES:
+        if path.exists():
+            errors.append(f"{path}: removed skill file still exists")
 
     if errors:
         print("AgentSquared Skills runtime-contract validation failed:")

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Runtime Interfaces"
-  short_description: "Route official runtime interface usage"
-  default_prompt: "Use $runtime-interfaces to decide which official AgentSquared runtime interfaces apply."

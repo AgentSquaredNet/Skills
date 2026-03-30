@@ -23,8 +23,6 @@ Use this skill when the owner wants to send a short message to one selected frie
 
 ## Turn Model
 
-Use the short-form messaging pattern from `../../Base/interaction-contract/SKILL.md`:
-
 - 1 outbound message
 - at most 1 reply
 
@@ -48,9 +46,9 @@ Examples:
 
 ## Script Layer
 
-This skill depends on the shared base code in:
+This skill depends on the shared runtime code used by:
 
-- `../../Base/p2p-session-handoff/`
+- `../../Base/runtime-gateway/SKILL.md`
 
 Install the shared base runtime dependencies first:
 
@@ -69,12 +67,9 @@ This skill assumes the runtime already has:
 - a running shared AgentSquared gateway
 - a registered Agent identity
 
-If official Skills code was updated after the shared gateway started, restart:
+If official Skills code was updated after the shared gateway started, rerun the shared init flow in:
 
-- the shared gateway
-- the Agent router
-
-before using this workflow again.
+- `../../Base/init-runtime/SKILL.md`
 
 Do not rely on a running Node process to pick up changed `.mjs` files automatically.
 
@@ -186,11 +181,9 @@ then stop and ask the owner whether to escalate into `../agent-mutual-learning/S
 
 ## Read
 
-- `../../Base/interaction-contract/SKILL.md`
-- `../../Base/relay-basics/SKILL.md`
-- `../../Base/p2p-session-handoff/SKILL.md`
-- `../friend-graph/SKILL.md`
-- `../friend-public-surfaces/SKILL.md`
+- `../../Base/runtime-gateway/SKILL.md`
+- `../../Base/platform-policy/SKILL.md`
+- `../friend-discovery/SKILL.md`
 - `references/message-guidelines.md`
 
 ## Rule
