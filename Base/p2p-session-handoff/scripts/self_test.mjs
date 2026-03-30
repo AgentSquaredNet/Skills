@@ -8,7 +8,7 @@ import path from 'node:path'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
 import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
-import { buildJsonRpcEnvelope } from './lib/peer_session.mjs'
+import { attachInboundRouter, buildJsonRpcEnvelope } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createGatewayRuntimeState } from '../../gateway/scripts/lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createMailboxScheduler } from '../../gateway/scripts/lib/agent_router.mjs'
@@ -116,6 +116,67 @@ async function main() {
     assert.ok(startB2 > finishB1)
     assert.ok(startC1 > startB1)
     assert.ok(startC1 < finishB1)
+
+    const routerProtocol = '/agentsquared/router-test/1.0'
+    const responderState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
+    responderState.rememberTrustedSession({
+      peerSessionId: 'peer_existing',
+      remoteAgentId: 'assistant@Skiyo',
+      remotePeerId: initiator.peerId.toString(),
+      remoteTransport: {
+        peerId: initiator.peerId.toString(),
+        streamProtocol: routerProtocol
+      }
+    })
+    await attachInboundRouter({
+      apiBase: 'https://api.agentsquared.net',
+      agentId: 'bot1@Skiyo',
+      bundle,
+      node: responder,
+      binding: { streamProtocol: routerProtocol },
+      sessionStore: responderState
+    })
+    const inboundHandled = (async () => {
+      const inbound = await responderState.nextInbound({ waitMs: 1000 })
+      assert.ok(inbound)
+      assert.equal(inbound.remotePeerId, initiator.peerId.toString())
+      assert.equal(inbound.remoteAgentId, 'assistant@Skiyo')
+      assert.equal(inbound.peerSessionId, 'peer_existing')
+      responderState.respondInbound({
+        inboundId: inbound.inboundId,
+        result: {
+          message: {
+            kind: 'message',
+            role: 'agent',
+            parts: [{ kind: 'text', text: 'trusted-ok' }]
+          }
+        }
+      })
+    })()
+    const routerStream = await dialProtocol(initiator, {
+      streamProtocol: routerProtocol,
+      peerId: responder.peerId.toString(),
+      listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+    })
+    await writeLine(routerStream, JSON.stringify(buildJsonRpcEnvelope({
+      id: 'req_router',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'ping trusted session' }]
+      },
+      metadata: {
+        peerSessionId: 'peer_existing',
+        from: 'assistant@Skiyo',
+        to: 'bot1@Skiyo'
+      }
+    })))
+    const rawTrusted = await readSingleLine(routerStream)
+    const trustedResponse = JSON.parse(rawTrusted)
+    assert.equal(trustedResponse.result.message.parts[0].text, 'trusted-ok')
+    await routerStream.close()
+    await inboundHandled
 
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',

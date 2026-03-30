@@ -139,9 +139,11 @@ export async function attachInboundRouter({
   handler,
   sessionStore
 }) {
-  node.handle(binding.streamProtocol, async (event) => {
-    const stream = event?.stream ?? event
-    const remotePeerId = event?.connection?.remotePeer?.toString?.() ?? ''
+  node.handle(binding.streamProtocol, async (eventOrStream, maybeConnection) => {
+    const { stream, connection } = normalizeInboundStreamContext(eventOrStream, maybeConnection)
+    const remotePeerId = connection?.remotePeer?.toString?.()
+      ?? stream?.stat?.connection?.remotePeer?.toString?.()
+      ?? ''
     try {
       const rawLine = await readSingleLine(stream)
       const request = JSON.parse(rawLine)
@@ -225,6 +227,20 @@ export async function attachInboundRouter({
       await stream.close()
     }
   }, { runOnLimitedConnection: true })
+}
+
+function normalizeInboundStreamContext(eventOrStream, maybeConnection) {
+  if (maybeConnection) {
+    return {
+      stream: eventOrStream,
+      connection: maybeConnection
+    }
+  }
+
+  return {
+    stream: eventOrStream?.stream ?? eventOrStream,
+    connection: eventOrStream?.connection ?? null
+  }
 }
 
 async function bestEffortCurrentTransport(node, binding) {
