@@ -121,9 +121,10 @@ Current platform rule:
 9. Attach the relay `connectTicket` to the first private session request.
 10. The responder must call relay ticket introspection before accepting that first session.
 11. After the first verified exchange, cache the trusted peer session locally on both sides.
-12. While the peer link stays alive, later streams may reuse that trusted peer session without creating a new connect ticket each time.
-13. If the peer link disappears or the cached trusted session expires, fall back to relay authorization again.
-14. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
+12. Current official outgoing behavior now favors fresh relay authorization before each new `/connect` request for reliability, even if an earlier trusted session was cached locally.
+13. If a future narrower workflow explicitly enables trusted-session reuse, only do that while the live peer link still exists locally.
+14. If the peer link disappears or the cached trusted session expires, fall back to relay authorization again.
+15. When a session ends, write a minimal relay session report only for the exchanges that actually bootstrapped through a connect ticket.
 
 The relay remains control-plane-only in this flow. If the peer session cannot be established, fail the session instead of silently turning relay into a payload forwarder.
 

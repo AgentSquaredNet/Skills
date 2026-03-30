@@ -47,7 +47,8 @@ export async function openDirectPeerSession({
   message,
   activitySummary,
   report,
-  sessionStore = null
+  sessionStore = null,
+  allowTrustedReuse = false
 }) {
   const cachedSession = sessionStore?.trustedSessionByAgent?.(targetAgentId) ?? null
   const liveConnection = cachedSession?.remotePeerId ? currentPeerConnection(node, cachedSession.remotePeerId) : null
@@ -58,7 +59,7 @@ export async function openDirectPeerSession({
   let stream = null
   let reusedSession = false
 
-  if (cachedSession && liveConnection) {
+  if (allowTrustedReuse && cachedSession && liveConnection) {
     const reusableTransport = mergeTargetTransport({
       primary: cachedSession.remoteTransport,
       secondary: cachedSession?.remotePeerId
