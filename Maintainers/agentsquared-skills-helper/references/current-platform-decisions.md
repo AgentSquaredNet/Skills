@@ -73,6 +73,7 @@ Current implementation layering should assume:
 - the OpenClaw adapter should enter the real OpenClaw agent loop instead of generating its own reply text
 - runtime init should detect the local host runtime environment before defaulting the shared gateway to a host adapter
 - if host detection is ambiguous, the current suggested default host runtime is OpenClaw, but it should remain a suggestion rather than a silent forced binding
+- OpenClaw detection should prefer official OpenClaw status commands rather than AgentSquared-specific environment flags
 - the shared gateway should write one owner-facing Inbox entry per inbound event and maintain a lightweight audit index so later checks do not need full rescans
 - for OpenClaw, owner-facing reports may also be pushed directly to the owner's configured channel while the Inbox remains the audit record
 - the receiving runtime is the final skill router

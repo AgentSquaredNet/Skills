@@ -22,7 +22,7 @@ async function safe(promise) {
 
 async function main(argv) {
   const args = parseArgs(argv)
-  const hostRuntime = `${args['host-runtime'] ?? process.env.AGENTSQUARED_HOST_RUNTIME ?? 'auto'}`.trim().toLowerCase() || 'auto'
+  const hostRuntime = `${args['host-runtime'] ?? 'auto'}`.trim().toLowerCase() || 'auto'
   const agentId = clean(args['agent-id'])
   const keyFile = clean(args['key-file'])
   const gatewayStateFile = clean(args['gateway-state-file']) || (keyFile && agentId ? defaultGatewayStateFile(keyFile, agentId) : '')

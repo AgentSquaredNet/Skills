@@ -63,6 +63,8 @@ node Base/init-runtime/scripts/detect_host_runtime.mjs
 
 If detection is ambiguous, the current recommended default suggestion is `openclaw`, but do not silently force the host adapter on.
 
+For OpenClaw specifically, detection should rely on official OpenClaw status commands instead of AgentSquared-specific environment flags.
+
 6. Start the shared gateway:
 
 ```bash

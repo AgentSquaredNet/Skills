@@ -38,6 +38,12 @@ Host detection should be:
 - automatic when a stable local host signal exists
 - conservative when signals are weak
 
+For OpenClaw, prefer official status probes such as:
+
+- `openclaw gateway status --json`
+- `openclaw status --json`
+- `openclaw gateway health --json`
+
 If detection is uncertain, prefer returning:
 
 - `resolved: "none"`

@@ -17,7 +17,8 @@ export async function detectHostRuntimeEnvironment({
     return {
       ...detection,
       requested: 'openclaw',
-      resolved: 'openclaw'
+      resolved: 'openclaw',
+      explicit: true
     }
   }
   if (normalizedPreferred && normalizedPreferred !== 'auto' && normalizedPreferred !== 'none') {

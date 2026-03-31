@@ -46,7 +46,8 @@ const REQUIRED_SUBSTRINGS = new Map([
   ]],
   [path.join(ROOT, 'Base', 'runtime-gateway', 'adapters', 'openclaw', 'detect.mjs'), [
     'detectOpenClawHostEnvironment',
-    'openclaw-cli-gateway-subcommand-available',
+    'gateway status',
+    'openclaw-gateway-status-json',
   ]],
   [path.join(ROOT, 'Base', 'init-runtime', 'scripts', 'detect_host_runtime.mjs'), [
     'detectHostRuntimeEnvironment',

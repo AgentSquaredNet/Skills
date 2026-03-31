@@ -5,7 +5,7 @@ import { detectHostRuntimeEnvironment, SUPPORTED_HOST_RUNTIMES } from '../../run
 
 async function main(argv) {
   const args = parseArgs(argv)
-  const hostRuntime = `${args['host-runtime'] ?? process.env.AGENTSQUARED_HOST_RUNTIME ?? 'auto'}`.trim().toLowerCase() || 'auto'
+  const hostRuntime = `${args['host-runtime'] ?? 'auto'}`.trim().toLowerCase() || 'auto'
   const openclawAgent = `${args['openclaw-agent'] ?? process.env.OPENCLAW_AGENT ?? ''}`.trim()
   const openclawCommand = `${args['openclaw-command'] ?? process.env.OPENCLAW_COMMAND ?? 'openclaw'}`.trim() || 'openclaw'
   const openclawCwd = `${args['openclaw-cwd'] ?? process.env.OPENCLAW_CWD ?? ''}`.trim()

@@ -69,7 +69,7 @@ async function main(argv) {
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
-  const hostRuntime = `${args['host-runtime'] ?? process.env.AGENTSQUARED_HOST_RUNTIME ?? 'auto'}`.trim().toLowerCase() || 'auto'
+  const hostRuntime = `${args['host-runtime'] ?? 'auto'}`.trim().toLowerCase() || 'auto'
   const openclawAgent = `${args['openclaw-agent'] ?? process.env.OPENCLAW_AGENT ?? ''}`.trim()
   const openclawOwnerChannel = `${args['openclaw-owner-channel'] ?? process.env.OPENCLAW_OWNER_CHANNEL ?? ''}`.trim()
   const openclawOwnerTarget = `${args['openclaw-owner-target'] ?? process.env.OPENCLAW_OWNER_TARGET ?? ''}`.trim()

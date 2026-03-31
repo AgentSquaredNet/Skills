@@ -180,6 +180,12 @@ The current official detection entry is:
 node Base/init-runtime/scripts/detect_host_runtime.mjs
 ```
 
+For OpenClaw, automatic detection should be based on the official OpenClaw CLI status surface, especially:
+
+- `openclaw gateway status --json`
+- `openclaw status --json`
+- `openclaw gateway health --json`
+
 ## Inbox Model
 
 The Inbox is the shared audit surface for inbound workflows.

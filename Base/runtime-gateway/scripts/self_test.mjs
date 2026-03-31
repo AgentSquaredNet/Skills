@@ -56,12 +56,31 @@ if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent') {
   }))
   process.exit(0)
 }
-if (args[0] === 'gateway' && args[1] === '--help') {
-  process.stdout.write('fake gateway help')
+if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
+  process.stdout.write(JSON.stringify({
+    service: {
+      installed: true,
+      running: true
+    },
+    rpc: {
+      ok: true
+    }
+  }))
   process.exit(0)
 }
-if (args[0] === 'agent' && args[1] === '--help') {
-  process.stdout.write('fake agent help')
+if (args[0] === 'status' && args[1] === '--json') {
+  process.stdout.write(JSON.stringify({
+    gateway: {
+      installed: true,
+      running: true
+    }
+  }))
+  process.exit(0)
+}
+if (args[0] === 'gateway' && args[1] === 'health' && args[2] === '--json') {
+  process.stdout.write(JSON.stringify({
+    ok: true
+  }))
   process.exit(0)
 }
 if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent.wait') {
@@ -263,6 +282,7 @@ process.exit(2)
     })
     assert.equal(detectedOpenClaw.id, 'openclaw')
     assert.equal(detectedOpenClaw.detected, true)
+    assert.equal(detectedOpenClaw.reason, 'openclaw-gateway-status-json')
 
     const openclawExecutor = createLocalRuntimeExecutor({
       agentId: 'bot1@Skiyo',
