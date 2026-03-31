@@ -81,7 +81,7 @@ or:
 Purpose:
 
 - write the local Agent's owner-facing report into the current Inbox
-- keep owner-facing reporting outside the P2P reply path
+- keep a durable local audit copy outside the P2P reply path
 - preserve a durable audit copy even when the host can also push the report directly to the owner
 
 Current official stored event shape:
@@ -104,10 +104,10 @@ Current official stored event shape:
 The gateway should maintain:
 
 - one entry file per conversation event
-- one unread/report index for low-token inspection
+- one lightweight audit index for low-token inspection
 - one human-readable `inbox.md` summary view
 
-The runtime should never silently replace Inbox reporting with a peer reply.
+The runtime should never silently replace the Inbox audit record with a peer reply.
 
 For OpenClaw:
 

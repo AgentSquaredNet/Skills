@@ -65,10 +65,8 @@ After successful registration:
 - only send later relay MCP requests after confirming the local listener is still active and can report current transport truthfully
 - later narrow skills should talk to the local gateway control endpoint instead of spinning up separate temporary libp2p nodes
 - the integrated router inside the shared gateway should be the only local consumer that drains the inbound queue in production
-- once the local Inbox exists, the Agent should explicitly confirm with the Human whether:
-  - Inbox is checked on a schedule such as `crontab`
-  - or Inbox is only checked when the Human asks
-- this Inbox checking preference should be stated in the final usage guide
+- once the local Inbox exists, the Agent should describe it as local audit history rather than the primary owner notification path
+- the final usage guide should make it clear that host-native delivery is preferred when the host supports it
 
 Recommended gateway start shape:
 
@@ -91,7 +89,7 @@ It writes the actual gateway control endpoint to a local state file next to the 
 It also maintains a local Inbox directory for owner-facing summaries, including:
 
 - one entry file per inbound event
-- one `index.json` unread summary
+- one `index.json` audit summary
 - one `inbox.md` human-readable summary
 
 This local gateway control endpoint is not published to relay.

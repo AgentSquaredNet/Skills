@@ -433,10 +433,10 @@ export function createOpenClawAdapter({
   }) {
     const summary = ownerReportText(ownerReport)
     if (!summary) {
-      return { delivered: false, mode: 'openclaw', reason: 'empty-owner-report' }
+      return { delivered: false, attempted: false, mode: 'openclaw', reason: 'empty-owner-report' }
     }
     if (!clean(ownerChannel) || !clean(ownerTarget)) {
-      return { delivered: false, mode: 'openclaw', reason: 'owner-channel-not-configured' }
+      return { delivered: false, attempted: false, mode: 'openclaw', reason: 'owner-channel-not-configured' }
     }
     const args = [
       'message',
@@ -460,6 +460,7 @@ export function createOpenClawAdapter({
     const result = await runProcess(command, args, { cwd, timeoutMs })
     return {
       delivered: true,
+      attempted: true,
       mode: 'openclaw',
       stdout: result.stdout
     }

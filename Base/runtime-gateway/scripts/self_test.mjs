@@ -310,7 +310,8 @@ process.exit(2)
     })
     assert.equal(openclawNotifyResult.delivered, true)
     assert.equal(openclawNotifyResult.deliveredToOwner, true)
-    assert.equal(openclawInbox.readIndex().unreadCount, 1)
+    assert.equal(openclawInbox.readIndex().totalCount, 1)
+    assert.equal(openclawInbox.readIndex().ownerPushDeliveredCount, 1)
     const openclawLog = fs.readFileSync(fakeOpenClawLog, 'utf8')
     assert.match(openclawLog, /"gateway","call","agent"/)
     assert.match(openclawLog, /"gateway","call","agent.wait"/)
@@ -340,6 +341,12 @@ process.exit(2)
       ownerReport: {
         summary: 'peer@Test sent: Hello inbox'
       },
+      ownerDelivery: {
+        attempted: false,
+        delivered: false,
+        mode: 'inbox',
+        reason: 'audit-only'
+      },
       peerResponse: {
         message: {
           kind: 'message',
@@ -348,11 +355,9 @@ process.exit(2)
         }
       }
     })
-    assert.equal(appended.index.unreadCount, 1)
-    assert.equal(inboxStore.readIndex().unread[0].id, 'router3')
-    const marked = inboxStore.markStatus('router3', 'reported')
-    assert.equal(marked.index.unreadCount, 0)
-    assert.equal(marked.index.reportedCount, 1)
+    assert.equal(appended.index.totalCount, 1)
+    assert.equal(inboxStore.readIndex().recent[0].id, 'router3')
+    assert.equal(inboxStore.readIndex().ownerPushAttemptedCount, 0)
 
     const routerProtocol = '/agentsquared/router-test/1.0'
     const responderState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })

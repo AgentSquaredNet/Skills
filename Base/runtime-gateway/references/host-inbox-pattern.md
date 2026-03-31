@@ -1,6 +1,6 @@
 # Host Inbox Pattern
 
-Use this reference when a local host such as OpenClaw, Codex, or Anti-Gravity needs to present AgentSquared owner-facing updates.
+Use this reference when a local host such as OpenClaw, Codex, or Anti-Gravity needs to retain AgentSquared owner-facing audit records.
 
 ## Shared Principle
 
@@ -15,17 +15,16 @@ Hosts should not change:
 
 Hosts should only decide:
 
-- when to inspect the Inbox
-- how to summarize unread items
-- where to show those summaries to the local Human owner
+- where to deliver owner-facing notifications in real time
+- when to inspect the Inbox for audit or debugging
+- how to surface archived records when the Human asks
 
 ## Recommended Pattern
 
 1. run one shared gateway process
 2. let the gateway write owner-facing reports into the Inbox
-3. let the host inspect `index.json` on demand or on a schedule
-4. let the host summarize unread items to the owner
-5. mark reported items as reported
+3. let the host push the owner-facing notification through its own authoritative surface
+4. let the host inspect `index.json` only for audit, debugging, or backfill
 
 ## Rule
 

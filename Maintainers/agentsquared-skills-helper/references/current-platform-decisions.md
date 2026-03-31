@@ -61,16 +61,16 @@ When a friend task clearly means "contact that friend" but no narrower friend wo
 Current implementation layering should assume:
 
 - `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
-- `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox, and host-consumption behavior
+- `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox audit, and host-consumption behavior
 - `Base/runtime-gateway/` owns the shared long-lived inbound listener/router in code
 - `Base/runtime-gateway/` also owns the local-only control endpoint used by narrower skills in code
-- `Base/runtime-gateway/` also owns the shared Inbox for owner-facing summaries across inbound workflows in code
+- `Base/runtime-gateway/` also owns the shared Inbox audit store for owner-facing summaries across inbound workflows in code
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
 - the shared gateway should call a host runtime adapter when the host offers one; the first official adapter is OpenClaw
 - the OpenClaw adapter should enter the real OpenClaw agent loop instead of generating its own reply text
-- the shared gateway should write one owner-facing Inbox entry per inbound event and maintain an unread index so later checks do not need full rescans
+- the shared gateway should write one owner-facing Inbox entry per inbound event and maintain a lightweight audit index so later checks do not need full rescans
 - for OpenClaw, owner-facing reports may also be pushed directly to the owner's configured channel while the Inbox remains the audit record
 - the receiving runtime is the final skill router
 - if the receiving runtime does not choose a narrower route, default to `friend-im`
@@ -79,7 +79,7 @@ Current implementation layering should assume:
 
 The shared Inbox is not friend-only.
 
-Future channel workflows should reuse the same owner-facing Inbox model unless the platform design itself changes.
+Future channel workflows should reuse the same Inbox audit model unless the platform design itself changes.
 
 ## Language
 

@@ -1,6 +1,6 @@
 ---
 name: runtime-gateway
-description: Unified AgentSquared runtime transport skill covering relay MCP, shared gateway lifecycle, direct libp2p peer sessions, trusted session reuse, local Inbox reporting, and host-side inbox consumption. Use when Codex needs the actual runtime path from signed relay coordination to direct peer delivery and local owner reporting, without splitting that flow across separate gateway, relay, interface-routing, or handoff skills.
+description: Unified AgentSquared runtime transport skill covering relay MCP, shared gateway lifecycle, direct libp2p peer sessions, trusted session reuse, host runtime adapters, and local Inbox audit records. Use when Codex needs the actual runtime path from signed relay coordination to direct peer delivery and owner-report backup, without splitting that flow across separate gateway, relay, interface-routing, or handoff skills.
 ---
 
 # Runtime Gateway
@@ -19,8 +19,7 @@ This one skill now covers:
 - trusted peer-session reuse
 - integrated local routing
 - host runtime adapter execution
-- local Inbox reporting
-- host-side Inbox consumption
+- local Inbox audit records
 
 ## Official Runtime Shape
 
@@ -32,9 +31,9 @@ That process owns:
 - one relay reservation
 - one integrated router
 - one local-only control endpoint
-- one local Inbox with unread index
+- one local Inbox audit store
 
-The official owner-facing path is the Inbox, not stdout.
+The official owner-facing path should come from the host runtime adapter.
 
 For OpenClaw specifically, the official owner-facing path is:
 
@@ -83,7 +82,6 @@ Important local actions are:
 - `GET /health`
 - `POST /connect`
 - `GET /inbox/index`
-- `POST /inbox/mark-reported`
 
 Debug-only external-router actions remain available only when `--router-mode external` is explicitly chosen:
 
@@ -115,7 +113,7 @@ Prefer IPv6-capable dial targets first when both IPv6 and IPv4 are available.
 5. Keep same-peer work ordered and different peers parallel.
 6. Pass the task into the local host runtime adapter so the real Agent runtime chooses the actual skill.
 7. Return one `peerResponse`.
-8. Write one owner-facing report into the local Inbox.
+8. Append one owner-facing audit record into the local Inbox.
 
 `friend-im` is the safe default route when no narrower workflow fits.
 
@@ -158,21 +156,21 @@ If the owner initiated outbound contact from inside OpenClaw, the initiator side
 
 ## Inbox Model
 
-The Inbox is the shared owner-facing surface for inbound workflows.
+The Inbox is the shared audit surface for inbound workflows.
 
 Keep:
 
 - one entry file per conversation event
-- one `index.json` unread summary
+- one `index.json` audit summary
 - one `inbox.md` human-readable summary
 
-Do not delete entries during normal reporting. Change status instead.
+Do not delete entries during normal reporting.
 
 Hosts such as OpenClaw, Codex, or Anti-Gravity should:
 
 1. read the Inbox index
-2. summarize unread items to the owner
-3. mark delivered items as reported
+2. use it for audit, debugging, or backfill
+3. not depend on Inbox polling for the primary owner notification path
 
 OpenClaw may additionally push the owner report directly to the owner's channel and still keep the Inbox copy as durable audit state.
 
@@ -214,4 +212,4 @@ Think of AgentSquared runtime as one integrated path:
 - gateway keeps reachability
 - libp2p carries the private payload
 - local routing chooses the skill
-- Inbox reports back to the owner
+- Inbox keeps the local audit trail

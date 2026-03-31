@@ -356,35 +356,69 @@ export function createOwnerNotifier({
       mailboxKey: context.mailboxKey,
       item: context.item,
       ownerReport: context.ownerReport,
-      peerResponse: context.peerResponse ?? null
+      peerResponse: context.peerResponse ?? null,
+      ownerDelivery: {
+        mode: 'inbox',
+        attempted: false,
+        delivered: false,
+        reason: 'audit-only'
+      }
     })
     return {
       delivered: true,
       mode: 'inbox',
       entryId: value.entry.id,
-      unreadCount: value.index.unreadCount
+      totalCount: value.index.totalCount
     }
   }
 
   async function notifyViaOpenClaw(context) {
-    const inboxResult = await notifyViaInbox(context)
+    let ownerResult
     if (!openclawAdapter) {
-      return {
-        ...inboxResult,
-        deliveredToOwner: false,
-        mode: 'openclaw'
+      ownerResult = {
+        delivered: false,
+        attempted: false,
+        mode: 'openclaw',
+        reason: 'adapter-not-configured'
+      }
+    } else {
+      try {
+        ownerResult = await openclawAdapter.pushOwnerReport({
+          item: context.item,
+          selectedSkill: context.selectedSkill,
+          ownerReport: context.ownerReport
+        })
+      } catch (error) {
+        ownerResult = {
+          delivered: false,
+          attempted: true,
+          mode: 'openclaw',
+          reason: clean(error?.message) || 'owner-push-failed'
+        }
       }
     }
-    const ownerResult = await openclawAdapter.pushOwnerReport({
-      item: context.item,
+    const value = inbox.appendEntry({
+      agentId,
       selectedSkill: context.selectedSkill,
-      ownerReport: context.ownerReport
+      mailboxKey: context.mailboxKey,
+      item: context.item,
+      ownerReport: context.ownerReport,
+      peerResponse: context.peerResponse ?? null,
+      ownerDelivery: {
+        attempted: Boolean(ownerResult?.attempted ?? true),
+        delivered: Boolean(ownerResult?.delivered),
+        mode: clean(ownerResult?.mode) || 'openclaw',
+        reason: clean(ownerResult?.reason),
+        stdout: ownerResult?.stdout ?? ''
+      }
     })
     return {
-      ...inboxResult,
+      delivered: true,
+      mode: 'openclaw',
+      entryId: value.entry.id,
+      totalCount: value.index.totalCount,
       deliveredToOwner: Boolean(ownerResult?.delivered),
-      ownerDelivery: ownerResult,
-      mode: 'openclaw'
+      ownerDelivery: ownerResult
     }
   }
 

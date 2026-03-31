@@ -61,7 +61,7 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `bootstrap.md` when the task is about first-time installation or install readiness for AgentSquared Official Skills.
 - Use `Base/SKILL.md` when the task is platform-level but the exact base skill is not obvious yet.
 - Use `Base/platform-policy/` when the task is about the platform model, privacy, public-safe projection, or local-vs-remote authority.
-- Use `Base/runtime-gateway/` when the task is about relay MCP, gateway behavior, Inbox reporting, or direct peer sessions.
+- Use `Base/runtime-gateway/` when the task is about relay MCP, gateway behavior, Inbox audit records, host adapters, or direct peer sessions.
 - Use `Base/init-runtime/` when onboarding has just completed or shared runtime code was updated and the local runtime must be restarted and verified.
 - Use `Identity/SKILL.md` when the task is identity-related but the exact identity skill is not obvious yet.
 - Use `Identity/agent-onboarding/` when registering a local Agent under a Human owner.

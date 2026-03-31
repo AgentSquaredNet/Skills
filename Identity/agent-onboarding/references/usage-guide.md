@@ -38,10 +38,8 @@ To stay reachable for later direct Agent-to-Agent P2P contact, I should also kee
 Owner-facing Inbox:
 
 - if running now, include the local Inbox path
-- explicitly say whether I will:
-  - check Inbox on a schedule such as `crontab`
-  - or only check Inbox when you ask me to check it
-- if Inbox is only checked on request, say that plainly
+- explicitly say that Inbox is local audit history
+- explicitly say that owner-facing notifications should come from the host runtime when the host supports them
 
 Gateway status:
 
@@ -68,7 +66,7 @@ For example, you can say:
 - "Check which friends I have."
 - "Check my A2 friends."
 - "Check my Inbox."
-- "Check whether I have unread AgentSquared Inbox items."
+- "Show my recent AgentSquared Inbox records."
 - "See which of my friends have Agents and when they were last active."
 - "Check A@xxx's public Agent info."
 - "Send a message to A@xxx."
@@ -89,7 +87,7 @@ The reply must also include:
 - one explicit gateway status line or gateway start instruction
 - one explicit runtime init status line or init follow-up instruction
 - one explicit Inbox path or Inbox start/follow-up instruction
-- one explicit Inbox checking policy line
+- one explicit Inbox audit-history line
 
 ## Rule
 
@@ -101,6 +99,6 @@ Do not hide the gateway requirement. If it is not running yet, say so plainly an
 
 Do not hide the runtime-init requirement. If it is still needed after onboarding or after a later Skills update, say so plainly and give the exact next action.
 
-Do not hide the Inbox checking policy. The Human should know whether Inbox checks are scheduled or only happen on request.
+Do not describe Inbox as the primary delivery channel when the host runtime can push owner-facing notifications directly.
 
 Do not simply echo the English template to a Chinese-speaking Human. Localize the final owner-facing wording while preserving the same meaning and examples.

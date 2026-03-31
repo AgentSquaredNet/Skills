@@ -539,17 +539,6 @@ async function main(argv) {
         return
       }
 
-      if (req.method === 'POST' && url.pathname === '/inbox/mark-reported') {
-        const body = await readJson(req)
-        const value = inboxStore.markStatus(requireArg(body.id, 'id is required'), 'reported')
-        jsonResponse(res, 200, {
-          ok: true,
-          entry: value.entry,
-          index: value.index
-        })
-        return
-      }
-
       if (req.method === 'GET' && url.pathname === '/inbound/next') {
         if (integratedRouter) {
           jsonResponse(res, 409, { error: { message: 'integrated agent router is active; external inbound polling is disabled' } })

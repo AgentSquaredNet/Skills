@@ -78,7 +78,6 @@ export function createInboxStore({
 } = {}) {
   const resolvedInboxDir = path.resolve(clean(inboxDir) || '.')
   const entriesDir = path.join(resolvedInboxDir, 'entries')
-  const archiveDir = path.join(resolvedInboxDir, 'archive')
   const indexFile = path.join(resolvedInboxDir, 'index.json')
   const inboxMarkdownFile = path.join(resolvedInboxDir, 'inbox.md')
 
@@ -86,9 +85,11 @@ export function createInboxStore({
     return jsonRead(indexFile, {
       updatedAt: '',
       totalCount: 0,
-      unreadCount: 0,
-      reportedCount: 0,
-      unread: [],
+      lastEntryAt: '',
+      lastEntryId: '',
+      ownerPushAttemptedCount: 0,
+      ownerPushDeliveredCount: 0,
+      ownerPushFailedCount: 0,
       recent: []
     })
   }
@@ -96,7 +97,6 @@ export function createInboxStore({
   function summarizeEntry(entry) {
     return {
       id: entry.id,
-      status: entry.status,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
       remoteAgentId: entry.remoteAgentId,
@@ -105,6 +105,7 @@ export function createInboxStore({
       summary: entry.summary,
       messageExcerpt: entry.messageExcerpt,
       replyExcerpt: entry.replyExcerpt,
+      ownerDelivery: entry.ownerDelivery ?? null,
       file: entry.file
     }
   }
@@ -114,32 +115,30 @@ export function createInboxStore({
       '# Inbox',
       '',
       `Updated: ${clean(index.updatedAt) || 'unknown'}`,
-      `Unread: ${index.unreadCount ?? 0}`,
-      `Reported: ${index.reportedCount ?? 0}`,
       `Total: ${index.totalCount ?? 0}`,
+      `Last Entry: ${clean(index.lastEntryAt) || 'none'}`,
+      `Owner Push Attempted: ${index.ownerPushAttemptedCount ?? 0}`,
+      `Owner Push Delivered: ${index.ownerPushDeliveredCount ?? 0}`,
+      `Owner Push Failed: ${index.ownerPushFailedCount ?? 0}`,
       ''
     ]
-
-    if (Array.isArray(index.unread) && index.unread.length > 0) {
-      lines.push('## Unread')
-      lines.push('')
-      for (const item of index.unread) {
-        lines.push(`- [${item.id}] ${item.remoteAgentId}: ${item.summary}`)
-      }
-      lines.push('')
-    } else {
-      lines.push('## Unread')
-      lines.push('')
-      lines.push('- none')
-      lines.push('')
-    }
 
     if (Array.isArray(index.recent) && index.recent.length > 0) {
       lines.push('## Recent')
       lines.push('')
       for (const item of index.recent) {
-        lines.push(`- [${item.status}] ${item.remoteAgentId}: ${item.summary}`)
+        const delivery = item.ownerDelivery?.attempted
+          ? item.ownerDelivery?.delivered
+            ? 'owner-delivered'
+            : 'owner-push-failed'
+          : 'audit-only'
+        lines.push(`- [${delivery}] ${item.remoteAgentId}: ${item.summary}`)
       }
+      lines.push('')
+    } else {
+      lines.push('## Recent')
+      lines.push('')
+      lines.push('- none')
       lines.push('')
     }
 
@@ -148,7 +147,6 @@ export function createInboxStore({
 
   function rebuildIndex() {
     ensureDir(entriesDir)
-    ensureDir(archiveDir)
     const files = fs.readdirSync(entriesDir)
       .filter((name) => name.endsWith('.json'))
       .sort()
@@ -162,16 +160,19 @@ export function createInboxStore({
       return Date.parse(right.createdAt || 0) - Date.parse(left.createdAt || 0)
     })
 
-    const unread = entries.filter((entry) => clean(entry.status) === 'unread').map(summarizeEntry)
     const recent = entries.slice(0, 50).map(summarizeEntry)
-    const reportedCount = entries.filter((entry) => clean(entry.status) === 'reported').length
+    const ownerPushAttemptedCount = entries.filter((entry) => Boolean(entry?.ownerDelivery?.attempted)).length
+    const ownerPushDeliveredCount = entries.filter((entry) => entry?.ownerDelivery?.attempted && entry?.ownerDelivery?.delivered).length
+    const ownerPushFailedCount = entries.filter((entry) => entry?.ownerDelivery?.attempted && !entry?.ownerDelivery?.delivered).length
 
     const index = {
       updatedAt: nowISO(),
       totalCount: entries.length,
-      unreadCount: unread.length,
-      reportedCount,
-      unread,
+      lastEntryAt: clean(entries[0]?.createdAt),
+      lastEntryId: clean(entries[0]?.id),
+      ownerPushAttemptedCount,
+      ownerPushDeliveredCount,
+      ownerPushFailedCount,
       recent
     }
     jsonWrite(indexFile, index)
@@ -185,7 +186,8 @@ export function createInboxStore({
     mailboxKey,
     item,
     ownerReport,
-    peerResponse
+    peerResponse,
+    ownerDelivery = null
   }) {
     ensureDir(entriesDir)
     const createdAt = nowISO()
@@ -199,7 +201,6 @@ export function createInboxStore({
 
     const entry = {
       id,
-      status: 'unread',
       createdAt,
       updatedAt: createdAt,
       agentId: clean(agentId),
@@ -211,6 +212,7 @@ export function createInboxStore({
       messageExcerpt: excerpt(inboundText),
       replyExcerpt: excerpt(replyText),
       ownerReport: ownerReport ?? null,
+      ownerDelivery: ownerDelivery ?? null,
       request: item?.request ?? null,
       peerResponse: peerResponse ?? null,
       file: path.relative(resolvedInboxDir, file)
@@ -224,26 +226,6 @@ export function createInboxStore({
     }
   }
 
-  function markStatus(id, status = 'reported') {
-    ensureDir(entriesDir)
-    const files = fs.readdirSync(entriesDir).filter((name) => name.endsWith('.json'))
-    for (const name of files) {
-      const file = path.join(entriesDir, name)
-      const entry = jsonRead(file, null)
-      if (clean(entry?.id) !== clean(id)) {
-        continue
-      }
-      entry.status = clean(status) || 'reported'
-      entry.updatedAt = nowISO()
-      jsonWrite(file, entry)
-      return {
-        entry,
-        index: rebuildIndex()
-      }
-    }
-    throw new Error(`inbox entry not found: ${id}`)
-  }
-
   function snapshot() {
     const index = readIndex()
     return {
@@ -251,22 +233,22 @@ export function createInboxStore({
       entriesDir,
       inboxMarkdownFile,
       indexFile,
-      unreadCount: index.unreadCount ?? 0,
       totalCount: index.totalCount ?? 0,
-      reportedCount: index.reportedCount ?? 0
+      lastEntryAt: index.lastEntryAt ?? '',
+      ownerPushAttemptedCount: index.ownerPushAttemptedCount ?? 0,
+      ownerPushDeliveredCount: index.ownerPushDeliveredCount ?? 0,
+      ownerPushFailedCount: index.ownerPushFailedCount ?? 0
     }
   }
 
   return {
     inboxDir: resolvedInboxDir,
     entriesDir,
-    archiveDir,
     indexFile,
     inboxMarkdownFile,
     readIndex,
     rebuildIndex,
     appendEntry,
-    markStatus,
     snapshot
   }
 }

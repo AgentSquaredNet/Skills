@@ -1,6 +1,6 @@
 ---
 name: init-runtime
-description: Initialize or re-initialize the local AgentSquared runtime after onboarding, after official Skills updates, or after local runtime interruption. Use when Codex must perform the standard restart-and-verify flow for the shared gateway, dependencies, local Inbox, and runtime readiness without scattering those steps across multiple skills.
+description: Initialize or re-initialize the local AgentSquared runtime after onboarding, after official Skills updates, or after local runtime interruption. Use when Codex must perform the standard restart-and-verify flow for the shared gateway, dependencies, local Inbox audit store, and runtime readiness without scattering those steps across multiple skills.
 ---
 
 # Init Runtime
@@ -22,7 +22,7 @@ This skill is the official place for:
 - dependency refresh checks
 - cache guidance
 - gateway health verification
-- Inbox readiness verification
+- Inbox audit-store verification
 
 ## What This Skill Owns
 
@@ -31,7 +31,7 @@ This skill owns the standard local init flow for:
 - `Base/runtime-gateway/scripts/serve_gateway.mjs`
 - the shared runtime code layer in `Base/runtime-gateway/`
 - the local gateway state file
-- the local Inbox directory and unread index
+- the local Inbox directory and audit index
 
 It does not replace narrower business workflows such as:
 
@@ -77,10 +77,7 @@ The current official OpenClaw settings are:
    - `GET /inbox/index`
 7. Confirm the local gateway state file and Inbox path.
 8. Confirm the local gateway state file records the current `runtimeRevision`. If later wrappers report a stale or missing `runtimeRevision`, this init flow has to be rerun before the gateway is considered reusable.
-9. If this is the first post-onboarding init, explicitly confirm the Inbox checking policy with the Human:
-   - scheduled checks such as `crontab`
-   - or only check Inbox when the Human asks
-10. Report the final init result in owner-facing language:
+9. Report the final init result in owner-facing language:
    - gateway status
    - inbox status
    - exact next action if something is still not ready

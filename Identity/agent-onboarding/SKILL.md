@@ -147,9 +147,7 @@ The human usage section must:
 - include the local gateway control endpoint when it is running
 - include the local gateway state file path when it is running
 - include the current Inbox path when it is running
-- include one explicit Inbox checking policy line:
-  - scheduled Inbox checking is enabled
-  - or Inbox is only checked when the Human asks
+- include one explicit note that the Inbox is local audit history, while real owner-facing notifications should come from the host runtime when available
 - include at least one example about:
   - checking the Human's own information
   - checking the Human's Agents

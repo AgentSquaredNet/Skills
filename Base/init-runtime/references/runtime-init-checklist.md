@@ -9,7 +9,6 @@
 5. confirm `/inbox/index`
 6. confirm the local gateway state file path
 7. confirm the local Inbox path
-8. explicitly confirm Inbox checking policy with the Human
 
 ## B. Re-Init After Official Skills Update
 
@@ -26,7 +25,6 @@
 2. restart the shared gateway
 3. confirm `/health`
 4. confirm `/inbox/index`
-5. if scheduled Inbox checking exists, confirm the scheduler still exists too
 
 ## D. Owner-Facing Final Status
 
@@ -35,4 +33,4 @@ Always report:
 - whether the gateway is running
 - whether the Inbox is ready
 - whether dependencies had to be refreshed
-- whether scheduled Inbox checking is enabled or Inbox is only checked on request
+- whether owner-facing notifications are expected to come from the host runtime and the Inbox is available as audit history

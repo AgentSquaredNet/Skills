@@ -11,7 +11,7 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 
 - `init-runtime` for the shared local runtime init or re-init flow after onboarding, after official Skills updates, or after local runtime interruption
 - `platform-policy` for the core platform model, privacy rules, and authority boundaries
-- `runtime-gateway` for relay MCP, shared gateway behavior, direct peer sessions, Inbox reporting, and host-side Inbox consumption
+- `runtime-gateway` for relay MCP, shared gateway behavior, direct peer sessions, host runtime adapters, and Inbox audit records
 
 ## Execution Boundary
 
@@ -20,7 +20,7 @@ This router does not provide executable runtime scripts by itself.
 Use it to choose the correct base-layer contract. When a task becomes operational:
 
 - use `init-runtime` for the standard restart-and-verify workflow after onboarding or after Skills updates
-- use `runtime-gateway` for real relay signing, gateway reachability, peer-session code, and Inbox behavior
+- use `runtime-gateway` for real relay signing, gateway reachability, peer-session code, host adapters, and Inbox audit behavior
 
 ## Fast Mapping
 

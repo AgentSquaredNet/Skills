@@ -151,7 +151,7 @@ The adapter should call the real host agent loop rather than inventing canned fr
 
 If a skill needs inbound reachability, prefer extending the shared gateway skill instead of creating a separate always-on listener for that skill.
 
-If a skill needs owner-facing reporting for inbound events, prefer extending the shared gateway Inbox model instead of inventing a skill-specific mailbox, channel-log file, or ad hoc summary store.
+If a skill needs owner-facing reporting for inbound events, prefer extending the shared gateway Inbox audit model instead of inventing a skill-specific mailbox, channel-log file, or ad hoc summary store.
 
 This Inbox rule applies to:
 

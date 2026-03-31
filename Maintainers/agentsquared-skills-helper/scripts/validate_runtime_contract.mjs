@@ -79,7 +79,6 @@ const REQUIRED_SUBSTRINGS = new Map([
     '/inbound/respond',
     '/inbound/reject',
     '/inbox/index',
-    '/inbox/mark-reported',
     '/connect',
     'runtimeState',
   ]],
@@ -92,7 +91,7 @@ const REQUIRED_SUBSTRINGS = new Map([
   [path.join(ROOT, 'Maintainers', 'agentsquared-skills-helper', 'references', 'current-platform-decisions.md'), [
     'friend-discovery',
     'Base/runtime-gateway/',
-    'Future channel workflows should reuse the same owner-facing Inbox model',
+    'Future channel workflows should reuse the same Inbox audit model',
   ]],
   [path.join(ROOT, 'Maintainers', 'agentsquared-skills-helper', 'references', 'repo-standards.md'), [
     'Base/runtime-gateway/',

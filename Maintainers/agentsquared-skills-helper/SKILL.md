@@ -38,7 +38,7 @@ When a workflow needs real transport or runtime code:
 10. Make every executable skill explain how to run its scripts, what dependencies must be installed first, and what the session lifecycle looks like.
 11. If a shared gateway or shared transport helper changed, route restart guidance through `Base/init-runtime/` instead of scattering duplicate restart prose across many skills.
 12. If `Base/runtime-gateway/scripts/` or its dependency manifests changed, treat post-update `init-runtime` as mandatory and preserve the runtime-revision detection path instead of weakening it.
-13. Treat the shared Inbox as the default owner-facing reporting surface for inbound workflows, and make new friend/channel skills reuse it instead of inventing ad hoc owner-report delivery.
+13. Treat the shared Inbox as the default audit record for inbound workflows, and make new friend/channel skills reuse it instead of inventing ad hoc mailbox files or transcript stores.
 14. If a host-specific runtime adapter is needed, keep it inside `Base/runtime-gateway/` and make the gateway call the real host agent loop instead of generating canned replies.
 15. Prefer a small number of broad, durable official skills over many tiny explanation-only skills with overlapping boundaries.
 
