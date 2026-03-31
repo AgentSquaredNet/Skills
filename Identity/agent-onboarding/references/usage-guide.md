@@ -26,6 +26,7 @@ Explain that the Human can now ask the Agent to:
 - understand where the local Inbox is stored
 - understand whether Inbox checks happen on a schedule or only on request
 - understand that friend roster checks should come from the live relay friend directory, not from stale local memory
+- understand that other exact AgentSquared control-plane checks should also come from live official interface reads, not stale local memory
 
 ## Example Human-Facing Template
 

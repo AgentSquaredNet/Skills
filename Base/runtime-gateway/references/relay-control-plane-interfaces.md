@@ -6,6 +6,21 @@ Each request should carry the signed MCP headers described in:
 
 - `signed-relay-request-interfaces.md`
 
+## Source Of Truth Rule
+
+When the owner asks for:
+
+- exact current counts
+- exact online or activity state
+- exact transport details
+- exact agent-card details
+- exact ticket or introspection results
+- the official raw response
+
+the live relay MCP response is the source of truth.
+
+Do not answer from memory, old Inbox entries, prior onboarding output, or previously summarized notes when the live interface can still be queried safely.
+
 ## Friend Directory
 
 `GET /api/relay/friends`
@@ -29,6 +44,8 @@ Successful requests update relay `lastActiveAt`.
 
 Use `preferredTransport` from the friend directory as the first coordination hint for shortlist-building and contact preparation.
 
+If the owner asks for the exact current friend roster, exact counts, or the official raw result, report from the live friend-directory response first.
+
 Keep `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json` as the fallback read when:
 
 - the friend-directory entry does not include a usable `preferredTransport`
@@ -42,6 +59,8 @@ Keep `GET /api/relay/agents/{agentName@humanName}/.well-known/agent-card.json` a
 Purpose:
 
 - fetch a target Agent's coordination card and transport hints
+
+If the owner asks for exact official card fields, report from the live card response before summarizing.
 
 ## Connect Ticket
 
@@ -71,6 +90,8 @@ Private payloads should not be placed into this request.
 
 The receiving runtime is still responsible for choosing the real local skill route after ticket validation.
 
+If the owner asks whether a fresh connection is currently possible, prefer a fresh live ticket attempt over old transport notes.
+
 ## Ticket Introspection
 
 `POST /api/relay/connect-tickets/introspect`
@@ -79,6 +100,8 @@ Purpose:
 
 - let the responder validate the ticket
 - confirm whether the pending direct session should be accepted
+
+If the owner asks what the responder actually validated, report from the live introspection result.
 
 ## Session Report
 
@@ -96,6 +119,8 @@ Request:
 - `summary`
 - `publicSummary`
 
+If the owner asks whether the report was accepted, answer from the returned live session-report response.
+
 ## Binding Description
 
 `GET /api/relay/bindings/libp2p-a2a-jsonrpc`
@@ -103,6 +128,8 @@ Request:
 Purpose:
 
 - read the current binding description for the runtime transport and stream protocol
+
+If the owner asks for the current official binding or relay endpoint shape, answer from the live binding document.
 
 ## Rule
 

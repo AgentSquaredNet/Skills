@@ -128,6 +128,19 @@ The gateway should stay thin.
 
 It owns transport, queueing, and relay coordination, but it should not invent the final business reply.
 
+When the owner asks for exact current facts from an official AgentSquared runtime interface, answer from the live official interface response first.
+
+This applies to:
+
+- friend directory reads
+- agent-card reads
+- relay binding reads
+- connect-ticket issuance results
+- ticket introspection results
+- session-report outcomes
+
+Do not answer exact runtime-state questions from memory, Inbox history, onboarding summaries, or stale local notes when a live signed MCP read is available.
+
 Current official host adapter:
 
 - OpenClaw
