@@ -47,11 +47,14 @@ async function main(argv) {
   const openclawAgent = (args['openclaw-agent'] ?? '').trim()
   const openclawCommand = (args['openclaw-command'] ?? '').trim()
   const openclawCwd = (args['openclaw-cwd'] ?? '').trim()
-  const openclawPeerTargetPrefix = (args['openclaw-peer-target-prefix'] ?? '').trim()
+  const openclawSessionPrefix = (args['openclaw-session-prefix'] ?? args['openclaw-peer-target-prefix'] ?? '').trim()
   const openclawTimeoutMs = (args['openclaw-timeout-ms'] ?? '').trim()
   const openclawOwnerChannel = (args['openclaw-owner-channel'] ?? '').trim()
   const openclawOwnerTarget = (args['openclaw-owner-target'] ?? '').trim()
   const openclawOwnerThreadId = (args['openclaw-owner-thread-id'] ?? '').trim()
+  const openclawGatewayUrl = (args['openclaw-gateway-url'] ?? '').trim()
+  const openclawGatewayToken = (args['openclaw-gateway-token'] ?? '').trim()
+  const openclawGatewayPassword = (args['openclaw-gateway-password'] ?? '').trim()
   const discoveredStateFile = gatewayStateFile || defaultGatewayStateFile(keyFile, agentId)
 
   const childArgs = [
@@ -111,8 +114,8 @@ async function main(argv) {
   if (openclawCwd) {
     childArgs.push('--openclaw-cwd', openclawCwd)
   }
-  if (openclawPeerTargetPrefix) {
-    childArgs.push('--openclaw-peer-target-prefix', openclawPeerTargetPrefix)
+  if (openclawSessionPrefix) {
+    childArgs.push('--openclaw-session-prefix', openclawSessionPrefix)
   }
   if (openclawTimeoutMs) {
     childArgs.push('--openclaw-timeout-ms', openclawTimeoutMs)
@@ -125,6 +128,15 @@ async function main(argv) {
   }
   if (openclawOwnerThreadId) {
     childArgs.push('--openclaw-owner-thread-id', openclawOwnerThreadId)
+  }
+  if (openclawGatewayUrl) {
+    childArgs.push('--openclaw-gateway-url', openclawGatewayUrl)
+  }
+  if (openclawGatewayToken) {
+    childArgs.push('--openclaw-gateway-token', openclawGatewayToken)
+  }
+  if (openclawGatewayPassword) {
+    childArgs.push('--openclaw-gateway-password', openclawGatewayPassword)
   }
 
   const gateway = spawn(process.execPath, childArgs, { stdio: 'inherit' })

@@ -36,9 +36,12 @@ async function main(argv) {
   const ownerNotifyCommand = `${args['owner-notify-command'] ?? ''}`.trim()
   const openclawCommand = `${args['openclaw-command'] ?? process.env.OPENCLAW_COMMAND ?? 'openclaw'}`.trim() || 'openclaw'
   const openclawCwd = `${args['openclaw-cwd'] ?? process.env.OPENCLAW_CWD ?? ''}`.trim()
-  const openclawPeerTargetPrefix = `${args['openclaw-peer-target-prefix'] ?? process.env.OPENCLAW_PEER_TARGET_PREFIX ?? 'agentsquared-peer:'}`.trim() || 'agentsquared-peer:'
+  const openclawSessionPrefix = `${args['openclaw-session-prefix'] ?? args['openclaw-peer-target-prefix'] ?? process.env.OPENCLAW_SESSION_PREFIX ?? process.env.OPENCLAW_PEER_TARGET_PREFIX ?? 'agentsquared:peer:'}`.trim() || 'agentsquared:peer:'
   const openclawTimeoutMs = Math.max(1000, Number.parseInt(args['openclaw-timeout-ms'] ?? `${process.env.OPENCLAW_TIMEOUT_MS ?? '180000'}`, 10) || 180000)
   const openclawOwnerThreadId = `${args['openclaw-owner-thread-id'] ?? process.env.OPENCLAW_OWNER_THREAD_ID ?? ''}`.trim()
+  const openclawGatewayUrl = `${args['openclaw-gateway-url'] ?? process.env.OPENCLAW_GATEWAY_URL ?? ''}`.trim()
+  const openclawGatewayToken = `${args['openclaw-gateway-token'] ?? process.env.OPENCLAW_GATEWAY_TOKEN ?? ''}`.trim()
+  const openclawGatewayPassword = `${args['openclaw-gateway-password'] ?? process.env.OPENCLAW_GATEWAY_PASSWORD ?? ''}`.trim()
   const inboxDir = `${args['inbox-dir'] ?? defaultInboxDir(keyFile, agentId)}`.trim() || defaultInboxDir(keyFile, agentId)
   const inboxStore = createInboxStore({ inboxDir })
   const localRuntimeExecutor = createLocalRuntimeExecutor({
@@ -49,11 +52,14 @@ async function main(argv) {
     openclawCommand,
     openclawCwd,
     openclawAgent,
-    openclawPeerTargetPrefix,
+    openclawSessionPrefix,
     openclawTimeoutMs,
     openclawOwnerChannel,
     openclawOwnerTarget,
-    openclawOwnerThreadId
+    openclawOwnerThreadId,
+    openclawGatewayUrl,
+    openclawGatewayToken,
+    openclawGatewayPassword
   })
   const ownerNotifier = createOwnerNotifier({
     agentId,
@@ -64,11 +70,14 @@ async function main(argv) {
     openclawCommand,
     openclawCwd,
     openclawAgent,
-    openclawPeerTargetPrefix,
+    openclawSessionPrefix,
     openclawTimeoutMs,
     openclawOwnerChannel,
     openclawOwnerTarget,
-    openclawOwnerThreadId
+    openclawOwnerThreadId,
+    openclawGatewayUrl,
+    openclawGatewayToken,
+    openclawGatewayPassword
   })
 
   const health = await gatewayHealth(gatewayBase)

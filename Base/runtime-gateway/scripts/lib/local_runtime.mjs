@@ -170,11 +170,14 @@ export function createLocalRuntimeExecutor({
   openclawCommand = 'openclaw',
   openclawCwd = '',
   openclawAgent = '',
-  openclawPeerTargetPrefix = 'agentsquared-peer:',
+  openclawSessionPrefix = 'agentsquared:peer:',
   openclawTimeoutMs = 180000,
   openclawOwnerChannel = '',
   openclawOwnerTarget = '',
-  openclawOwnerThreadId = ''
+  openclawOwnerThreadId = '',
+  openclawGatewayUrl = '',
+  openclawGatewayToken = '',
+  openclawGatewayPassword = ''
 } = {}) {
   const normalizedMode = clean(mode).toLowerCase() || 'reject'
   const normalizedUrl = clean(url)
@@ -185,11 +188,14 @@ export function createLocalRuntimeExecutor({
         openclawAgent,
         command: openclawCommand,
         cwd: openclawCwd,
-        peerTargetPrefix: openclawPeerTargetPrefix,
+        sessionPrefix: openclawSessionPrefix,
         timeoutMs: openclawTimeoutMs,
         ownerChannel: openclawOwnerChannel,
         ownerTarget: openclawOwnerTarget,
-        ownerThreadId: openclawOwnerThreadId
+        ownerThreadId: openclawOwnerThreadId,
+        gatewayUrl: openclawGatewayUrl,
+        gatewayToken: openclawGatewayToken,
+        gatewayPassword: openclawGatewayPassword
       })
     : null
 
@@ -267,11 +273,14 @@ export function createOwnerNotifier({
   openclawCommand = 'openclaw',
   openclawCwd = '',
   openclawAgent = '',
-  openclawPeerTargetPrefix = 'agentsquared-peer:',
+  openclawSessionPrefix = 'agentsquared:peer:',
   openclawTimeoutMs = 180000,
   openclawOwnerChannel = '',
   openclawOwnerTarget = '',
-  openclawOwnerThreadId = ''
+  openclawOwnerThreadId = '',
+  openclawGatewayUrl = '',
+  openclawGatewayToken = '',
+  openclawGatewayPassword = ''
 } = {}) {
   const normalizedMode = clean(mode).toLowerCase() || 'inbox'
   const normalizedUrl = clean(url)
@@ -282,11 +291,14 @@ export function createOwnerNotifier({
         openclawAgent,
         command: openclawCommand,
         cwd: openclawCwd,
-        peerTargetPrefix: openclawPeerTargetPrefix,
+        sessionPrefix: openclawSessionPrefix,
         timeoutMs: openclawTimeoutMs,
         ownerChannel: openclawOwnerChannel,
         ownerTarget: openclawOwnerTarget,
-        ownerThreadId: openclawOwnerThreadId
+        ownerThreadId: openclawOwnerThreadId,
+        gatewayUrl: openclawGatewayUrl,
+        gatewayToken: openclawGatewayToken,
+        gatewayPassword: openclawGatewayPassword
       })
     : null
 

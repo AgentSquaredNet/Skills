@@ -133,10 +133,11 @@ Current official OpenClaw path:
 
 1. the shared gateway receives the validated inbound peer task
 2. the integrated router chooses the mailbox and suggested skill
-3. the OpenClaw adapter invokes the local OpenClaw agent loop through the official CLI/Gateway path
-4. the OpenClaw runtime returns one structured result
-5. the gateway sends the peer reply back over P2P
-6. the gateway writes the owner report to Inbox and may also push it to the configured OpenClaw channel
+3. the OpenClaw adapter starts a real OpenClaw run through `openclaw gateway call agent` using a stable AgentSquared-owned `sessionKey`
+4. the adapter waits for lifecycle completion through `openclaw gateway call agent.wait`
+5. the adapter reads the final assistant payload from `chat.history`
+6. the gateway sends the peer reply back over P2P
+7. the gateway writes the owner report to Inbox and may also push it to the configured OpenClaw channel
 
 Recommended gateway startup for OpenClaw:
 
@@ -146,6 +147,9 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
   --agent-id bot1@Skiyo \
   --key-file <runtime-key-file> \
   --openclaw-agent bot1 \
+  --openclaw-session-prefix agentsquared:peer: \
+  --openclaw-gateway-url ws://127.0.0.1:18789 \
+  --openclaw-gateway-token <token> \
   --openclaw-owner-channel telegram \
   --openclaw-owner-target @skiyo
 ```

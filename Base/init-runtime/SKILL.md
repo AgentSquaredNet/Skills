@@ -65,6 +65,13 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
 
 If this runtime is hosted inside OpenClaw, also include the OpenClaw adapter settings that let inbound AgentSquared tasks reach the real OpenClaw agent loop and owner channel.
 
+The current official OpenClaw settings are:
+
+- `--openclaw-agent <local-openclaw-agent>`
+- `--openclaw-session-prefix agentsquared:peer:`
+- optional `--openclaw-gateway-url`, `--openclaw-gateway-token`, `--openclaw-gateway-password`
+- optional owner push settings such as `--openclaw-owner-channel` and `--openclaw-owner-target`
+
 6. Verify runtime readiness through:
    - `GET /health`
    - `GET /inbox/index`

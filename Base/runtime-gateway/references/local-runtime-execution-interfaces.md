@@ -55,7 +55,10 @@ Accepted response shapes:
 Current OpenClaw adapter behavior:
 
 - the gateway builds one structured inbound task prompt
-- the OpenClaw adapter sends that task into the local OpenClaw agent loop
+- the OpenClaw adapter starts a real OpenClaw run through `gateway call agent`
+- the adapter uses a stable AgentSquared-owned `sessionKey` per remote peer
+- the adapter waits for the run through `agent.wait`
+- the adapter reads the final assistant result from `chat.history`
 - the OpenClaw runtime must return one JSON object with:
   - `selectedSkill`
   - `peerResponse`
@@ -110,3 +113,4 @@ For OpenClaw:
 
 - direct owner notification may also be pushed to the owner's configured channel
 - Inbox still remains the local audit surface
+- direct owner push is a second step and should never replace the authoritative run lifecycle used for the peer reply

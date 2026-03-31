@@ -12,7 +12,7 @@ function excerpt(text, maxLength = 240) {
   return compact.length > maxLength ? `${compact.slice(0, maxLength - 3)}...` : compact
 }
 
-function normalizePeerTarget(remoteAgentId, prefix = 'agentsquared-peer:') {
+function normalizeOpenClawSessionKey(remoteAgentId, prefix = 'agentsquared:peer:') {
   return `${clean(prefix)}${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
 }
 
@@ -26,22 +26,41 @@ function ownerReportText(ownerReport) {
   return ''
 }
 
-function peerResponseText(raw) {
-  if (typeof raw === 'string') {
-    return clean(raw)
+function textParts(value) {
+  if (!value) {
+    return []
   }
-  if (raw && typeof raw === 'object') {
-    if (typeof raw.peerResponse === 'string') {
-      return clean(raw.peerResponse)
+  if (typeof value === 'string') {
+    return [clean(value)].filter(Boolean)
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => textParts(item))
+  }
+  if (typeof value === 'object') {
+    if (Array.isArray(value.parts)) {
+      return value.parts.flatMap((part) => textParts(part?.text ?? part?.value ?? part))
     }
-    if (typeof raw.reply === 'string') {
-      return clean(raw.reply)
+    if (typeof value.text === 'string') {
+      return [clean(value.text)].filter(Boolean)
     }
-    if (raw.message?.parts?.length) {
-      return clean(raw.message.parts.map((part) => clean(part?.text)).filter(Boolean).join('\n'))
+    if (typeof value.value === 'string') {
+      return [clean(value.value)].filter(Boolean)
+    }
+    if (typeof value.content === 'string') {
+      return [clean(value.content)].filter(Boolean)
+    }
+    if (Array.isArray(value.content)) {
+      return value.content.flatMap((item) => textParts(item))
+    }
+    if (value.message) {
+      return textParts(value.message)
     }
   }
-  return ''
+  return []
+}
+
+function flattenText(value) {
+  return textParts(value).filter(Boolean).join('\n').trim()
 }
 
 function extractJsonBlock(text) {
@@ -64,12 +83,99 @@ function extractJsonBlock(text) {
   throw new Error(`OpenClaw response did not contain a JSON object: ${excerpt(trimmed, 400)}`)
 }
 
+function parseJsonOutput(text, label = 'OpenClaw response') {
+  try {
+    return JSON.parse(extractJsonBlock(text))
+  } catch (error) {
+    throw new Error(`${label} was not valid JSON: ${error.message}`)
+  }
+}
+
+function unwrapResult(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return payload
+  }
+  if (payload.result && typeof payload.result === 'object') {
+    return payload.result
+  }
+  if (payload.data && typeof payload.data === 'object') {
+    return payload.data
+  }
+  return payload
+}
+
+function readOpenClawRunId(payload) {
+  const value = unwrapResult(payload)
+  return clean(value?.runId || value?.id || value?.run?.runId || value?.run?.id)
+}
+
+function readOpenClawStatus(payload) {
+  const value = unwrapResult(payload)
+  return clean(value?.status || value?.run?.status || value?.state)
+}
+
+function latestAssistantText(historyPayload, {
+  runId = ''
+} = {}) {
+  const payload = unwrapResult(historyPayload)
+  const messages = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.items)
+      ? payload.items
+      : Array.isArray(payload?.messages)
+        ? payload.messages
+        : Array.isArray(payload?.events)
+          ? payload.events
+          : []
+
+  const assistantMessages = messages.filter((entry) => {
+    const role = clean(entry?.role || entry?.message?.role || entry?.actor || entry?.kind).toLowerCase()
+    return role === 'assistant' || role === 'agent' || role === 'final'
+  })
+
+  if (assistantMessages.length === 0) {
+    return ''
+  }
+
+  const byRunId = runId
+    ? assistantMessages.filter((entry) => {
+        const entryRunId = clean(
+          entry?.runId
+          || entry?.run?.id
+          || entry?.run?.runId
+          || entry?.metadata?.runId
+          || entry?.message?.metadata?.runId
+        )
+        return entryRunId && entryRunId === runId
+      })
+    : []
+
+  const target = (byRunId.length > 0 ? byRunId : assistantMessages).at(-1)
+  return flattenText(target?.message ?? target)
+}
+
+function peerResponseText(raw) {
+  if (typeof raw === 'string') {
+    return clean(raw)
+  }
+  if (raw && typeof raw === 'object') {
+    if (typeof raw.peerResponse === 'string') {
+      return clean(raw.peerResponse)
+    }
+    if (typeof raw.reply === 'string') {
+      return clean(raw.reply)
+    }
+    return flattenText(raw.message ?? raw)
+  }
+  return ''
+}
+
 export function parseOpenClawTaskResult(text, {
   defaultSkill = 'friend-im',
   remoteAgentId = '',
   inboundId = ''
 } = {}) {
-  const parsed = JSON.parse(extractJsonBlock(text))
+  const parsed = parseJsonOutput(text, 'OpenClaw task result')
   const selectedSkill = clean(parsed.selectedSkill) || clean(defaultSkill) || 'friend-im'
   const peerText = clean(parsed.peerResponse) || clean(parsed.peerResponseText) || clean(parsed.reply)
   if (!peerText) {
@@ -150,6 +256,32 @@ function runProcess(command, args, {
   })
 }
 
+function gatewayCallArgs(method, {
+  params = null,
+  gatewayUrl = '',
+  gatewayToken = '',
+  gatewayPassword = '',
+  expectFinal = false
+} = {}) {
+  const args = ['gateway', 'call', clean(method), '--json']
+  if (expectFinal) {
+    args.push('--expect-final')
+  }
+  if (clean(gatewayUrl)) {
+    args.push('--url', clean(gatewayUrl))
+  }
+  if (clean(gatewayToken)) {
+    args.push('--token', clean(gatewayToken))
+  }
+  if (clean(gatewayPassword)) {
+    args.push('--password', clean(gatewayPassword))
+  }
+  if (params && typeof params === 'object') {
+    args.push('--params', JSON.stringify(params))
+  }
+  return args
+}
+
 export function buildOpenClawTaskPrompt({
   localAgentId,
   remoteAgentId,
@@ -195,15 +327,43 @@ export function createOpenClawAdapter({
   openclawAgent = '',
   command = 'openclaw',
   cwd = '',
-  peerTargetPrefix = 'agentsquared-peer:',
+  sessionPrefix = 'agentsquared:peer:',
   timeoutMs = 180000,
   ownerChannel = '',
   ownerTarget = '',
-  ownerThreadId = ''
+  ownerThreadId = '',
+  gatewayUrl = '',
+  gatewayToken = '',
+  gatewayPassword = ''
 } = {}) {
   const agentName = clean(openclawAgent) || clean(localAgentId)
   if (!agentName) {
     throw new Error('openclaw agent name is required')
+  }
+
+  async function gatewayCall(method, options = {}) {
+    const args = gatewayCallArgs(method, {
+      ...options,
+      gatewayUrl,
+      gatewayToken,
+      gatewayPassword
+    })
+    const result = await runProcess(command, args, { cwd, timeoutMs: options.timeoutMs ?? timeoutMs })
+    return parseJsonOutput(result.stdout || result.stderr, `OpenClaw ${method} response`)
+  }
+
+  async function fetchSessionResult({ sessionKey, runId }) {
+    const history = await gatewayCall('chat.history', {
+      params: {
+        sessionKey,
+        limit: 12
+      }
+    })
+    const responseText = latestAssistantText(history, { runId })
+    if (!responseText) {
+      throw new Error(`OpenClaw chat.history did not include a final assistant message for session ${sessionKey}.`)
+    }
+    return responseText
   }
 
   async function executeInbound({
@@ -212,24 +372,60 @@ export function createOpenClawAdapter({
     mailboxKey
   }) {
     const remoteAgentId = clean(item?.remoteAgentId)
+    const sessionKey = normalizeOpenClawSessionKey(remoteAgentId || mailboxKey || 'unknown', sessionPrefix)
     const prompt = buildOpenClawTaskPrompt({
       localAgentId,
       remoteAgentId,
       selectedSkill,
       item
     })
-    const args = [
-      'agent',
-      '--agent', agentName,
-      '--to', normalizePeerTarget(remoteAgentId || mailboxKey || 'unknown', peerTargetPrefix),
-      '--message', prompt
-    ]
-    const result = await runProcess(command, args, { cwd, timeoutMs })
-    return parseOpenClawTaskResult(result.stdout || result.stderr, {
+
+    const accepted = await gatewayCall('agent', {
+      params: {
+        agentId: agentName,
+        sessionKey,
+        message: prompt
+      }
+    })
+    const runId = readOpenClawRunId(accepted)
+    if (!runId) {
+      throw new Error('OpenClaw agent call did not return a runId.')
+    }
+
+    const waited = await gatewayCall('agent.wait', {
+      params: {
+        runId,
+        timeoutMs
+      },
+      timeoutMs: timeoutMs + 1000
+    })
+    const status = readOpenClawStatus(waited).toLowerCase()
+    if (status && status !== 'ok' && status !== 'completed' && status !== 'done') {
+      throw new Error(`OpenClaw agent.wait returned ${status || 'an unknown status'} for run ${runId}.`)
+    }
+
+    const resultText = latestAssistantText(waited, { runId }) || await fetchSessionResult({ sessionKey, runId })
+    const parsed = parseOpenClawTaskResult(resultText, {
       defaultSkill: selectedSkill,
       remoteAgentId,
       inboundId: clean(item?.inboundId)
     })
+    return {
+      ...parsed,
+      peerResponse: {
+        ...parsed.peerResponse,
+        metadata: {
+          ...(parsed.peerResponse?.metadata ?? {}),
+          openclawRunId: runId,
+          openclawSessionKey: sessionKey
+        }
+      },
+      ownerReport: {
+        ...(parsed.ownerReport ?? {}),
+        openclawRunId: runId,
+        openclawSessionKey: sessionKey
+      }
+    }
   }
 
   async function pushOwnerReport({
@@ -252,6 +448,15 @@ export function createOpenClawAdapter({
     if (clean(ownerThreadId)) {
       args.push('--thread-id', clean(ownerThreadId))
     }
+    if (clean(gatewayUrl)) {
+      args.push('--url', clean(gatewayUrl))
+    }
+    if (clean(gatewayToken)) {
+      args.push('--token', clean(gatewayToken))
+    }
+    if (clean(gatewayPassword)) {
+      args.push('--password', clean(gatewayPassword))
+    }
     const result = await runProcess(command, args, { cwd, timeoutMs })
     return {
       delivered: true,
@@ -266,6 +471,8 @@ export function createOpenClawAdapter({
     agent: agentName,
     ownerChannel: clean(ownerChannel),
     ownerTarget: clean(ownerTarget),
+    sessionPrefix: clean(sessionPrefix) || 'agentsquared:peer:',
+    gatewayUrl: clean(gatewayUrl),
     executeInbound,
     pushOwnerReport
   }

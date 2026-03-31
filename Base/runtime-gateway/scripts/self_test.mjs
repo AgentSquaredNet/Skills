@@ -44,11 +44,41 @@ import fs from 'node:fs'
 const args = process.argv.slice(2)
 const logFile = process.env.AGENTSQUARED_OPENCLAW_TEST_LOG
 fs.appendFileSync(logFile, JSON.stringify(args) + '\\n')
-if (args[0] === 'agent') {
+const readFlag = (name) => {
+  const index = args.indexOf(name)
+  return index >= 0 ? args[index + 1] ?? '' : ''
+}
+if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent') {
   process.stdout.write(JSON.stringify({
-    selectedSkill: 'friend-im',
-    peerResponse: 'I am an AI agent representing my owner.',
-    ownerReport: 'botaaa@jessica_dlq asked whether I am human or AI.'
+    runId: 'run_openclaw_test',
+    acceptedAt: '2026-03-31T10:00:00Z'
+  }))
+  process.exit(0)
+}
+if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent.wait') {
+  process.stdout.write(JSON.stringify({
+    runId: 'run_openclaw_test',
+    status: 'ok',
+    endedAt: '2026-03-31T10:00:01Z'
+  }))
+  process.exit(0)
+}
+if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'chat.history') {
+  const params = JSON.parse(readFlag('--params') || '{}')
+  process.stdout.write(JSON.stringify({
+    messages: [{
+      role: 'assistant',
+      runId: 'run_openclaw_test',
+      message: {
+        parts: [{
+          text: JSON.stringify({
+            selectedSkill: 'friend-im',
+            peerResponse: 'I am an AI agent representing my owner.',
+            ownerReport: \`\${params.sessionKey} handled the inbound question.\`
+          })
+        }]
+      }
+    }]
   }))
   process.exit(0)
 }
@@ -225,6 +255,7 @@ process.exit(2)
       mode: 'openclaw',
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
+      openclawSessionPrefix: 'agentsquared:peer:',
       openclawOwnerChannel: 'telegram',
       openclawOwnerTarget: '@skiyo'
     })
@@ -246,7 +277,10 @@ process.exit(2)
       mailboxKey: 'agent:botaaa@jessica_dlq'
     })
     assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
-    assert.equal(openclawExecution.ownerReport.summary, 'botaaa@jessica_dlq asked whether I am human or AI.')
+    assert.equal(openclawExecution.peerResponse.metadata.openclawRunId, 'run_openclaw_test')
+    assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:peer:botaaa%40jessica_dlq')
+    assert.equal(openclawExecution.ownerReport.summary, 'agentsquared:peer:botaaa%40jessica_dlq handled the inbound question.')
+    assert.equal(openclawExecution.ownerReport.openclawRunId, 'run_openclaw_test')
 
     const openclawInbox = createInboxStore({
       inboxDir: path.join(tempDir, 'openclaw-owner-inbox')
@@ -257,6 +291,7 @@ process.exit(2)
       inbox: openclawInbox,
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
+      openclawSessionPrefix: 'agentsquared:peer:',
       openclawOwnerChannel: 'telegram',
       openclawOwnerTarget: '@skiyo'
     })
@@ -277,8 +312,11 @@ process.exit(2)
     assert.equal(openclawNotifyResult.deliveredToOwner, true)
     assert.equal(openclawInbox.readIndex().unreadCount, 1)
     const openclawLog = fs.readFileSync(fakeOpenClawLog, 'utf8')
-    assert.match(openclawLog, /"agent"/)
+    assert.match(openclawLog, /"gateway","call","agent"/)
+    assert.match(openclawLog, /"gateway","call","agent.wait"/)
+    assert.match(openclawLog, /"gateway","call","chat.history"/)
     assert.match(openclawLog, /"message","send"/)
+    assert.match(openclawLog, /agentsquared:peer:botaaa%40jessica_dlq/)
 
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')
