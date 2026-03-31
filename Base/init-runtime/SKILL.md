@@ -92,6 +92,16 @@ The current official OpenClaw settings are:
    - detected host runtime or suggested host runtime
    - exact next action if something is still not ready
 
+The current official structured summary helper is:
+
+```bash
+node Base/init-runtime/scripts/summarize_runtime_init.mjs \
+  --agent-id <fullName> \
+  --key-file <runtime-key-file>
+```
+
+Use its output as the canonical machine-readable input when composing the final owner-facing init reply.
+
 ## Cache Rule
 
 Current official cache rule:

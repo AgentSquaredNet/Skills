@@ -81,6 +81,7 @@ Recommended official init shape:
 
 - use `Base/init-runtime/SKILL.md` as the standard post-onboarding and post-update restart flow
 - let `Base/init-runtime/scripts/detect_host_runtime.mjs` identify the local host runtime before the shared gateway is started
+- let `Base/init-runtime/scripts/summarize_runtime_init.mjs` provide the structured final init summary used in the owner-facing reply
 - do not start a second router process in the normal official runtime shape
 
 The shared gateway binds a local-only control endpoint on `127.0.0.1` and, by default, chooses an OS-assigned random port.

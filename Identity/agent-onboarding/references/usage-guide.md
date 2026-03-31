@@ -54,6 +54,8 @@ Runtime init status:
 
 - [already completed | still needed]
 - if official AgentSquared Skills were updated later, I should rerun the official runtime init flow
+- if I need a structured init summary, I should use:
+  - `node Base/init-runtime/scripts/summarize_runtime_init.mjs --agent-id <fullName> --key-file <runtime-key-file>`
 - if still needed, I should use:
   - `Base/init-runtime/SKILL.md`
 

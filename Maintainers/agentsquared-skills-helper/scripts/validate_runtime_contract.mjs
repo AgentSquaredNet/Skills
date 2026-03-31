@@ -53,6 +53,11 @@ const REQUIRED_SUBSTRINGS = new Map([
     'suggestedHostRuntime',
     'recommendedGatewayArgs',
   ]],
+  [path.join(ROOT, 'Base', 'init-runtime', 'scripts', 'summarize_runtime_init.mjs'), [
+    'detectedHostRuntime',
+    'ownerFacingLines',
+    'gatewayInboxIndex',
+  ]],
   [path.join(ROOT, 'Base', 'platform-policy', 'SKILL.md'), [
     'Human-rooted trust model',
     'public-safe projections',
