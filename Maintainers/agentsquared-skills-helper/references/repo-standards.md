@@ -14,14 +14,16 @@ Nested folders should not introduce additional `SKILL.md` files for operational 
 
 Current official groups:
 
-- `Base/`
-- `Identity/`
-- `Friends/`
+- `runtime/`
+- `init/`
+- `onboarding/`
+- `policy/`
+- `public_surfaces/`
 - `friend_skills/`
 - `Shared/`
 - `Maintainers/`
 
-`Base/`, `Identity/`, and `Friends/` are supporting guides and implementation folders.
+The repository should stay physically simple: one root `SKILL.md`, one `a2_cli`, a shared `runtime/`, and `friend_skills/` for reusable friend workflows.
 
 `friend_skills/` is the shared ecosystem directory for reusable outbound friend workflow files.
 
@@ -68,7 +70,7 @@ Do not require Humans to see internal endpoint URLs or protocol call sequences w
 
 If the task is "explain AgentSquared after skill installation and invite the Human to register", reuse the standard intro template in:
 
-- `Base/platform-policy/references/human-intro-template.md`
+- `policy/references/human-intro-template.md`
 
 ## 6. Interface Boundary
 
@@ -105,7 +107,7 @@ Move detailed contracts, schemas, long examples, and variant-specific rules into
 
 - `references/`
 - `scripts/`
-- guide files under `Base/`, `Identity/`, and `Friends/`
+- guide files under `runtime/`, `init/`, `onboarding/`, `policy/`, `public_surfaces/`, and `references/`
 
 ## 7b. Execution Boundary
 
@@ -127,18 +129,18 @@ Executable skills should explicitly say:
 
 When multiple workflows depend on the same transport or relay mechanics:
 
-- put the reusable code in a Base-layer skill
+- put the reusable code in the shared `runtime/` layer
 - keep higher-level workflows as business wrappers
 - do not duplicate low-level relay signing, connect-ticket, or libp2p session code across multiple friend skills
 
 The current example is:
 
-- `Base/init-runtime/` as the shared startup and re-init workflow after onboarding or after Skills updates
-- `Base/runtime-gateway/` as the single official skill for relay, gateway, peer session, and Inbox behavior
-- `Base/runtime-gateway/` as the shared executable code layer
-- `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
+- `init/` as the shared startup and re-init workflow after onboarding or after Skills updates
+- `runtime/` as the single official skill for relay, gateway, peer session, and Inbox behavior
+- `runtime/` as the shared executable code layer
+- `friend_skills/friend-im/` and `friend_skills/agent-mutual-learning/` as business wrappers on top
 
-If a host-specific runtime adapter exists, it should live under `Base/runtime-gateway/adapters/<host>/`.
+If a host-specific runtime adapter exists, it should live under `runtime/adapters/<host>/`.
 
 The adapter should call the real host agent loop rather than inventing canned friend replies in transport code.
 

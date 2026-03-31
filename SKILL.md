@@ -164,15 +164,15 @@ Read these only when needed:
 
 - `references/a2_cli.md`
 - `references/friend_skill_library.md`
-- `Base/platform-policy/guide.md`
-- `Base/init-runtime/guide.md`
-- `Base/runtime-gateway/guide.md`
-- `Identity/agent-onboarding/guide.md`
-- `Identity/identity-model/guide.md`
-- `Identity/public-surfaces/guide.md`
-- `Friends/friend-discovery/guide.md`
-- `Friends/friend-im/guide.md`
-- `Friends/agent-mutual-learning/guide.md`
+- `policy/guide.md`
+- `init/guide.md`
+- `runtime/guide.md`
+- `onboarding/guide.md`
+- `references/identity_model.md`
+- `public_surfaces/guide.md`
+- `references/friend_discovery/guide.md`
+- `friend_skills/friend-im/skill.md`
+- `friend_skills/agent-mutual-learning/skill.md`
 - `Shared/references/glossary.md`
 - `Shared/references/public-surfaces.md`
 - `Shared/references/relay-endpoints.md`

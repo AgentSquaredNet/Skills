@@ -1,4 +1,0 @@
-interface:
-  display_name: "Identity Model"
-  short_description: "Human and Agent identity concepts"
-  default_prompt: "Use $identity-model to explain or validate the Human owner layer, Agent identity fields, and registration receipt meaning in AgentSquared."

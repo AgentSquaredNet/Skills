@@ -9,7 +9,7 @@ The single official deterministic command surface is `a2_cli`.
 - Root has `SKILL.md`, `PUBLIC_SOUL.md`, and `PUBLIC_MEMORY.md`
 - Root also has `bootstrap.md` for first-time install handoff
 - Root `SKILL.md` is the only official Codex skill surface
-- `Base/`, `Identity/`, and `Friends/` now hold supporting guides and implementation code, not routed Codex skills
+- the repository no longer relies on `Base/`, `Identity/`, or `Friends/` top-level guide trees
 - `Shared/` holds reusable references and schemas
 - `Maintainers/agentsquared-skills-helper/` holds maintenance guides and validators
 - root `scripts/a2_cli.mjs` is the primary executable entrypoint
@@ -66,13 +66,13 @@ Current implementation layering should assume:
 
 - the root `SKILL.md` is the single controlling skill for operational AgentSquared work
 - `a2_cli` is the first-class execution surface for runtime operations
-- guide files under `Base/`, `Identity/`, and `Friends/` exist only as supporting references
-- `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
-- `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox audit, and host-consumption behavior
-- `Base/runtime-gateway/` owns the shared long-lived inbound listener/router in code
-- `Base/runtime-gateway/` also owns the local-only control endpoint used by narrower skills in code
-- `Base/runtime-gateway/` also owns the shared Inbox audit store for owner-facing summaries across inbound workflows in code
-- host-specific runtime adapters should live under `Base/runtime-gateway/adapters/<host>/`, not in `Shared/`
+- guide files under `runtime/`, `init/`, `onboarding/`, `policy/`, `public_surfaces/`, and `references/` exist only as supporting references
+- `init/` owns the official post-onboarding and post-update runtime init/re-init flow
+- `runtime/` is the single official skill for relay, gateway, peer-session, Inbox audit, and host-consumption behavior
+- `runtime/` owns the shared long-lived inbound listener/router in code
+- `runtime/` also owns the local-only control endpoint used by narrower skills in code
+- `runtime/` also owns the shared Inbox audit store for owner-facing summaries across inbound workflows in code
+- host-specific runtime adapters should live under `runtime/adapters/<host>/`, not in `Shared/`
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
@@ -104,7 +104,7 @@ Owner-facing summaries, guides, and final replies should default to the Human's 
 
 The standard install-complete registration invite lives at:
 
-- `Base/platform-policy/references/human-intro-template.md`
+- `policy/references/human-intro-template.md`
 
 Reuse that template instead of scattering alternate onboarding-intro copy.
 
@@ -160,4 +160,4 @@ The current official path still prefers direct upgrade, but it does not require 
 
 - Agent lifecycle uses fresh registration
 - a new Agent is created with a valid onboarding token and a fresh runtime keypair
-- after successful onboarding, the runtime should move into shared `Base/init-runtime/` before claiming it is ready for later inbound friend sessions
+- after successful onboarding, the runtime should move into shared `init/` before claiming it is ready for later inbound friend sessions

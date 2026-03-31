@@ -46,30 +46,30 @@ const REQUIRED_SUBSTRINGS = new Map([
     '"version": "1.0.0"',
     '"agentsquared-official-skills": "SKILL.md"',
   ]],
-  [path.join(ROOT, 'Base', 'runtime-gateway', 'guide.md'), [
+  [path.join(ROOT, 'runtime', 'guide.md'), [
     'relay MCP',
     'shared gateway lifecycle',
     'trusted peer-session reuse',
   ]],
-  [path.join(ROOT, 'Base', 'init-runtime', 'guide.md'), [
+  [path.join(ROOT, 'init', 'guide.md'), [
     'Initialize or re-initialize the local AgentSquared runtime',
     'GET /health',
     'GET /inbox/index',
   ]],
-  [path.join(ROOT, 'Base', 'platform-policy', 'guide.md'), [
+  [path.join(ROOT, 'policy', 'guide.md'), [
     'Human-rooted trust model',
     'public-safe projections',
     'relay for coordination only',
   ]],
-  [path.join(ROOT, 'Identity', 'agent-onboarding', 'guide.md'), [
+  [path.join(ROOT, 'onboarding', 'guide.md'), [
     'registration',
     'runtime init',
   ]],
-  [path.join(ROOT, 'Friends', 'friend-im', 'guide.md'), [
+  [path.join(ROOT, 'friend_skills', 'friend-im', 'skill.md'), [
     'friend-im',
     'private peer payload',
   ]],
-  [path.join(ROOT, 'Friends', 'agent-mutual-learning', 'guide.md'), [
+  [path.join(ROOT, 'friend_skills', 'agent-mutual-learning', 'skill.md'), [
     'mutual-learning',
     'private session',
   ]],
@@ -79,13 +79,13 @@ const REQUIRED_SUBSTRINGS = new Map([
   [path.join(ROOT, 'friend_skills', 'agent-mutual-learning', 'skill.md'), [
     'name: agent-mutual-learning',
   ]],
-  [path.join(ROOT, 'Base', 'runtime-gateway', 'scripts', 'serve_gateway.mjs'), [
+  [path.join(ROOT, 'runtime', 'scripts', 'serve_gateway.mjs'), [
     '/health',
     '/inbox/index',
     '/connect',
     'runtimeState',
   ]],
-  [path.join(ROOT, 'Base', 'runtime-gateway', 'adapters', 'openclaw', 'adapter.mjs'), [
+  [path.join(ROOT, 'runtime', 'adapters', 'openclaw', 'adapter.mjs'), [
     'agent.wait',
     'chat.history',
     'sharedSkillDocument',
@@ -94,18 +94,15 @@ const REQUIRED_SUBSTRINGS = new Map([
 
 const FORBIDDEN_SKILL_PATHS = [
   path.join(ROOT, 'Base', 'SKILL.md'),
-  path.join(ROOT, 'Base', 'init-runtime', 'SKILL.md'),
-  path.join(ROOT, 'Base', 'platform-policy', 'SKILL.md'),
-  path.join(ROOT, 'Base', 'runtime-gateway', 'SKILL.md'),
   path.join(ROOT, 'Friends', 'SKILL.md'),
-  path.join(ROOT, 'Friends', 'friend-im', 'SKILL.md'),
-  path.join(ROOT, 'Friends', 'friend-discovery', 'SKILL.md'),
-  path.join(ROOT, 'Friends', 'agent-mutual-learning', 'SKILL.md'),
   path.join(ROOT, 'Identity', 'SKILL.md'),
-  path.join(ROOT, 'Identity', 'agent-onboarding', 'SKILL.md'),
-  path.join(ROOT, 'Identity', 'identity-model', 'SKILL.md'),
-  path.join(ROOT, 'Identity', 'public-surfaces', 'SKILL.md'),
   path.join(ROOT, 'Maintainers', 'agentsquared-skills-helper', 'SKILL.md'),
+]
+
+const FORBIDDEN_DIRECTORIES = [
+  path.join(ROOT, 'Base'),
+  path.join(ROOT, 'Friends'),
+  path.join(ROOT, 'Identity'),
 ]
 
 function main() {
@@ -127,6 +124,12 @@ function main() {
   for (const filePath of FORBIDDEN_SKILL_PATHS) {
     if (fs.existsSync(filePath)) {
       errors.push(`${filePath}: unexpected nested SKILL.md; the repository should expose only the root SKILL.md`)
+    }
+  }
+
+  for (const dirPath of FORBIDDEN_DIRECTORIES) {
+    if (fs.existsSync(dirPath)) {
+      errors.push(`${dirPath}: unexpected legacy top-level directory; migrate content into the flat root-level structure`)
     }
   }
 

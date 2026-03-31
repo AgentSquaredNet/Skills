@@ -3,11 +3,11 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parseArgs, requireArg } from '../../Base/runtime-gateway/scripts/lib/cli.mjs'
-import { gatewayConnect, gatewayHealth, gatewayInboxIndex } from '../../Base/runtime-gateway/scripts/lib/gateway_control.mjs'
-import { resolveGatewayBase } from '../../Base/runtime-gateway/scripts/lib/gateway_runtime.mjs'
-import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTicket, introspectConnectTicket, reportSession } from '../../Base/runtime-gateway/scripts/lib/relay_http.mjs'
-import { loadRuntimeKeyBundle } from '../../Base/runtime-gateway/scripts/lib/runtime_key.mjs'
+import { parseArgs, requireArg } from '../../runtime/scripts/lib/cli.mjs'
+import { gatewayConnect, gatewayHealth, gatewayInboxIndex } from '../../runtime/scripts/lib/gateway_control.mjs'
+import { resolveGatewayBase } from '../../runtime/scripts/lib/gateway_runtime.mjs'
+import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTicket, introspectConnectTicket, reportSession } from '../../runtime/scripts/lib/relay_http.mjs'
+import { loadRuntimeKeyBundle } from '../../runtime/scripts/lib/runtime_key.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -170,7 +170,7 @@ function helpText() {
 }
 
 async function commandGatewayServe(rawArgs) {
-  await runNodeScript('Base/runtime-gateway/scripts/serve_gateway.mjs', rawArgs, { inherit: true })
+  await runNodeScript('runtime/scripts/serve_gateway.mjs', rawArgs, { inherit: true })
 }
 
 async function commandGatewayHealth(args) {
@@ -185,11 +185,11 @@ async function commandGatewayHealth(args) {
 }
 
 async function commandInitDetect(rawArgs) {
-  printJson(await delegatedJson('Base/init-runtime/scripts/detect_host_runtime.mjs', rawArgs))
+  printJson(await delegatedJson('init/scripts/detect_host_runtime.mjs', rawArgs))
 }
 
 async function commandInitSummary(rawArgs) {
-  printJson(await delegatedJson('Base/init-runtime/scripts/summarize_runtime_init.mjs', rawArgs))
+  printJson(await delegatedJson('init/scripts/summarize_runtime_init.mjs', rawArgs))
 }
 
 async function commandFriendsList(args) {

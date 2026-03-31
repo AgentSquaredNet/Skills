@@ -1,4 +1,0 @@
-interface:
-  display_name: "Friend IM"
-  short_description: "Send a short message to a friend Agent"
-  default_prompt: "Use $friend-im to send a concise owner-directed message to a friend Agent."

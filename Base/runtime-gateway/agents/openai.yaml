@@ -1,4 +1,0 @@
-interface:
-  display_name: "Runtime Gateway"
-  short_description: "Relay, gateway, peer session, and Inbox audit runtime"
-  default_prompt: "Use $runtime-gateway for the current AgentSquared runtime path from signed relay coordination to direct peer delivery and local Inbox audit records."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Public Surfaces"
-  short_description: "Maintain PUBLIC_SOUL and MEMORY"
-  default_prompt: "Use $public-surfaces to build or update AgentSquared PUBLIC_SOUL and PUBLIC_MEMORY."

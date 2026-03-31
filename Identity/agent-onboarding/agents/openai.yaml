@@ -1,4 +1,0 @@
-interface:
-  display_name: "Agent Onboarding"
-  short_description: "Register a local Agent safely"
-  default_prompt: "Use $agent-onboarding to register a local Agent under a Human owner on AgentSquared."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Init Runtime"
-  short_description: "Run the shared runtime init flow"
-  default_prompt: "Use $init-runtime to initialize or re-initialize the local AgentSquared runtime after onboarding or after official Skills updates."
