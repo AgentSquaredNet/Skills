@@ -30,8 +30,8 @@ async function main() {
   }
 
   const signedAt = '2026-03-28T12:00:00Z'
-  const onlineTarget = onlineSignTarget('bot1@Skiyo', signedAt)
-  const mcpTarget = mcpSignTarget('POST', '/api/relay/connect-tickets', 'bot1@Skiyo', signedAt)
+  const onlineTarget = onlineSignTarget('agent-a@owner-a', signedAt)
+  const mcpTarget = mcpSignTarget('POST', '/api/relay/connect-tickets', 'agent-a@owner-a', signedAt)
   assert.match(onlineTarget, /^agentsquared:relay-online:/)
   assert.match(mcpTarget, /^agentsquared:relay-mcp:POST:/)
   assert.ok(signText(bundle, onlineTarget).length > 20)
@@ -131,15 +131,15 @@ process.exit(2)
     const gatewayState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
     gatewayState.rememberTrustedSession({
       peerSessionId: 'peer_demo',
-      remoteAgentId: 'bot1@Skiyo',
+      remoteAgentId: 'agent-a@owner-a',
       remotePeerId: '12D3KooWDemoPeer'
     })
-    assert.equal(gatewayState.trustedSessionByAgent('bot1@Skiyo').peerSessionId, 'peer_demo')
+    assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a').peerSessionId, 'peer_demo')
     const inboundPromise = gatewayState.nextInbound({ waitMs: 100 })
     const queued = await gatewayState.enqueueInbound({
       request: { jsonrpc: '2.0', id: 'q1', method: 'message/send', params: { metadata: {} } },
       remotePeerId: '12D3KooWDemoPeer',
-      remoteAgentId: 'bot1@Skiyo',
+      remoteAgentId: 'agent-a@owner-a',
       peerSessionId: 'peer_demo',
       suggestedSkill: 'friend-im'
     })
@@ -257,7 +257,7 @@ process.exit(2)
     assert.equal(ownerReports.length, 1)
     assert.equal(ownerReports[0].ownerReport.summary, 'owner saw router1')
 
-    const rejectExecutor = createLocalRuntimeExecutor({ agentId: 'bot1@Skiyo' })
+    const rejectExecutor = createLocalRuntimeExecutor({ agentId: 'agent-a@owner-a' })
     const rejectExecution = await rejectExecutor({
       item: { inboundId: 'router2' },
       selectedSkill: 'friend-im',
@@ -285,7 +285,7 @@ process.exit(2)
     assert.equal(detectedOpenClaw.reason, 'openclaw-gateway-status-json')
 
     const openclawExecutor = createLocalRuntimeExecutor({
-      agentId: 'bot1@Skiyo',
+      agentId: 'agent-a@owner-a',
       mode: 'host',
       hostRuntime: 'openclaw',
       openclawCommand: fakeOpenClaw,
@@ -297,7 +297,7 @@ process.exit(2)
     const openclawExecution = await openclawExecutor({
       item: {
         inboundId: 'router-openclaw-1',
-        remoteAgentId: 'botaaa@jessica_dlq',
+        remoteAgentId: 'agent-b@owner-b',
         peerSessionId: 'peer-openclaw',
         request: {
           method: 'message/send',
@@ -309,19 +309,19 @@ process.exit(2)
         }
       },
       selectedSkill: 'friend-im',
-      mailboxKey: 'agent:botaaa@jessica_dlq'
+      mailboxKey: 'agent:agent-b@owner-b'
     })
     assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
     assert.equal(openclawExecution.peerResponse.metadata.openclawRunId, 'run_openclaw_test')
-    assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:peer:botaaa%40jessica_dlq')
-    assert.equal(openclawExecution.ownerReport.summary, 'agentsquared:peer:botaaa%40jessica_dlq handled the inbound question.')
+    assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:peer:agent-b%40owner-b')
+    assert.equal(openclawExecution.ownerReport.summary, 'agentsquared:peer:agent-b%40owner-b handled the inbound question.')
     assert.equal(openclawExecution.ownerReport.openclawRunId, 'run_openclaw_test')
 
     const openclawInbox = createInboxStore({
       inboxDir: path.join(tempDir, 'openclaw-owner-inbox')
     })
     const openclawNotifier = createOwnerNotifier({
-      agentId: 'bot1@Skiyo',
+      agentId: 'agent-a@owner-a',
       mode: 'host',
       hostRuntime: 'openclaw',
       inbox: openclawInbox,
@@ -334,13 +334,13 @@ process.exit(2)
     const openclawNotifyResult = await openclawNotifier({
       item: {
         inboundId: 'router-openclaw-1',
-        remoteAgentId: 'botaaa@jessica_dlq',
+        remoteAgentId: 'agent-b@owner-b',
         peerSessionId: 'peer-openclaw'
       },
       selectedSkill: 'friend-im',
-      mailboxKey: 'agent:botaaa@jessica_dlq',
+      mailboxKey: 'agent:agent-b@owner-b',
       ownerReport: {
-        summary: 'botaaa@jessica_dlq asked whether I am human or AI.'
+        summary: 'agent-b@owner-b asked whether I am human or AI.'
       },
       peerResponse: openclawExecution.peerResponse
     })
@@ -353,13 +353,13 @@ process.exit(2)
     assert.match(openclawLog, /"gateway","call","agent.wait"/)
     assert.match(openclawLog, /"gateway","call","chat.history"/)
     assert.match(openclawLog, /"message","send"/)
-    assert.match(openclawLog, /agentsquared:peer:botaaa%40jessica_dlq/)
+    assert.match(openclawLog, /agentsquared:peer:agent-b%40owner-b/)
 
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')
     })
     const appended = inboxStore.appendEntry({
-      agentId: 'bot1@Skiyo',
+      agentId: 'agent-a@owner-a',
       selectedSkill: 'friend-im',
       mailboxKey: 'agent:peer@test',
       item: {
@@ -399,7 +399,7 @@ process.exit(2)
     const responderState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
     responderState.rememberTrustedSession({
       peerSessionId: 'peer_existing',
-      remoteAgentId: 'assistant@Skiyo',
+      remoteAgentId: 'assistant@owner-a',
       remotePeerId: initiator.peerId.toString(),
       remoteTransport: {
         peerId: initiator.peerId.toString(),
@@ -408,7 +408,7 @@ process.exit(2)
     })
     await attachInboundRouter({
       apiBase: 'https://api.agentsquared.net',
-      agentId: 'bot1@Skiyo',
+      agentId: 'agent-a@owner-a',
       bundle,
       node: responder,
       binding: { streamProtocol: routerProtocol },
@@ -418,7 +418,7 @@ process.exit(2)
       const inbound = await responderState.nextInbound({ waitMs: 1000 })
       assert.ok(inbound)
       assert.equal(inbound.remotePeerId, initiator.peerId.toString())
-      assert.equal(inbound.remoteAgentId, 'assistant@Skiyo')
+      assert.equal(inbound.remoteAgentId, 'assistant@owner-a')
       assert.equal(inbound.peerSessionId, 'peer_existing')
       responderState.respondInbound({
         inboundId: inbound.inboundId,
@@ -446,8 +446,8 @@ process.exit(2)
       },
       metadata: {
         peerSessionId: 'peer_existing',
-        from: 'assistant@Skiyo',
-        to: 'bot1@Skiyo'
+        from: 'assistant@owner-a',
+        to: 'agent-a@owner-a'
       }
     })))
     const rawTrusted = await readSingleLine(routerStream)
@@ -499,8 +499,8 @@ process.exit(2)
       },
       metadata: {
         relayConnectTicket: 'ticket-demo',
-        from: 'assistant@Skiyo',
-        to: 'bot1@Skiyo'
+        from: 'assistant@owner-a',
+        to: 'agent-a@owner-a'
       }
     })
     await writeLine(stream, JSON.stringify(request))
