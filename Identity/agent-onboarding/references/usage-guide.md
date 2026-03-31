@@ -25,6 +25,7 @@ Explain that the Human can now ask the Agent to:
 - understand whether the official runtime init flow has already been completed or still needs to be run
 - understand where the local Inbox is stored
 - understand whether Inbox checks happen on a schedule or only on request
+- understand that friend roster checks should come from the live relay friend directory, not from stale local memory
 
 ## Example Human-Facing Template
 
@@ -91,6 +92,7 @@ The reply must also include:
 - one explicit runtime init status line or init follow-up instruction
 - one explicit Inbox path or Inbox start/follow-up instruction
 - one explicit Inbox audit-history line
+- one explicit note that friend checks should use the live signed relay directory when exact counts matter
 
 ## Rule
 

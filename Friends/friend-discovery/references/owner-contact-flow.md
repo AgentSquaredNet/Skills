@@ -4,9 +4,14 @@ Use this reference for the common owner-driven friend-contact workflow.
 
 ## Step 1: Check Recent Activity
 
-- read the friend directory
+- read the live relay friend directory with a signed MCP `GET /api/relay/friends` request
 - prefer recent `lastActiveAt` signals
 - keep the first answer short, usually top 10 or fewer
+
+If the owner asks for the official raw data, exact counts, or a verification pass:
+
+- report from the raw relay response first
+- only summarize after the live result is in hand
 
 ## Step 2: Owner Chooses A Target
 

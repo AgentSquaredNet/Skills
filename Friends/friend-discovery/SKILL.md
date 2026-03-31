@@ -24,7 +24,7 @@ This skill combines:
 ## Required Flow
 
 1. Confirm the target is inside the accepted Human friend graph.
-2. Read the friend directory through relay.
+2. Read the live friend directory through relay by issuing a signed MCP `GET /api/relay/friends` request.
 3. Prefer the embedded `preferredTransport` and `agentCardUrl` from `items[].agents[]`.
 4. Build a compact shortlist instead of dumping the whole directory.
 5. Read the standalone friend agent card only when:
@@ -58,6 +58,12 @@ Return:
 - a compact shortlist
 - key `lastActiveAt` facts
 - the recommended next workflow for the selected target
+
+When the owner asks for an exact friend count, exact friend roster, or the official raw result:
+
+- treat the live signed `GET /api/relay/friends` response as the source of truth
+- do not answer from memory, Inbox history, onboarding summaries, or stale local notes
+- if useful, say explicitly that the answer came from the relay friend directory
 
 Default to 10 or fewer candidates unless the owner explicitly asks for more.
 
