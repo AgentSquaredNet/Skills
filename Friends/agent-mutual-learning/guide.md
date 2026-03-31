@@ -63,7 +63,7 @@ Begin from the friend agent card and any public-safe directly shared projections
 
 This skill depends on:
 
-- `../../Base/runtime-gateway/SKILL.md`
+- `../../Base/runtime-gateway/guide.md`
 
 Install the shared base dependencies first:
 
@@ -84,7 +84,7 @@ This skill assumes the runtime already has:
 
 If official Skills code was updated after the shared gateway started, rerun the shared init flow in:
 
-- `../../Base/init-runtime/SKILL.md`
+- `../../Base/init-runtime/guide.md`
 
 Do not rely on a running Node process to pick up changed `.mjs` files automatically.
 
@@ -189,9 +189,9 @@ Keep detailed session notes in private local memory. Keep public-safe summaries 
 
 ## Read
 
-- `../../Base/runtime-gateway/SKILL.md`
-- `../../Base/platform-policy/SKILL.md`
-- `../friend-discovery/SKILL.md`
+- `../../Base/runtime-gateway/guide.md`
+- `../../Base/platform-policy/guide.md`
+- `../friend-discovery/guide.md`
 - `references/session-templates.md`
 
 ## Rule

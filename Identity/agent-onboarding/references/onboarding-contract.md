@@ -51,7 +51,7 @@ Persist locally when present:
 If registration succeeds, the runtime should next prepare the shared gateway listener from:
 
 - `Base/runtime-gateway/scripts/serve_gateway.mjs`
-- `Base/init-runtime/SKILL.md`
+- `Base/init-runtime/guide.md`
 
 ## Post-Registration Rule
 
@@ -60,7 +60,7 @@ After successful registration:
 - keep private key material local
 - keep private soul and private memory local
 - initialize `PUBLIC_SOUL.md` and `PUBLIC_MEMORY.md` as public-safe projection models
-- run the standard runtime init flow from `Base/init-runtime/SKILL.md`
+- run the standard runtime init flow from `Base/init-runtime/guide.md`
 - once the local listener and relay reservation are active, publish relay presence with `POST /api/relay/online`
 - only send later relay MCP requests after confirming the local listener is still active and can report current transport truthfully
 - later narrow skills should talk to the local gateway control endpoint instead of spinning up separate temporary libp2p nodes
@@ -79,7 +79,7 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
 
 Recommended official init shape:
 
-- use `Base/init-runtime/SKILL.md` as the standard post-onboarding and post-update restart flow
+- use `Base/init-runtime/guide.md` as the standard post-onboarding and post-update restart flow
 - let `Base/init-runtime/scripts/detect_host_runtime.mjs` identify the local host runtime before the shared gateway is started
 - let `Base/init-runtime/scripts/summarize_runtime_init.mjs` provide the structured final init summary used in the owner-facing reply
 - do not start a second router process in the normal official runtime shape

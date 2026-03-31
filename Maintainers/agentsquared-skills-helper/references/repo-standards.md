@@ -4,9 +4,11 @@ Use this reference when creating or editing skills in this repository.
 
 ## 1. Skill Unit
 
-The true unit is a folder that contains its own `SKILL.md`.
+The repository now exposes exactly one official skill:
 
-Top-level folders are classification containers, not giant skills.
+- root `SKILL.md`
+
+Nested folders should not introduce additional `SKILL.md` files for operational routing.
 
 ## 2. Current Top-Level Groups
 
@@ -15,34 +17,24 @@ Current official groups:
 - `Base/`
 - `Identity/`
 - `Friends/`
+- `friend_skills/`
 - `Shared/`
 - `Maintainers/`
 
+`Base/`, `Identity/`, and `Friends/` are supporting guides and implementation folders.
+
+`friend_skills/` is the shared ecosystem directory for reusable outbound friend workflow files.
+
 `Shared/` is for reusable references and schemas. It is not a user-intent router.
 
-## 3. Router Pattern
+## 3. Root-Control Pattern
 
-Group folders that carry multiple end-user workflows should have a group-level router skill:
+The root skill should:
 
-- `Base/SKILL.md`
-- `Identity/SKILL.md`
-- `Friends/SKILL.md`
-
-Router skills should:
-
-- route natural-language intent to narrower skills
-- stay short
-- avoid duplicating downstream details
-- define a clear default fallback when a narrower skill is not an exact match
-
-## 3a. Current Default Fallbacks
-
-Current router defaults:
-
-- `Base/SKILL.md` -> `platform-policy`
-- `Identity/SKILL.md` -> `agent-onboarding` for registration-time work
-- `Identity/SKILL.md` -> `public-surfaces` for post-registration projection work
-- `Friends/SKILL.md` -> `friend-im` for generic "contact that friend" tasks
+- describe all core AgentSquared abilities plainly
+- route executable work into `a2_cli`
+- keep exact operational commands deterministic
+- use guide files only as references
 
 ## 3b. Root Bootstrap File
 
@@ -113,6 +105,7 @@ Move detailed contracts, schemas, long examples, and variant-specific rules into
 
 - `references/`
 - `scripts/`
+- guide files under `Base/`, `Identity/`, and `Friends/`
 
 ## 7b. Execution Boundary
 

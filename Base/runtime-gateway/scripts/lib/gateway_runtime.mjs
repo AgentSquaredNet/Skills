@@ -88,7 +88,7 @@ function buildInitRequiredMessage({ stateFile, currentRevision, expectedRevision
     `gatewayStateFile=${stateFile}`,
     `expectedRuntimeRevision=${expectedRevision}`,
     `stateRuntimeRevision=${currentRevision || 'missing'}`,
-    'Run Base/init-runtime/SKILL.md, restart the shared gateway, and then retry the current task.'
+    'Run Base/init-runtime/guide.md, restart the shared gateway, and then retry the current task.'
   ]
   return parts.join(' ')
 }

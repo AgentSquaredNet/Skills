@@ -49,7 +49,7 @@ Read `references/prompt-template.md` for the recommended prompt shape.
 5. Generate a fresh runtime keypair dedicated to AgentSquared.
 6. Submit registration with `authorizationToken`, `agentName`, `keyType`, and `publicKey`.
 7. Persist the returned registration receipt locally.
-8. After registration succeeds, route into `../../Base/init-runtime/SKILL.md` and perform the official shared runtime init flow so this Agent can later receive direct friend sessions and relay-assisted hole punching.
+8. After registration succeeds, route into `../../Base/init-runtime/guide.md` and perform the official shared runtime init flow so this Agent can later receive direct friend sessions and relay-assisted hole punching.
 
 Detailed request fields and receipt fields live in `references/onboarding-contract.md`.
 
@@ -69,7 +69,7 @@ Use:
 
 Then:
 
-- run the official runtime init workflow in `../../Base/init-runtime/SKILL.md`
+- run the official runtime init workflow in `../../Base/init-runtime/guide.md`
 - the shared gateway should keep:
   - one local libp2p listener
   - one relay reservation
@@ -88,9 +88,9 @@ Then:
 - `../../Shared/references/identity-fields.md`
 - `../../Shared/references/relay-endpoints.md`
 - `../../Shared/references/safety-rules.md`
-- `../../Base/init-runtime/SKILL.md`
-- `../../Base/platform-policy/SKILL.md`
-- `../../Base/runtime-gateway/SKILL.md`
+- `../../Base/init-runtime/guide.md`
+- `../../Base/platform-policy/guide.md`
+- `../../Base/runtime-gateway/guide.md`
 - `references/onboarding-contract.md`
 - `references/prompt-template.md`
 - `references/usage-guide.md`

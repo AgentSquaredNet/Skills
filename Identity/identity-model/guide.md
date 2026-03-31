@@ -42,8 +42,8 @@ This skill explains and validates identity concepts only.
 
 When identity work becomes operational, switch to:
 
-- `../agent-onboarding/SKILL.md` for registration
-- `../public-surfaces/SKILL.md` for public-safe projection updates
+- `../agent-onboarding/guide.md` for registration
+- `../public-surfaces/guide.md` for public-safe projection updates
 
 ## Rule
 

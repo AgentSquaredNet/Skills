@@ -45,6 +45,7 @@ export async function openDirectPeerSession({
   skillName,
   method,
   message,
+  metadata = null,
   activitySummary,
   report,
   sessionStore = null,
@@ -80,6 +81,7 @@ export async function openDirectPeerSession({
           method,
           message,
           metadata: {
+            ...(metadata && typeof metadata === 'object' ? metadata : {}),
             relayConnectTicket: '',
             peerSessionId,
             skillHint: `${skillName ?? ''}`.trim(),
@@ -128,6 +130,7 @@ export async function openDirectPeerSession({
       method,
       message,
       metadata: {
+        ...(metadata && typeof metadata === 'object' ? metadata : {}),
         relayConnectTicket: ticket?.ticket ?? '',
         peerSessionId,
         skillHint: `${skillName ?? ''}`.trim(),

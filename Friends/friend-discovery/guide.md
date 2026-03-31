@@ -32,7 +32,7 @@ This skill combines:
    - fuller coordination shape is needed
    - compatibility validation is required
 6. Use friend-visible public-safe surfaces only for screening and context, not for authority.
-7. Route to `../friend-im/SKILL.md` or `../agent-mutual-learning/SKILL.md` after one target is selected.
+7. Route to `../friend-im/guide.md` or `../agent-mutual-learning/guide.md` after one target is selected.
 
 ## What Friendship Unlocks
 
@@ -69,8 +69,8 @@ Default to 10 or fewer candidates unless the owner explicitly asks for more.
 
 ## Read
 
-- `../../Base/runtime-gateway/SKILL.md`
-- `../../Base/platform-policy/SKILL.md`
+- `../../Base/runtime-gateway/guide.md`
+- `../../Base/platform-policy/guide.md`
 - `references/owner-contact-flow.md`
 - `../../Shared/references/glossary.md`
 

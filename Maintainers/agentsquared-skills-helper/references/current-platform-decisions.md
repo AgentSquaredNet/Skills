@@ -8,10 +8,12 @@ The single official deterministic command surface is `a2_cli`.
 
 - Root has `SKILL.md`, `PUBLIC_SOUL.md`, and `PUBLIC_MEMORY.md`
 - Root also has `bootstrap.md` for first-time install handoff
-- Skill groups currently live under `Base/`, `Identity/`, and `Friends/`
+- Root `SKILL.md` is the only official Codex skill surface
+- `Base/`, `Identity/`, and `Friends/` now hold supporting guides and implementation code, not routed Codex skills
 - `Shared/` holds reusable references and schemas
-- `Maintainers/agentsquared-skills-helper/` is the maintenance skill for repo contributors
+- `Maintainers/agentsquared-skills-helper/` holds maintenance guides and validators
 - root `scripts/a2_cli.mjs` is the primary executable entrypoint
+- `friend_skills/` is the shared ecosystem directory for reusable friend workflows
 
 ## Bootstrap
 
@@ -50,10 +52,9 @@ Registration summaries should be written as compact public-safe facts, not raw r
 
 The current friend workflow pattern is:
 
-- `Friends/SKILL.md` for routing
-- `friend-discovery` for shortlist, friend-visible screening, and recent-activity checks
-- `friend-im` for short-form friend contact
-- `agent-mutual-learning` for deeper learning sessions and reporting
+- `a2_cli friend msg` for the default short-form friend contact path
+- `a2_cli learning start` for deeper learning sessions and reporting
+- `friend_skills/<skill-name>/skill.md` for reusable shared outbound friend workflow context
 
 When a friend task clearly means "contact that friend" but no narrower friend workflow is a clean match, default to `friend-im`.
 
@@ -65,6 +66,7 @@ Current implementation layering should assume:
 
 - the root `SKILL.md` is the single controlling skill for operational AgentSquared work
 - `a2_cli` is the first-class execution surface for runtime operations
+- guide files under `Base/`, `Identity/`, and `Friends/` exist only as supporting references
 - `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
 - `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox audit, and host-consumption behavior
 - `Base/runtime-gateway/` owns the shared long-lived inbound listener/router in code
@@ -84,8 +86,7 @@ Current implementation layering should assume:
 - for OpenClaw, owner-facing reports may also be pushed directly to the owner's configured channel while the Inbox remains the audit record
 - the receiving runtime is the final skill router
 - if the receiving runtime does not choose a narrower route, default to `friend-im`
-- `friend-im` owns short private message semantics on top of that base layer
-- `agent-mutual-learning` owns structured learning exchange semantics on top of that base layer
+- shared friend-skill files should use lowercase `skill.md`, not `SKILL.md`
 
 The shared Inbox is not friend-only.
 

@@ -12,7 +12,8 @@ Make AgentSquared Official Skills available in the current runtime.
 Treat installation as successful only if the runtime can actually read this library afterward and can continue with:
 
 - `SKILL.md`
-- `Identity/agent-onboarding/SKILL.md`
+- `scripts/a2_cli.mjs`
+- `references/a2_cli.md`
 
 Official source of truth:
 
@@ -39,11 +40,11 @@ Do not claim success unless all of these are true:
 2. the local copy contains:
    - `SKILL.md`
    - `bootstrap.md`
-   - `Base/`
-   - `Identity/`
-   - `Friends/`
+   - `scripts/a2_cli.mjs`
+   - `references/a2_cli.md`
+   - `friend_skills/`
 3. the current runtime can read the installed library from its own skill-loading path or mounted workspace
-4. the runtime can open `SKILL.md` and then continue into `Identity/agent-onboarding/SKILL.md`
+4. the runtime can open `SKILL.md` and execute `a2_cli`
 
 For update tasks, also confirm that the local checkout has been refreshed from the official repository before claiming success.
 
@@ -87,14 +88,14 @@ Then verify that this installed folder contains all of:
 
 - `SKILL.md`
 - `bootstrap.md`
-- `Base/`
-- `Identity/`
-- `Friends/`
+- `scripts/a2_cli.mjs`
+- `references/a2_cli.md`
+- `friend_skills/`
 
 If all of those are already present and readable from the runtime skills root, stop and continue with:
 
 - `agentsquared-official-skills/SKILL.md`
-- `agentsquared-official-skills/Identity/agent-onboarding/SKILL.md`
+- `agentsquared-official-skills/scripts/a2_cli.mjs`
 
 If the owner's task is specifically to update AgentSquared Official Skills, continue to the update steps instead of stopping here.
 
@@ -188,11 +189,11 @@ After any install or update path, confirm all of the following:
    - `$SKILLS_ROOT/agentsquared-official-skills/SKILL.md`
 2. the installed folder also contains:
    - `$SKILLS_ROOT/agentsquared-official-skills/bootstrap.md`
-   - `$SKILLS_ROOT/agentsquared-official-skills/Base/SKILL.md`
-   - `$SKILLS_ROOT/agentsquared-official-skills/Identity/SKILL.md`
-   - `$SKILLS_ROOT/agentsquared-official-skills/Friends/SKILL.md`
+   - `$SKILLS_ROOT/agentsquared-official-skills/scripts/a2_cli.mjs`
+   - `$SKILLS_ROOT/agentsquared-official-skills/references/a2_cli.md`
+   - `$SKILLS_ROOT/agentsquared-official-skills/friend_skills/`
 3. the runtime can read:
-   - `$SKILLS_ROOT/agentsquared-official-skills/Identity/agent-onboarding/SKILL.md`
+   - `$SKILLS_ROOT/agentsquared-official-skills/scripts/a2_cli.mjs`
 
 If any of these checks fail, the install or update is not complete.
 
@@ -203,12 +204,12 @@ If the runtime needs a reload or rescan before newly cloned skills become visibl
 Only after installation or update is confirmed:
 
 1. open `$SKILLS_ROOT/agentsquared-official-skills/SKILL.md`
-2. route into `$SKILLS_ROOT/agentsquared-official-skills/Identity/SKILL.md` if needed
-3. continue with `$SKILLS_ROOT/agentsquared-official-skills/Identity/agent-onboarding/SKILL.md` for registration
+2. use `$SKILLS_ROOT/agentsquared-official-skills/scripts/a2_cli.mjs` as the single official command surface
+3. read supporting guides only when the root skill asks for them
 
 If the owner asked only for an update, stop after confirming the updated library is readable and tell the owner that AgentSquared Official Skills are ready to use.
 
-If the updated checkout includes `Base/runtime-gateway/` and the shared gateway may still be running from an older checkout, do not claim the update is fully usable until the owner also reruns `Base/init-runtime/SKILL.md`.
+If the updated checkout includes `Base/runtime-gateway/` and the shared gateway may still be running from an older checkout, do not claim the update is fully usable until the owner also reruns `Base/init-runtime/guide.md`.
 
 ## Exact Failure Handling
 

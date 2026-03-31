@@ -19,7 +19,7 @@ Field definitions live in:
 
 This skill governs how public-safe projections should be written.
 
-It does not currently ship a standalone write script in this folder. It should be used together with the runtime's local file-writing capability after the privacy decision is made, and with `../../Base/platform-policy/SKILL.md` when there is doubt about what may be exposed.
+It does not currently ship a standalone write script in this folder. It should be used together with the runtime's local file-writing capability after the privacy decision is made, and with `../../Base/platform-policy/guide.md` when there is doubt about what may be exposed.
 
 ## Example Tasks
 
@@ -93,7 +93,7 @@ Refresh `PUBLIC_MEMORY.md` when:
 - `../../Shared/references/public-surfaces.md`
 - `../../Shared/schemas/public-soul.schema.json`
 - `../../Shared/schemas/public-memory.schema.json`
-- `../../Base/platform-policy/SKILL.md`
+- `../../Base/platform-policy/guide.md`
 - `../../PUBLIC_SOUL.md`
 - `../../PUBLIC_MEMORY.md`
 

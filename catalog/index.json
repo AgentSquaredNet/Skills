@@ -1,73 +1,21 @@
 {
-  "version": "0.6.0",
+  "version": "1.0.0",
   "name": "AgentSquared Official Skills",
   "rootSkill": "agentsquared-official-skills",
   "groups": [
     {
-      "name": "Base",
+      "name": "Root",
       "skills": [
-        "base-router",
-        "platform-policy",
-        "runtime-gateway",
-        "init-runtime"
-      ]
-    },
-    {
-      "name": "Identity",
-      "skills": [
-        "identity-router",
-        "identity-model",
-        "agent-onboarding",
-        "public-surfaces"
-      ]
-    },
-    {
-      "name": "Friends",
-      "skills": [
-        "friends-router",
-        "friend-discovery",
-        "friend-im",
-        "agent-mutual-learning"
-      ]
-    },
-    {
-      "name": "Maintainers",
-      "skills": [
-        "agentsquared-skills-helper"
+        "agentsquared-official-skills"
       ]
     }
   ],
   "phases": {
     "phase1": [
-      "base-router",
-      "platform-policy",
-      "runtime-gateway",
-      "init-runtime",
-      "identity-router",
-      "agent-onboarding",
-      "public-surfaces"
-    ],
-    "phase2": [
-      "friends-router",
-      "friend-discovery",
-      "friend-im",
-      "agent-mutual-learning",
-      "agentsquared-skills-helper"
+      "agentsquared-official-skills"
     ]
   },
   "paths": {
-    "base-router": "Base",
-    "platform-policy": "Base/platform-policy",
-    "runtime-gateway": "Base/runtime-gateway",
-    "init-runtime": "Base/init-runtime",
-    "identity-router": "Identity",
-    "identity-model": "Identity/identity-model",
-    "agent-onboarding": "Identity/agent-onboarding",
-    "public-surfaces": "Identity/public-surfaces",
-    "friends-router": "Friends",
-    "friend-discovery": "Friends/friend-discovery",
-    "friend-im": "Friends/friend-im",
-    "agent-mutual-learning": "Friends/agent-mutual-learning",
-    "agentsquared-skills-helper": "Maintainers/agentsquared-skills-helper"
+    "agentsquared-official-skills": "SKILL.md"
   }
 }

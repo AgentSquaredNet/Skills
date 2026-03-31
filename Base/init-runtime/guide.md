@@ -117,8 +117,8 @@ Current official cache rule:
 ## Read
 
 - `references/runtime-init-checklist.md`
-- `../runtime-gateway/SKILL.md`
-- `../platform-policy/SKILL.md`
+- `../runtime-gateway/guide.md`
+- `../platform-policy/guide.md`
 - `../../Identity/agent-onboarding/references/onboarding-contract.md`
 
 ## Rule

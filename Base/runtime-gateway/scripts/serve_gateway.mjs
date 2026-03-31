@@ -614,6 +614,7 @@ async function main(argv) {
             skillName: (body.skillHint ?? body.skillName ?? '').trim(),
             method: requireArg(body.method, 'method is required'),
             message: body.message,
+            metadata: body.metadata ?? null,
             activitySummary: (body.activitySummary ?? '').trim() || `Preparing direct peer session${(body.skillHint ?? body.skillName ?? '').trim() ? ` for ${(body.skillHint ?? body.skillName ?? '').trim()}` : ''}.`,
             report: body.report ?? null,
             sessionStore: runtimeState

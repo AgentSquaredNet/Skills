@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { spawn } from 'node:child_process'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { parseArgs, requireArg } from '../../Base/runtime-gateway/scripts/lib/cli.mjs'
@@ -18,6 +19,25 @@ function printJson(payload) {
 
 function clean(value) {
   return `${value ?? ''}`.trim()
+}
+
+function parseFrontmatterName(text) {
+  const match = text.match(/^---\n([\s\S]*?)\n---/)
+  if (!match?.[1]) {
+    return ''
+  }
+  const nameMatch = match[1].match(/^\s*name\s*:\s*(.+)\s*$/m)
+  return clean(nameMatch?.[1] ?? '').replace(/^["']|["']$/g, '')
+}
+
+function loadSharedSkillFile(skillFile) {
+  const resolved = path.resolve(skillFile)
+  const text = fs.readFileSync(resolved, 'utf8')
+  return {
+    path: resolved,
+    name: parseFrontmatterName(text) || path.basename(path.dirname(resolved)) || path.basename(resolved, path.extname(resolved)),
+    document: clean(text).slice(0, 16000)
+  }
 }
 
 function rootScript(relativePath) {
@@ -136,6 +156,7 @@ function helpText() {
     '  a2_cli init summary --agent-id <id> --key-file <file>',
     '  a2_cli friends list --agent-id <id> --key-file <file>',
     '  a2_cli friend get --agent-id <id> --key-file <file>',
+    '  a2_cli friend msg --target-agent <id> --text <text> --agent-id <id> --key-file <file> [--skill-file <path>]',
     '  a2_cli relay agent-card get --target-agent <id> --agent-id <id> --key-file <file>',
     '  a2_cli relay bindings get [--api-base <url>]',
     '  a2_cli relay ticket create --target-agent <id> --agent-id <id> --key-file <file> [--skill-name <skill>]',
@@ -280,6 +301,11 @@ async function commandPeerOpen(args) {
         }
       : null
   }
+  if (clean(args['skill-file'])) {
+    const sharedSkill = loadSharedSkillFile(clean(args['skill-file']))
+    payload.metadata = { sharedSkill }
+    payload.skillHint = payload.skillHint || clean(sharedSkill.name)
+  }
   const text = clean(args.text)
   payload.message = text
     ? {
@@ -301,24 +327,31 @@ async function commandMessageSend(args) {
   })
   const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
   const text = requireArg(args.text, '--text is required')
+  const skillFile = clean(args['skill-file'])
+  const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
+  const explicitSkillName = clean(args['skill-name'] || args.skill)
+  const skillHint = explicitSkillName || clean(sharedSkill?.name) || 'friend-im'
   const result = await gatewayConnect(gatewayBase, {
     targetAgentId,
-    skillHint: 'friend-im',
+    skillHint,
     method: 'message/send',
     message: {
       kind: 'message',
       role: 'user',
       parts: [{ kind: 'text', text }]
     },
+    metadata: sharedSkill ? { sharedSkill } : null,
     activitySummary: 'Preparing a short friend IM.',
     report: {
-      taskId: 'friend-im',
+      taskId: skillHint,
       summary: `Delivered a short friend IM to ${targetAgentId}.`,
       publicSummary: ''
     }
   })
   printJson({
     targetAgentId,
+    skillHint,
+    sharedSkill: sharedSkill ? { name: sharedSkill.name, path: sharedSkill.path } : null,
     ticketExpiresAt: result.ticket?.expiresAt ?? '',
     peerSessionId: result.peerSessionId ?? '',
     reusedSession: Boolean(result.reusedSession),
@@ -408,6 +441,10 @@ export async function runA2Cli(argv) {
   }
   if ((group === 'friends' && (action === 'list' || action === 'get')) || (group === 'friend' && (action === 'get' || action === 'list'))) {
     await commandFriendsList(args)
+    return
+  }
+  if (group === 'friend' && action === 'msg') {
+    await commandMessageSend(args)
     return
   }
   if (group === 'relay' && action === 'friends' && subaction === 'get') {

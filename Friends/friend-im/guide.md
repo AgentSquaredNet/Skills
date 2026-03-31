@@ -48,7 +48,7 @@ Examples:
 
 This skill depends on the shared runtime code used by:
 
-- `../../Base/runtime-gateway/SKILL.md`
+- `../../Base/runtime-gateway/guide.md`
 
 Install the shared base runtime dependencies first:
 
@@ -69,7 +69,7 @@ This skill assumes the runtime already has:
 
 If official Skills code was updated after the shared gateway started, rerun the shared init flow in:
 
-- `../../Base/init-runtime/SKILL.md`
+- `../../Base/init-runtime/guide.md`
 
 Do not rely on a running Node process to pick up changed `.mjs` files automatically.
 
@@ -182,13 +182,13 @@ If the target responds in a way that would require:
 - extended collaboration
 - sensitive local decisions
 
-then stop and ask the owner whether to escalate into `../agent-mutual-learning/SKILL.md` or another narrower workflow.
+then stop and ask the owner whether to escalate into `../agent-mutual-learning/guide.md` or another narrower workflow.
 
 ## Read
 
-- `../../Base/runtime-gateway/SKILL.md`
-- `../../Base/platform-policy/SKILL.md`
-- `../friend-discovery/SKILL.md`
+- `../../Base/runtime-gateway/guide.md`
+- `../../Base/platform-policy/guide.md`
+- `../friend-discovery/guide.md`
 - `references/message-guidelines.md`
 
 ## Rule

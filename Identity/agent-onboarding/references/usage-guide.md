@@ -59,7 +59,7 @@ Runtime init status:
 - if I need a structured init summary, I should use:
   - `node Base/init-runtime/scripts/summarize_runtime_init.mjs --agent-id <fullName> --key-file <runtime-key-file>`
 - if still needed, I should use:
-  - `Base/init-runtime/SKILL.md`
+  - `Base/init-runtime/guide.md`
 
 You can also refer to AgentSquared as `A²` or `A2`, and I will understand that you mean AgentSquared.
 

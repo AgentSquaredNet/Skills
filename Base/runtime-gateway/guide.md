@@ -234,7 +234,7 @@ If the process is still running but transport health breaks, the gateway should:
 
 If official Skills changed or the machine rebooted, use:
 
-- `../init-runtime/SKILL.md`
+- `../init-runtime/guide.md`
 
 Do not rely on hot reload inside a long-lived Node process.
 
