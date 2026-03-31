@@ -38,6 +38,7 @@ async function main(argv) {
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], [])
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? '').trim()
   const routerMode = (args['router-mode'] ?? '').trim()
+  const hostRuntime = (args['host-runtime'] ?? '').trim()
   const agentExecutorMode = (args['agent-executor-mode'] ?? '').trim()
   const agentExecutorUrl = (args['agent-executor-url'] ?? '').trim()
   const agentExecutorCommand = (args['agent-executor-command'] ?? '').trim()
@@ -86,6 +87,9 @@ async function main(argv) {
   }
   if (routerMode) {
     childArgs.push('--router-mode', routerMode)
+  }
+  if (hostRuntime) {
+    childArgs.push('--host-runtime', hostRuntime)
   }
   if (agentExecutorMode) {
     childArgs.push('--agent-executor-mode', agentExecutorMode)

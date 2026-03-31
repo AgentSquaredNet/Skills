@@ -30,6 +30,7 @@ This skill owns the standard local init flow for:
 
 - `Base/runtime-gateway/scripts/serve_gateway.mjs`
 - the shared runtime code layer in `Base/runtime-gateway/`
+- `Base/runtime-gateway/adapters/`
 - the local gateway state file
 - the local Inbox directory and audit index
 
@@ -54,7 +55,15 @@ npm install
 ```
 
 4. Do **not** default to `npm cache clean` or deleting global Node caches.
-5. Start the shared gateway:
+5. Detect the local host runtime environment:
+
+```bash
+node Base/init-runtime/scripts/detect_host_runtime.mjs
+```
+
+If detection is ambiguous, the current recommended default suggestion is `openclaw`, but do not silently force the host adapter on.
+
+6. Start the shared gateway:
 
 ```bash
 node Base/runtime-gateway/scripts/serve_gateway.mjs \
@@ -72,14 +81,15 @@ The current official OpenClaw settings are:
 - optional `--openclaw-gateway-url`, `--openclaw-gateway-token`, `--openclaw-gateway-password`
 - optional owner push settings such as `--openclaw-owner-channel` and `--openclaw-owner-target`
 
-6. Verify runtime readiness through:
+7. Verify runtime readiness through:
    - `GET /health`
    - `GET /inbox/index`
-7. Confirm the local gateway state file and Inbox path.
-8. Confirm the local gateway state file records the current `runtimeRevision`. If later wrappers report a stale or missing `runtimeRevision`, this init flow has to be rerun before the gateway is considered reusable.
-9. Report the final init result in owner-facing language:
+8. Confirm the local gateway state file and Inbox path.
+9. Confirm the local gateway state file records the current `runtimeRevision`. If later wrappers report a stale or missing `runtimeRevision`, this init flow has to be rerun before the gateway is considered reusable.
+10. Report the final init result in owner-facing language:
    - gateway status
    - inbox status
+   - detected host runtime or suggested host runtime
    - exact next action if something is still not ready
 
 ## Cache Rule

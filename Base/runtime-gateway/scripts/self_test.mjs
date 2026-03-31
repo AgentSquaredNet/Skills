@@ -14,7 +14,8 @@ import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { parseOpenClawTaskResult } from './lib/openclaw_adapter.mjs'
+import { parseOpenClawTaskResult } from '../adapters/index.mjs'
+import { detectOpenClawHostEnvironment } from '../adapters/openclaw/detect.mjs'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -53,6 +54,14 @@ if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent') {
     runId: 'run_openclaw_test',
     acceptedAt: '2026-03-31T10:00:00Z'
   }))
+  process.exit(0)
+}
+if (args[0] === 'gateway' && args[1] === '--help') {
+  process.stdout.write('fake gateway help')
+  process.exit(0)
+}
+if (args[0] === 'agent' && args[1] === '--help') {
+  process.stdout.write('fake agent help')
   process.exit(0)
 }
 if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent.wait') {
@@ -248,11 +257,17 @@ process.exit(2)
     })
     assert.equal(parsedOpenClaw.peerResponse.message.parts[0].text, 'Hello from OpenClaw')
     assert.equal(parsedOpenClaw.ownerReport.summary, 'OpenClaw owner report')
-
     process.env.AGENTSQUARED_OPENCLAW_TEST_LOG = fakeOpenClawLog
+    const detectedOpenClaw = await detectOpenClawHostEnvironment({
+      command: fakeOpenClaw
+    })
+    assert.equal(detectedOpenClaw.id, 'openclaw')
+    assert.equal(detectedOpenClaw.detected, true)
+
     const openclawExecutor = createLocalRuntimeExecutor({
       agentId: 'bot1@Skiyo',
-      mode: 'openclaw',
+      mode: 'host',
+      hostRuntime: 'openclaw',
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
       openclawSessionPrefix: 'agentsquared:peer:',
@@ -287,7 +302,8 @@ process.exit(2)
     })
     const openclawNotifier = createOwnerNotifier({
       agentId: 'bot1@Skiyo',
-      mode: 'openclaw',
+      mode: 'host',
+      hostRuntime: 'openclaw',
       inbox: openclawInbox,
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',

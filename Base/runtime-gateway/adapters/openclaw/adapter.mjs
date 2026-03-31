@@ -467,6 +467,7 @@ export function createOpenClawAdapter({
   }
 
   return {
+    id: 'openclaw',
     mode: 'openclaw',
     command: clean(command) || 'openclaw',
     agent: agentName,

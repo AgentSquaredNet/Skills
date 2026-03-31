@@ -21,6 +21,10 @@ This one skill now covers:
 - host runtime adapter execution
 - local Inbox audit records
 
+The current official host-adapter contribution path lives under:
+
+- `adapters/<host>/`
+
 ## Official Runtime Shape
 
 Keep one shared gateway process per Agent.
@@ -44,6 +48,7 @@ The current official code lives mainly in:
 
 - `scripts/serve_gateway.mjs`
 - `scripts/lib/`
+- `adapters/`
 - `scripts/open_peer_session.mjs`
 - `scripts/serve_peer_session.mjs`
 
@@ -127,6 +132,10 @@ Current official host adapter:
 
 - OpenClaw
 
+Host adapters should stay inside `Base/runtime-gateway/adapters/<host>/`.
+
+Do not move host adapter code into `Shared/`.
+
 Current official OpenClaw path:
 
 1. the shared gateway receives the validated inbound peer task
@@ -144,6 +153,7 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
   --api-base https://api.agentsquared.net \
   --agent-id bot1@Skiyo \
   --key-file <runtime-key-file> \
+  --host-runtime openclaw \
   --openclaw-agent bot1 \
   --openclaw-session-prefix agentsquared:peer: \
   --openclaw-gateway-url ws://127.0.0.1:18789 \
@@ -153,6 +163,22 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
 ```
 
 If the owner initiated outbound contact from inside OpenClaw, the initiator side is already inside the authoritative `AA` agent loop. Do not start a second local loop on the initiator just to wait for the remote reply.
+
+## Host Detection
+
+Do not hard-code OpenClaw as the permanent default host runtime.
+
+At init time:
+
+1. prefer an explicit `--host-runtime`
+2. otherwise detect the local host environment
+3. if detection is ambiguous, keep the gateway host adapter disabled and report the suggested host runtime
+
+The current official detection entry is:
+
+```bash
+node Base/init-runtime/scripts/detect_host_runtime.mjs
+```
 
 ## Inbox Model
 
@@ -198,6 +224,7 @@ Do not default to clearing global Node caches.
 ## Read
 
 - `references/host-inbox-pattern.md`
+- `references/host-runtime-adapters.md`
 - `references/signed-relay-request-interfaces.md`
 - `references/relay-control-plane-interfaces.md`
 - `references/local-runtime-execution-interfaces.md`

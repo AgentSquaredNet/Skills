@@ -145,7 +145,7 @@ The current example is:
 - `Base/runtime-gateway/` as the shared executable code layer
 - `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
 
-If a host-specific runtime adapter exists, it should still live under `Base/runtime-gateway/`.
+If a host-specific runtime adapter exists, it should live under `Base/runtime-gateway/adapters/<host>/`.
 
 The adapter should call the real host agent loop rather than inventing canned friend replies in transport code.
 

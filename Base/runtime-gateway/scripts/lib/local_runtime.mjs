@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 
 import { requestJson } from './http_json.mjs'
 import { extractInboundText } from './agent_router.mjs'
-import { createOpenClawAdapter } from './openclaw_adapter.mjs'
+import { createHostRuntimeAdapter } from '../../adapters/index.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -165,6 +165,7 @@ async function runJsonCommand(command, payload) {
 export function createLocalRuntimeExecutor({
   agentId,
   mode = 'reject',
+  hostRuntime = 'none',
   url = '',
   command = '',
   openclawCommand = 'openclaw',
@@ -180,22 +181,26 @@ export function createLocalRuntimeExecutor({
   openclawGatewayPassword = ''
 } = {}) {
   const normalizedMode = clean(mode).toLowerCase() || 'reject'
+  const normalizedHostRuntime = clean(hostRuntime).toLowerCase() || 'none'
   const normalizedUrl = clean(url)
   const normalizedCommand = clean(command)
-  const openclawAdapter = normalizedMode === 'openclaw'
-    ? createOpenClawAdapter({
+  const hostAdapter = normalizedMode === 'host' || normalizedMode === 'openclaw'
+    ? createHostRuntimeAdapter({
+        hostRuntime: normalizedHostRuntime || 'openclaw',
         localAgentId: agentId,
-        openclawAgent,
-        command: openclawCommand,
-        cwd: openclawCwd,
-        sessionPrefix: openclawSessionPrefix,
-        timeoutMs: openclawTimeoutMs,
-        ownerChannel: openclawOwnerChannel,
-        ownerTarget: openclawOwnerTarget,
-        ownerThreadId: openclawOwnerThreadId,
-        gatewayUrl: openclawGatewayUrl,
-        gatewayToken: openclawGatewayToken,
-        gatewayPassword: openclawGatewayPassword
+        openclaw: {
+          openclawAgent,
+          command: openclawCommand,
+          cwd: openclawCwd,
+          sessionPrefix: openclawSessionPrefix,
+          timeoutMs: openclawTimeoutMs,
+          ownerChannel: openclawOwnerChannel,
+          ownerTarget: openclawOwnerTarget,
+          ownerThreadId: openclawOwnerThreadId,
+          gatewayUrl: openclawGatewayUrl,
+          gatewayToken: openclawGatewayToken,
+          gatewayPassword: openclawGatewayPassword
+        }
       })
     : null
 
@@ -231,12 +236,12 @@ export function createLocalRuntimeExecutor({
     )
   }
 
-  async function executeViaOpenClaw(context) {
-    if (!openclawAdapter) {
-      throw new Error('OpenClaw adapter was not configured')
+  async function executeViaHost(context) {
+    if (!hostAdapter) {
+      throw new Error('host runtime adapter was not configured')
     }
     return normalizeExecutionResult(
-      await openclawAdapter.executeInbound(context),
+      await hostAdapter.executeInbound(context),
       context
     )
   }
@@ -254,8 +259,8 @@ export function createLocalRuntimeExecutor({
     ? executeViaHttp
     : normalizedMode === 'command'
       ? executeViaCommand
-      : normalizedMode === 'openclaw'
-        ? executeViaOpenClaw
+      : normalizedMode === 'host' || normalizedMode === 'openclaw'
+        ? executeViaHost
         : rejectExecution
 
   execute.mode = normalizedMode
@@ -267,6 +272,7 @@ export function createLocalRuntimeExecutor({
 export function createOwnerNotifier({
   agentId,
   mode = 'inbox',
+  hostRuntime = 'none',
   url = '',
   command = '',
   inbox = null,
@@ -283,22 +289,26 @@ export function createOwnerNotifier({
   openclawGatewayPassword = ''
 } = {}) {
   const normalizedMode = clean(mode).toLowerCase() || 'inbox'
+  const normalizedHostRuntime = clean(hostRuntime).toLowerCase() || 'none'
   const normalizedUrl = clean(url)
   const normalizedCommand = clean(command)
-  const openclawAdapter = normalizedMode === 'openclaw'
-    ? createOpenClawAdapter({
+  const hostAdapter = normalizedMode === 'host' || normalizedMode === 'openclaw'
+    ? createHostRuntimeAdapter({
+        hostRuntime: normalizedHostRuntime || 'openclaw',
         localAgentId: agentId,
-        openclawAgent,
-        command: openclawCommand,
-        cwd: openclawCwd,
-        sessionPrefix: openclawSessionPrefix,
-        timeoutMs: openclawTimeoutMs,
-        ownerChannel: openclawOwnerChannel,
-        ownerTarget: openclawOwnerTarget,
-        ownerThreadId: openclawOwnerThreadId,
-        gatewayUrl: openclawGatewayUrl,
-        gatewayToken: openclawGatewayToken,
-        gatewayPassword: openclawGatewayPassword
+        openclaw: {
+          openclawAgent,
+          command: openclawCommand,
+          cwd: openclawCwd,
+          sessionPrefix: openclawSessionPrefix,
+          timeoutMs: openclawTimeoutMs,
+          ownerChannel: openclawOwnerChannel,
+          ownerTarget: openclawOwnerTarget,
+          ownerThreadId: openclawOwnerThreadId,
+          gatewayUrl: openclawGatewayUrl,
+          gatewayToken: openclawGatewayToken,
+          gatewayPassword: openclawGatewayPassword
+        }
       })
     : null
 
@@ -372,18 +382,18 @@ export function createOwnerNotifier({
     }
   }
 
-  async function notifyViaOpenClaw(context) {
+  async function notifyViaHost(context) {
     let ownerResult
-    if (!openclawAdapter) {
+    if (!hostAdapter) {
       ownerResult = {
         delivered: false,
         attempted: false,
-        mode: 'openclaw',
+        mode: normalizedHostRuntime || 'host',
         reason: 'adapter-not-configured'
       }
     } else {
       try {
-        ownerResult = await openclawAdapter.pushOwnerReport({
+        ownerResult = await hostAdapter.pushOwnerReport({
           item: context.item,
           selectedSkill: context.selectedSkill,
           ownerReport: context.ownerReport
@@ -426,8 +436,8 @@ export function createOwnerNotifier({
     ? notifyViaHttp
     : normalizedMode === 'command'
       ? notifyViaCommand
-      : normalizedMode === 'openclaw'
-        ? notifyViaOpenClaw
+      : normalizedMode === 'host' || normalizedMode === 'openclaw'
+        ? notifyViaHost
       : normalizedMode === 'inbox'
         ? notifyViaInbox
       : normalizedMode === 'none'

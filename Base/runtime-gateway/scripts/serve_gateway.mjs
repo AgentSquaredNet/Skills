@@ -14,6 +14,7 @@ import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { createAgentRouter, DEFAULT_ROUTER_DEFAULT_SKILL, DEFAULT_ROUTER_SKILLS } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { createInboxStore, defaultInboxDir } from './lib/gateway_inbox.mjs'
+import { detectHostRuntimeEnvironment } from '../adapters/index.mjs'
 
 const DEFAULT_GATEWAY_HOST = '127.0.0.1'
 const DEFAULT_GATEWAY_PORT = 0
@@ -68,13 +69,12 @@ async function main(argv) {
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
+  const hostRuntime = `${args['host-runtime'] ?? process.env.AGENTSQUARED_HOST_RUNTIME ?? 'auto'}`.trim().toLowerCase() || 'auto'
   const openclawAgent = `${args['openclaw-agent'] ?? process.env.OPENCLAW_AGENT ?? ''}`.trim()
   const openclawOwnerChannel = `${args['openclaw-owner-channel'] ?? process.env.OPENCLAW_OWNER_CHANNEL ?? ''}`.trim()
   const openclawOwnerTarget = `${args['openclaw-owner-target'] ?? process.env.OPENCLAW_OWNER_TARGET ?? ''}`.trim()
-  const agentExecutorMode = `${args['agent-executor-mode'] ?? (openclawAgent ? 'openclaw' : 'reject')}`.trim().toLowerCase() || 'reject'
   const agentExecutorUrl = `${args['agent-executor-url'] ?? ''}`.trim()
   const agentExecutorCommand = `${args['agent-executor-command'] ?? ''}`.trim()
-  const ownerNotifyMode = `${args['owner-notify-mode'] ?? (openclawOwnerChannel && openclawOwnerTarget ? 'openclaw' : 'inbox')}`.trim().toLowerCase() || 'inbox'
   const ownerNotifyUrl = `${args['owner-notify-url'] ?? ''}`.trim()
   const ownerNotifyCommand = `${args['owner-notify-command'] ?? ''}`.trim()
   const openclawCommand = `${args['openclaw-command'] ?? process.env.OPENCLAW_COMMAND ?? 'openclaw'}`.trim() || 'openclaw'
@@ -93,9 +93,24 @@ async function main(argv) {
   const runtimeState = createGatewayRuntimeState()
   const inboxStore = createInboxStore({ inboxDir })
   const runtimeRevision = currentRuntimeRevision()
+  const detectedHostRuntime = await detectHostRuntimeEnvironment({
+    preferred: hostRuntime,
+    openclaw: {
+      command: openclawCommand,
+      cwd: openclawCwd,
+      openclawAgent,
+      gatewayUrl: openclawGatewayUrl,
+      gatewayToken: openclawGatewayToken,
+      gatewayPassword: openclawGatewayPassword
+    }
+  })
+  const resolvedHostRuntime = detectedHostRuntime.resolved || 'none'
+  const agentExecutorMode = `${args['agent-executor-mode'] ?? (resolvedHostRuntime !== 'none' ? 'host' : 'reject')}`.trim().toLowerCase() || 'reject'
+  const ownerNotifyMode = `${args['owner-notify-mode'] ?? (resolvedHostRuntime !== 'none' && openclawOwnerChannel && openclawOwnerTarget ? 'host' : 'inbox')}`.trim().toLowerCase() || 'inbox'
   const localRuntimeExecutor = createLocalRuntimeExecutor({
     agentId,
     mode: agentExecutorMode,
+    hostRuntime: resolvedHostRuntime,
     url: agentExecutorUrl,
     command: agentExecutorCommand,
     openclawCommand,
@@ -113,6 +128,7 @@ async function main(argv) {
   const ownerNotifier = createOwnerNotifier({
     agentId,
     mode: ownerNotifyMode,
+    hostRuntime: resolvedHostRuntime,
     url: ownerNotifyUrl,
     command: ownerNotifyCommand,
     inbox: inboxStore,
@@ -245,7 +261,8 @@ async function main(argv) {
           routerSkills,
           defaultSkill,
           executorMode: localRuntimeExecutor.mode,
-          ownerNotifyMode: ownerNotifier.mode
+          ownerNotifyMode: ownerNotifier.mode,
+          hostRuntime: resolvedHostRuntime
         }
   }
 
@@ -481,6 +498,7 @@ async function main(argv) {
             gatewayStateFile,
             runtimeRevision,
             revisionStatus,
+            hostRuntime: detectedHostRuntime,
             routerMode,
             agentRouter: buildRouterSnapshot(),
             lifecycle: buildLifecycleSnapshot(),
@@ -498,6 +516,7 @@ async function main(argv) {
             gatewayStateFile,
             runtimeRevision,
             revisionStatus,
+            hostRuntime: detectedHostRuntime,
             peerId: transport.peerId,
             listenAddrs: transport.listenAddrs,
             relayAddrs: transport.relayAddrs,
@@ -520,6 +539,7 @@ async function main(argv) {
             gatewayStateFile,
             runtimeRevision,
             revisionStatus,
+            hostRuntime: detectedHostRuntime,
             routerMode,
             error: { message: error.message },
             agentRouter: buildRouterSnapshot(),

@@ -34,6 +34,25 @@ const REQUIRED_SUBSTRINGS = new Map([
     '"name": "agentsquared-runtime-gateway"',
     '"self-test": "node ./scripts/self_test.mjs"',
   ]],
+  [path.join(ROOT, 'Base', 'runtime-gateway', 'adapters', 'index.mjs'), [
+    'detectHostRuntimeEnvironment',
+    'SUPPORTED_HOST_RUNTIMES',
+    'createHostRuntimeAdapter',
+  ]],
+  [path.join(ROOT, 'Base', 'runtime-gateway', 'adapters', 'openclaw', 'adapter.mjs'), [
+    'createOpenClawAdapter',
+    'agent.wait',
+    'chat.history',
+  ]],
+  [path.join(ROOT, 'Base', 'runtime-gateway', 'adapters', 'openclaw', 'detect.mjs'), [
+    'detectOpenClawHostEnvironment',
+    'openclaw-cli-gateway-subcommand-available',
+  ]],
+  [path.join(ROOT, 'Base', 'init-runtime', 'scripts', 'detect_host_runtime.mjs'), [
+    'detectHostRuntimeEnvironment',
+    'suggestedHostRuntime',
+    'recommendedGatewayArgs',
+  ]],
   [path.join(ROOT, 'Base', 'platform-policy', 'SKILL.md'), [
     'Human-rooted trust model',
     'public-safe projections',
@@ -67,6 +86,7 @@ const REQUIRED_SUBSTRINGS = new Map([
     'Treat onboarding-complete startup and post-update restart as the same official runtime-init workflow.',
     'GET /health',
     'GET /inbox/index',
+    'detect_host_runtime.mjs',
   ]],
   [path.join(ROOT, 'Base', 'init-runtime', 'references', 'runtime-init-checklist.md'), [
     'First Init After Onboarding',
