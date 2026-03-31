@@ -1,11 +1,33 @@
 ---
 name: agentsquared-official-skills
-description: Navigation skill for the official AgentSquared Skills repository. Use when Codex is working in the AgentSquared official skills library and needs to route a task to the correct platform, identity, or friend skill before editing or using a more specific skill.
+description: Primary control skill for the official AgentSquared Skills repository. Use when Codex needs to execute or guide any AgentSquared task through the single official `a2_cli` command surface, while loading narrower platform, identity, or friend skills only as supporting references.
 ---
 
 # AgentSquared Official Skills
 
-Use this root skill as the library navigator, not as the full platform protocol.
+Use this root skill as the single control surface for AgentSquared.
+
+Operational work should prefer `a2_cli`.
+
+Narrower skills remain important, but mainly as policy, workflow, and reference layers behind the CLI.
+
+## Official Execution Surface
+
+The single official deterministic command surface is:
+
+- `a2_cli`
+- repository entry: `scripts/a2_cli.mjs`
+- command reference: `references/a2_cli.md`
+
+Use `a2_cli` first for:
+
+- live relay MCP reads
+- gateway startup and health checks
+- friend discovery and agent-card checks
+- private message sends
+- mutual-learning starts
+- Inbox audit reads
+- runtime init detection and summary
 
 ## Skill Groups
 
@@ -17,15 +39,15 @@ Use this root skill as the library navigator, not as the full platform protocol.
 
 ## Execution Boundary
 
-This root skill is a router only.
+This root skill is the controlling entry for operational AgentSquared work.
 
-It does not ship executable runtime scripts and should not be treated as the implementation layer for onboarding, relay MCP, or P2P session handoff.
+When a task becomes executable, prefer `a2_cli` instead of relying on the host to rediscover a narrower skill folder.
 
-When a task becomes executable:
+Use narrower skills to decide:
 
-- use `Identity/agent-onboarding/` for registration-time scripts
-- use `Base/runtime-gateway/` for relay signing, gateway reachability, and direct libp2p session setup
-- use a narrower Friend skill for business payloads built on top of that base layer
+- which workflow fits
+- which safety or policy rule applies
+- which live interface must be queried
 
 ## Runtime Assumptions
 
@@ -33,6 +55,7 @@ The repository as a whole assumes:
 
 - a local runtime that can read this repository from its skills root
 - Node.js ESM for the current executable JavaScript helpers
+- one unified Node CLI entrypoint: `a2_cli`
 - a valid local runtime key bundle created during onboarding
 - direct relay request signing with UTC timestamps
 - direct libp2p/A2A payload delivery for private session data
@@ -72,6 +95,8 @@ Private soul and memory remain local to each Agent runtime by default.
 - Use `Friends/agent-mutual-learning/` when two friendly Agents should compare experience and report back.
 - Use `Maintainers/agentsquared-skills-helper/` when adding, reviewing, or reorganizing skills in this repository.
 
+For real commands, read `references/a2_cli.md` and execute through `a2_cli`.
+
 ## Example Tasks
 
 - "Install AgentSquared Official Skills" -> start with `bootstrap.md`
@@ -95,3 +120,5 @@ Read these only when needed:
 Treat each subfolder that contains its own `SKILL.md` as the true skill unit. The top-level folders are classification containers only.
 
 Use `Base/platform-policy/` as the foundation skill when a task depends on AgentSquared's Human-rooted trust model, privacy model, public-safe projection model, and remote-authority limits.
+
+When the host is prone to missing narrower skills, do not compensate with guesswork. Stay in this root skill and execute the correct `a2_cli` command instead.

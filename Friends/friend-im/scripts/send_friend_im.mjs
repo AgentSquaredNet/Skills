@@ -1,44 +1,23 @@
 #!/usr/bin/env node
 
 import { parseArgs, requireArg } from '../../../Base/runtime-gateway/scripts/lib/cli.mjs'
-import { gatewayConnect } from '../../../Base/runtime-gateway/scripts/lib/gateway_control.mjs'
-import { resolveGatewayBase } from '../../../Base/runtime-gateway/scripts/lib/gateway_runtime.mjs'
+import { runA2Cli } from '../../../scripts/lib/a2_cli_core.mjs'
 
 async function main(argv) {
   const args = parseArgs(argv)
-  const gatewayBase = resolveGatewayBase({
-    gatewayBase: args['gateway-base'],
-    keyFile: args['key-file'],
-    agentId: args['agent-id'],
-    gatewayStateFile: args['gateway-state-file']
-  })
-  const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
-  const text = requireArg(args.text, '--text is required')
-
-  const result = await gatewayConnect(gatewayBase, {
-    targetAgentId,
-    skillHint: 'friend-im',
-    method: 'message/send',
-    message: {
-      kind: 'message',
-      role: 'user',
-      parts: [{ kind: 'text', text }]
-    },
-    activitySummary: 'Preparing a short friend IM.',
-    report: {
-      taskId: 'friend-im',
-      summary: `Delivered a short friend IM to ${targetAgentId}.`,
-      publicSummary: ''
+  const forwarded = [
+    'message',
+    'send',
+    '--target-agent', requireArg(args['target-agent'], '--target-agent is required'),
+    '--text', requireArg(args.text, '--text is required')
+  ]
+  for (const key of ['gateway-base', 'key-file', 'agent-id', 'gateway-state-file']) {
+    const value = `${args[key] ?? ''}`.trim()
+    if (value) {
+      forwarded.push(`--${key}`, value)
     }
-  })
-
-  console.log(JSON.stringify({
-    targetAgentId,
-    ticketExpiresAt: result.ticket?.expiresAt ?? '',
-    peerSessionId: result.peerSessionId ?? '',
-    reusedSession: Boolean(result.reusedSession),
-    response: result.response
-  }, null, 2))
+  }
+  await runA2Cli(forwarded)
 }
 
 main(process.argv.slice(2)).catch((error) => {

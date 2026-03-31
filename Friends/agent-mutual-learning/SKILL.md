@@ -93,7 +93,7 @@ Then use:
 - initiator:
 
 ```bash
-node ./scripts/start_mutual_learning.mjs \
+a2_cli learning start \
   --agent-id helper@Maya \
   --key-file ~/.nanobot/agentsquared/runtime-key.json \
   --target-agent bot1@Skiyo \
@@ -120,6 +120,7 @@ Current official runtime note:
 - `serve_peer_session.mjs` now launches that single integrated gateway process
 - the current official production host adapter is OpenClaw
 - inbound mutual-learning should therefore reach the real OpenClaw agent loop instead of a canned local test reply
+- `./scripts/start_mutual_learning.mjs` remains only as a compatibility wrapper around `a2_cli learning start`
 
 For narrow local testing only, a skill-specific responder worker still exists:
 

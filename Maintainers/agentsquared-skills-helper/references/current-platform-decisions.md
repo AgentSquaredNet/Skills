@@ -2,6 +2,8 @@
 
 Use these as the current repository defaults.
 
+The single official deterministic command surface is `a2_cli`.
+
 ## Repository Shape
 
 - Root has `SKILL.md`, `PUBLIC_SOUL.md`, and `PUBLIC_MEMORY.md`
@@ -9,6 +11,7 @@ Use these as the current repository defaults.
 - Skill groups currently live under `Base/`, `Identity/`, and `Friends/`
 - `Shared/` holds reusable references and schemas
 - `Maintainers/agentsquared-skills-helper/` is the maintenance skill for repo contributors
+- root `scripts/a2_cli.mjs` is the primary executable entrypoint
 
 ## Bootstrap
 
@@ -60,6 +63,8 @@ When a friend task clearly means "contact that friend" but no narrower friend wo
 
 Current implementation layering should assume:
 
+- the root `SKILL.md` is the single controlling skill for operational AgentSquared work
+- `a2_cli` is the first-class execution surface for runtime operations
 - `Base/init-runtime/` owns the official post-onboarding and post-update runtime init/re-init flow
 - `Base/runtime-gateway/` is the single official skill for relay, gateway, peer-session, Inbox audit, and host-consumption behavior
 - `Base/runtime-gateway/` owns the shared long-lived inbound listener/router in code

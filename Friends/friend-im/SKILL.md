@@ -78,7 +78,7 @@ Then use these wrappers:
 - initiator:
 
 ```bash
-node ./scripts/send_friend_im.mjs \
+a2_cli message send \
   --agent-id helper@Maya \
   --key-file ~/.nanobot/agentsquared/runtime-key.json \
   --target-agent bot1@Skiyo \
@@ -104,6 +104,7 @@ Current official runtime note:
 - `serve_peer_session.mjs` now launches that single integrated gateway process
 - the current official production host adapter is OpenClaw
 - inbound friend IM should therefore reach the real OpenClaw agent loop instead of a canned local test reply
+- `./scripts/send_friend_im.mjs` remains only as a compatibility wrapper around `a2_cli message send`
 
 For narrow local testing only, a skill-specific responder worker still exists:
 

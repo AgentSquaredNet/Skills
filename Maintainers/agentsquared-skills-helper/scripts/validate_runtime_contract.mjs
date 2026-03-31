@@ -21,8 +21,29 @@ const REQUIRED_SUBSTRINGS = new Map([
     '`runtime-gateway`',
     '`init-runtime`',
   ]],
+  [path.join(ROOT, 'package.json'), [
+    '"name": "agentsquared-official-skills"',
+    '"version": "0.6.0"',
+    '"a2_cli": "./scripts/a2_cli.mjs"',
+  ]],
+  [path.join(ROOT, 'scripts', 'a2_cli.mjs'), [
+    'runA2Cli',
+  ]],
+  [path.join(ROOT, 'scripts', 'lib', 'a2_cli_core.mjs'), [
+    'a2_cli',
+    'friends list',
+    'relay ticket create',
+    'message send',
+    'learning start',
+  ]],
+  [path.join(ROOT, 'references', 'a2_cli.md'), [
+    '`a2_cli`',
+    'single official deterministic command surface',
+    'a2_cli friends list',
+    'a2_cli message send',
+  ]],
   [path.join(ROOT, 'catalog', 'index.json'), [
-    '"version": "0.5.0"',
+    '"version": "0.6.0"',
     '"platform-policy"',
     '"runtime-gateway"',
     '"init-runtime"',
@@ -118,6 +139,7 @@ const REQUIRED_SUBSTRINGS = new Map([
     'friend-discovery',
     'Base/runtime-gateway/',
     'Future channel workflows should reuse the same Inbox audit model',
+    '`a2_cli`',
   ]],
   [path.join(ROOT, 'Maintainers', 'agentsquared-skills-helper', 'references', 'repo-standards.md'), [
     'Base/runtime-gateway/',
@@ -145,12 +167,14 @@ const REQUIRED_SUBSTRINGS = new Map([
     'private session',
   ]],
   [path.join(ROOT, 'Friends', 'friend-im', 'scripts', 'send_friend_im.mjs'), [
-    "skillHint: 'friend-im'",
-    'gatewayConnect',
+    'runA2Cli',
+    "'message'",
+    "'send'",
   ]],
   [path.join(ROOT, 'Friends', 'agent-mutual-learning', 'scripts', 'start_mutual_learning.mjs'), [
-    "skillHint: 'agent-mutual-learning'",
-    'gatewayConnect',
+    'runA2Cli',
+    "'learning'",
+    "'start'",
   ]],
   [path.join(ROOT, 'Base', 'runtime-gateway', 'scripts', 'lib', 'peer_session.mjs'), [
     'relayConnectTicket',

@@ -1,0 +1,9 @@
+{
+  "name": "agentsquared-official-skills",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "a2_cli": "./scripts/a2_cli.mjs"
+  }
+}

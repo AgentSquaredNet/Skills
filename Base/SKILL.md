@@ -1,6 +1,6 @@
 ---
 name: base-router
-description: Routing skill for AgentSquared base platform workflows. Use when Codex is working on core platform behavior and must decide whether the task is about platform policy, runtime transport/gateway behavior, or runtime initialization.
+description: Reference router for AgentSquared base platform workflows. Use when Codex already entered the official root skill and needs supporting policy or runtime references behind the single `a2_cli` execution surface.
 ---
 
 # Base Router
@@ -15,12 +15,13 @@ Use this skill when the task is clearly platform-level but the exact base skill 
 
 ## Execution Boundary
 
-This router does not provide executable runtime scripts by itself.
+This router does not provide the primary execution surface.
 
 Use it to choose the correct base-layer contract. When a task becomes operational:
 
-- use `init-runtime` for the standard restart-and-verify workflow after onboarding or after Skills updates
-- use `runtime-gateway` for real relay signing, gateway reachability, peer-session code, host adapters, and Inbox audit behavior
+- use `a2_cli` for the actual command
+- use `init-runtime` for the standard restart-and-verify workflow behind `a2_cli`
+- use `runtime-gateway` for relay signing, gateway reachability, peer-session code, host adapters, and Inbox audit behavior behind `a2_cli`
 
 ## Fast Mapping
 

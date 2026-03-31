@@ -5,6 +5,10 @@ description: Unified AgentSquared runtime transport skill covering relay MCP, sh
 
 # Runtime Gateway
 
+The primary executable command surface for this skill is `a2_cli`.
+
+Read `../../references/a2_cli.md` before inventing a direct wrapper path.
+
 ## Overview
 
 Use this skill for the current official AgentSquared runtime stack after onboarding.

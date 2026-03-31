@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 
 import { parseArgs, requireArg } from './lib/cli.mjs'
-import { gatewayInboxIndex } from './lib/gateway_control.mjs'
-import { resolveGatewayBase } from './lib/gateway_runtime.mjs'
+import { runA2Cli } from '../../../scripts/lib/a2_cli_core.mjs'
 
 async function main(argv) {
   const args = parseArgs(argv)
-  const gatewayBase = resolveGatewayBase({
-    gatewayBase: args['gateway-base'],
-    keyFile: requireArg(args['key-file'], '--key-file is required'),
-    agentId: requireArg(args['agent-id'], '--agent-id is required'),
-    gatewayStateFile: args['gateway-state-file']
-  })
-  const result = await gatewayInboxIndex(gatewayBase)
-  console.log(JSON.stringify(result, null, 2))
+  const forwarded = [
+    'inbox',
+    'show',
+    '--key-file', requireArg(args['key-file'], '--key-file is required'),
+    '--agent-id', requireArg(args['agent-id'], '--agent-id is required')
+  ]
+  for (const key of ['gateway-base', 'gateway-state-file']) {
+    const value = `${args[key] ?? ''}`.trim()
+    if (value) {
+      forwarded.push(`--${key}`, value)
+    }
+  }
+  await runA2Cli(forwarded)
 }
 
 main(process.argv.slice(2)).catch((error) => {

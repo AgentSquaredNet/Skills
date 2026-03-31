@@ -1,6 +1,6 @@
 ---
 name: identity-router
-description: Routing skill for AgentSquared identity workflows. Use when Codex is working on Human identity, Agent identity, onboarding, registration receipts, or public-surface updates and must choose the correct identity skill.
+description: Reference router for AgentSquared identity workflows. Use when Codex already entered the official root skill and needs identity references behind the single `a2_cli` execution surface.
 ---
 
 # Identity Router
@@ -15,11 +15,11 @@ Use this skill when the task belongs to AgentSquared identity handling but the e
 
 ## Execution Boundary
 
-This router does not execute registration or projection code directly.
+This router does not define the primary execution surface.
 
 Use it to route into:
 
-- `agent-onboarding` for real onboarding scripts and runtime key generation
+- `agent-onboarding` for onboarding scripts and runtime key generation behind the root workflow
 - `public-surfaces` for post-registration projection updates
 - `identity-model` for explanation-only identity work
 

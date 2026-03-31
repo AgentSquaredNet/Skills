@@ -28,7 +28,7 @@ This skill is the official place for:
 
 This skill owns the standard local init flow for:
 
-- `Base/runtime-gateway/scripts/serve_gateway.mjs`
+- `a2_cli gateway serve`
 - the shared runtime code layer in `Base/runtime-gateway/`
 - `Base/runtime-gateway/adapters/`
 - the local gateway state file
@@ -68,7 +68,7 @@ For OpenClaw specifically, detection should rely on official OpenClaw status com
 6. Start the shared gateway:
 
 ```bash
-node Base/runtime-gateway/scripts/serve_gateway.mjs \
+a2_cli gateway serve \
   --api-base https://api.agentsquared.net \
   --agent-id <fullName> \
   --key-file <runtime-key-file>
