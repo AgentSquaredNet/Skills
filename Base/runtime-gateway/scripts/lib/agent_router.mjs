@@ -97,43 +97,6 @@ export function chooseInboundSkill(item, {
   return ''
 }
 
-export function buildFriendImReplyText(item) {
-  const incoming = extractInboundText(item)
-  if (!incoming) {
-    return 'Hi, I received your message.'
-  }
-  const compact = incoming.replace(/\s+/g, ' ').trim()
-  const excerpt = compact.length > 140 ? `${compact.slice(0, 137)}...` : compact
-  return `Hi, I received your message: ${excerpt}`
-}
-
-export function buildMutualLearningReplyText(item) {
-  const goal = extractInboundText(item)
-  const summary = goal
-    ? `I reviewed your learning request: ${goal.replace(/\s+/g, ' ').trim().slice(0, 180)}`
-    : 'I reviewed your learning request.'
-  return `${summary}\nCurrent recommendation: compare concrete workflows first, then summarize reusable lessons without exposing private memory.`
-}
-
-export function buildSkillResult(skill, item) {
-  let text = ''
-  if (skill === 'agent-mutual-learning') {
-    text = buildMutualLearningReplyText(item)
-  } else {
-    text = buildFriendImReplyText(item)
-  }
-  return {
-    message: {
-      kind: 'message',
-      role: 'agent',
-      parts: [{ kind: 'text', text }]
-    },
-    metadata: {
-      selectedSkill: skill
-    }
-  }
-}
-
 export function createMailboxScheduler({
   maxActiveMailboxes = 8,
   mailboxKeyForItem = resolveMailboxKey,

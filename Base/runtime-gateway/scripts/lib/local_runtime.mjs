@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process'
 
 import { requestJson } from './http_json.mjs'
-import { buildSkillResult, extractInboundText } from './agent_router.mjs'
+import { extractInboundText } from './agent_router.mjs'
+import { createOpenClawAdapter } from './openclaw_adapter.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -163,13 +164,34 @@ async function runJsonCommand(command, payload) {
 
 export function createLocalRuntimeExecutor({
   agentId,
-  mode = 'integrated',
+  mode = 'reject',
   url = '',
-  command = ''
+  command = '',
+  openclawCommand = 'openclaw',
+  openclawCwd = '',
+  openclawAgent = '',
+  openclawPeerTargetPrefix = 'agentsquared-peer:',
+  openclawTimeoutMs = 180000,
+  openclawOwnerChannel = '',
+  openclawOwnerTarget = '',
+  openclawOwnerThreadId = ''
 } = {}) {
-  const normalizedMode = clean(mode).toLowerCase() || 'integrated'
+  const normalizedMode = clean(mode).toLowerCase() || 'reject'
   const normalizedUrl = clean(url)
   const normalizedCommand = clean(command)
+  const openclawAdapter = normalizedMode === 'openclaw'
+    ? createOpenClawAdapter({
+        localAgentId: agentId,
+        openclawAgent,
+        command: openclawCommand,
+        cwd: openclawCwd,
+        peerTargetPrefix: openclawPeerTargetPrefix,
+        timeoutMs: openclawTimeoutMs,
+        ownerChannel: openclawOwnerChannel,
+        ownerTarget: openclawOwnerTarget,
+        ownerThreadId: openclawOwnerThreadId
+      })
+    : null
 
   async function executeViaHttp(context) {
     if (!normalizedUrl) {
@@ -203,34 +225,21 @@ export function createLocalRuntimeExecutor({
     )
   }
 
-  async function executeIntegrated(context) {
-    const peerResponse = normalizeExecutionResult({
-      peerResponse: buildSkillResult(context.selectedSkill, context.item),
-      ownerReport: {
-        summary: buildOwnerSummary(context),
-        selectedSkill: context.selectedSkill,
-        remoteAgentId: clean(context.item?.remoteAgentId),
-        inboxStatus: 'unread'
-      }
-    }, context)
-    return peerResponse
-  }
-
-  async function executeDemo(context) {
-    return normalizeExecutionResult({
-      peerResponse: buildSkillResult(context.selectedSkill, context.item),
-      ownerReport: {
-        summary: `demo executor handled inbound ${clean(context.item?.inboundId) || 'message'}`,
-        selectedSkill: context.selectedSkill
-      }
-    }, context)
+  async function executeViaOpenClaw(context) {
+    if (!openclawAdapter) {
+      throw new Error('OpenClaw adapter was not configured')
+    }
+    return normalizeExecutionResult(
+      await openclawAdapter.executeInbound(context),
+      context
+    )
   }
 
   async function rejectExecution() {
     return {
       reject: {
         code: 503,
-        message: 'no local agent executor is configured; inbound request cannot be handled yet'
+        message: 'no local agent runtime adapter is configured; inbound request cannot be handled yet'
       }
     }
   }
@@ -239,10 +248,8 @@ export function createLocalRuntimeExecutor({
     ? executeViaHttp
     : normalizedMode === 'command'
       ? executeViaCommand
-      : normalizedMode === 'integrated'
-        ? executeIntegrated
-      : normalizedMode === 'demo'
-        ? executeDemo
+      : normalizedMode === 'openclaw'
+        ? executeViaOpenClaw
         : rejectExecution
 
   execute.mode = normalizedMode
@@ -256,11 +263,32 @@ export function createOwnerNotifier({
   mode = 'inbox',
   url = '',
   command = '',
-  inbox = null
+  inbox = null,
+  openclawCommand = 'openclaw',
+  openclawCwd = '',
+  openclawAgent = '',
+  openclawPeerTargetPrefix = 'agentsquared-peer:',
+  openclawTimeoutMs = 180000,
+  openclawOwnerChannel = '',
+  openclawOwnerTarget = '',
+  openclawOwnerThreadId = ''
 } = {}) {
   const normalizedMode = clean(mode).toLowerCase() || 'inbox'
   const normalizedUrl = clean(url)
   const normalizedCommand = clean(command)
+  const openclawAdapter = normalizedMode === 'openclaw'
+    ? createOpenClawAdapter({
+        localAgentId: agentId,
+        openclawAgent,
+        command: openclawCommand,
+        cwd: openclawCwd,
+        peerTargetPrefix: openclawPeerTargetPrefix,
+        timeoutMs: openclawTimeoutMs,
+        ownerChannel: openclawOwnerChannel,
+        ownerTarget: openclawOwnerTarget,
+        ownerThreadId: openclawOwnerThreadId
+      })
+    : null
 
   async function notifyViaHttp(context) {
     if (!normalizedUrl) {
@@ -326,10 +354,34 @@ export function createOwnerNotifier({
     }
   }
 
+  async function notifyViaOpenClaw(context) {
+    const inboxResult = await notifyViaInbox(context)
+    if (!openclawAdapter) {
+      return {
+        ...inboxResult,
+        deliveredToOwner: false,
+        mode: 'openclaw'
+      }
+    }
+    const ownerResult = await openclawAdapter.pushOwnerReport({
+      item: context.item,
+      selectedSkill: context.selectedSkill,
+      ownerReport: context.ownerReport
+    })
+    return {
+      ...inboxResult,
+      deliveredToOwner: Boolean(ownerResult?.delivered),
+      ownerDelivery: ownerResult,
+      mode: 'openclaw'
+    }
+  }
+
   const notify = normalizedMode === 'http'
     ? notifyViaHttp
     : normalizedMode === 'command'
       ? notifyViaCommand
+      : normalizedMode === 'openclaw'
+        ? notifyViaOpenClaw
       : normalizedMode === 'inbox'
         ? notifyViaInbox
       : normalizedMode === 'none'

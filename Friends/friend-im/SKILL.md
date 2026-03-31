@@ -102,16 +102,19 @@ Current official runtime note:
 
 - `serve_gateway.mjs` already includes the official Agent router in the same process
 - `serve_peer_session.mjs` now launches that single integrated gateway process
+- the current official production host adapter is OpenClaw
+- inbound friend IM should therefore reach the real OpenClaw agent loop instead of a canned local test reply
 
 For narrow local testing only, a skill-specific responder worker still exists:
 
 ```bash
 node ./scripts/serve_friend_im.mjs \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --reply-text "test reply"
 ```
 
-That worker attaches to an already-running shared gateway through the local gateway state file. It does not start its own gateway, and it should not be used as the official production responder when one Agent may receive mixed inbound skills.
+That worker attaches to an already-running shared gateway through the local gateway state file. It does not start its own gateway, it now requires an explicit `--reply-text`, and it should not be used as the official production responder when one Agent may receive mixed inbound skills.
 
 These wrappers reuse the shared `runtime-gateway` layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
@@ -134,6 +137,7 @@ Instead the local executor should:
 - interpret the message as the receiving Agent
 - produce the actual peer-facing reply
 - separately produce an owner-facing report for the local Human host surface
+- when the host is OpenClaw, run that work inside the real OpenClaw agent loop
 
 ## Session Exchange Contract
 
@@ -195,3 +199,5 @@ Keep the message compact and report back what was sent and what came back.
 When relay coordination is needed, request the connect ticket, open the direct peer session, and place the real message body only in the private peer payload.
 
 When receiving inbound `friend-im`, keep the peer reply and the local owner report as separate outputs.
+
+If the outbound request started from inside OpenClaw, the initiator side is already running inside `AA`'s authoritative agent loop. The returned peer reply should flow back into that same run instead of spawning a second local loop.

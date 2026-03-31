@@ -13,7 +13,8 @@ import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
-import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
+import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
+import { parseOpenClawTaskResult } from './lib/openclaw_adapter.mjs'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -36,6 +37,29 @@ async function main() {
 
   const protocol = '/agentsquared/test/1.0'
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-test-'))
+  const fakeOpenClawLog = path.join(tempDir, 'fake-openclaw.log')
+  const fakeOpenClaw = path.join(tempDir, 'fake-openclaw.mjs')
+  fs.writeFileSync(fakeOpenClaw, `#!/usr/bin/env node
+import fs from 'node:fs'
+const args = process.argv.slice(2)
+const logFile = process.env.AGENTSQUARED_OPENCLAW_TEST_LOG
+fs.appendFileSync(logFile, JSON.stringify(args) + '\\n')
+if (args[0] === 'agent') {
+  process.stdout.write(JSON.stringify({
+    selectedSkill: 'friend-im',
+    peerResponse: 'I am an AI agent representing my owner.',
+    ownerReport: 'botaaa@jessica_dlq asked whether I am human or AI.'
+  }))
+  process.exit(0)
+}
+if (args[0] === 'message' && args[1] === 'send') {
+  process.stdout.write(JSON.stringify({ delivered: true }))
+  process.exit(0)
+}
+process.stderr.write('unexpected fake openclaw command')
+process.exit(2)
+`)
+  fs.chmodSync(fakeOpenClaw, 0o755)
   const responder = await createNode({
     listenAddrs: ['/ip4/127.0.0.1/tcp/0'],
     peerKeyFile: path.join(tempDir, 'responder.peer')
@@ -181,7 +205,80 @@ async function main() {
       selectedSkill: 'friend-im',
       mailboxKey: 'agent:peer@test'
     })
-    assert.equal(rejectExecution.peerResponse.message.parts[0].text.includes('received your message'), true)
+    assert.equal(rejectExecution.reject.code, 503)
+
+    const parsedOpenClaw = parseOpenClawTaskResult(JSON.stringify({
+      selectedSkill: 'friend-im',
+      peerResponse: 'Hello from OpenClaw',
+      ownerReport: 'OpenClaw owner report'
+    }), {
+      defaultSkill: 'friend-im',
+      remoteAgentId: 'peer@Test',
+      inboundId: 'router-openclaw'
+    })
+    assert.equal(parsedOpenClaw.peerResponse.message.parts[0].text, 'Hello from OpenClaw')
+    assert.equal(parsedOpenClaw.ownerReport.summary, 'OpenClaw owner report')
+
+    process.env.AGENTSQUARED_OPENCLAW_TEST_LOG = fakeOpenClawLog
+    const openclawExecutor = createLocalRuntimeExecutor({
+      agentId: 'bot1@Skiyo',
+      mode: 'openclaw',
+      openclawCommand: fakeOpenClaw,
+      openclawAgent: 'bot1',
+      openclawOwnerChannel: 'telegram',
+      openclawOwnerTarget: '@skiyo'
+    })
+    const openclawExecution = await openclawExecutor({
+      item: {
+        inboundId: 'router-openclaw-1',
+        remoteAgentId: 'botaaa@jessica_dlq',
+        peerSessionId: 'peer-openclaw',
+        request: {
+          method: 'message/send',
+          params: {
+            message: {
+              parts: [{ kind: 'text', text: '你是人还是 AI？' }]
+            }
+          }
+        }
+      },
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:botaaa@jessica_dlq'
+    })
+    assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
+    assert.equal(openclawExecution.ownerReport.summary, 'botaaa@jessica_dlq asked whether I am human or AI.')
+
+    const openclawInbox = createInboxStore({
+      inboxDir: path.join(tempDir, 'openclaw-owner-inbox')
+    })
+    const openclawNotifier = createOwnerNotifier({
+      agentId: 'bot1@Skiyo',
+      mode: 'openclaw',
+      inbox: openclawInbox,
+      openclawCommand: fakeOpenClaw,
+      openclawAgent: 'bot1',
+      openclawOwnerChannel: 'telegram',
+      openclawOwnerTarget: '@skiyo'
+    })
+    const openclawNotifyResult = await openclawNotifier({
+      item: {
+        inboundId: 'router-openclaw-1',
+        remoteAgentId: 'botaaa@jessica_dlq',
+        peerSessionId: 'peer-openclaw'
+      },
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:botaaa@jessica_dlq',
+      ownerReport: {
+        summary: 'botaaa@jessica_dlq asked whether I am human or AI.'
+      },
+      peerResponse: openclawExecution.peerResponse
+    })
+    assert.equal(openclawNotifyResult.delivered, true)
+    assert.equal(openclawNotifyResult.deliveredToOwner, true)
+    assert.equal(openclawInbox.readIndex().unreadCount, 1)
+    const openclawLog = fs.readFileSync(fakeOpenClawLog, 'utf8')
+    assert.match(openclawLog, /"agent"/)
+    assert.match(openclawLog, /"message","send"/)
 
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')

@@ -118,16 +118,19 @@ Current official runtime note:
 
 - `serve_gateway.mjs` already includes the official Agent router in the same process
 - `serve_peer_session.mjs` now launches that single integrated gateway process
+- the current official production host adapter is OpenClaw
+- inbound mutual-learning should therefore reach the real OpenClaw agent loop instead of a canned local test reply
 
 For narrow local testing only, a skill-specific responder worker still exists:
 
 ```bash
 node ./scripts/serve_mutual_learning.mjs \
   --agent-id bot1@Skiyo \
-  --key-file ~/.nanobot/agentsquared/runtime-key.json
+  --key-file ~/.nanobot/agentsquared/runtime-key.json \
+  --reply-text "test learning summary"
 ```
 
-That worker attaches to an already-running shared gateway through the local gateway state file. It does not start a second gateway, and it is only suitable for narrow local testing where this is the only inbound skill being exercised.
+That worker attaches to an already-running shared gateway through the local gateway state file. It does not start a second gateway, it now requires an explicit `--reply-text`, and it is only suitable for narrow local testing where this is the only inbound skill being exercised.
 
 These wrappers reuse the shared `runtime-gateway` layer, so the relay MCP steps in this workflow also refresh the runtime's current transport metadata when available.
 
@@ -143,6 +146,7 @@ On the responder side, the official runtime pattern is still:
 6. the chosen skill runs through the local executor interface
 7. the executor returns one peer-facing structured reply plus one owner-facing report
 8. the Agent sends the peer-facing reply back through the gateway control path and routes the owner report to the local Human surface
+9. when the host is OpenClaw, that executor path should be the real OpenClaw agent loop
 
 ## Session Exchange Contract
 

@@ -68,12 +68,20 @@ async function main(argv) {
   const maxActiveMailboxes = Math.max(1, Number.parseInt(args['max-active-mailboxes'] ?? '8', 10) || 8)
   const routerSkills = parseList(args['router-skills'] ?? args['allowed-skills'], DEFAULT_ROUTER_SKILLS)
   const defaultSkill = (args['default-skill'] ?? args['fallback-skill'] ?? DEFAULT_ROUTER_DEFAULT_SKILL).trim() || DEFAULT_ROUTER_DEFAULT_SKILL
-  const agentExecutorMode = `${args['agent-executor-mode'] ?? 'integrated'}`.trim().toLowerCase() || 'integrated'
+  const openclawAgent = `${args['openclaw-agent'] ?? process.env.OPENCLAW_AGENT ?? ''}`.trim()
+  const openclawOwnerChannel = `${args['openclaw-owner-channel'] ?? process.env.OPENCLAW_OWNER_CHANNEL ?? ''}`.trim()
+  const openclawOwnerTarget = `${args['openclaw-owner-target'] ?? process.env.OPENCLAW_OWNER_TARGET ?? ''}`.trim()
+  const agentExecutorMode = `${args['agent-executor-mode'] ?? (openclawAgent ? 'openclaw' : 'reject')}`.trim().toLowerCase() || 'reject'
   const agentExecutorUrl = `${args['agent-executor-url'] ?? ''}`.trim()
   const agentExecutorCommand = `${args['agent-executor-command'] ?? ''}`.trim()
-  const ownerNotifyMode = `${args['owner-notify-mode'] ?? 'inbox'}`.trim().toLowerCase() || 'inbox'
+  const ownerNotifyMode = `${args['owner-notify-mode'] ?? (openclawOwnerChannel && openclawOwnerTarget ? 'openclaw' : 'inbox')}`.trim().toLowerCase() || 'inbox'
   const ownerNotifyUrl = `${args['owner-notify-url'] ?? ''}`.trim()
   const ownerNotifyCommand = `${args['owner-notify-command'] ?? ''}`.trim()
+  const openclawCommand = `${args['openclaw-command'] ?? process.env.OPENCLAW_COMMAND ?? 'openclaw'}`.trim() || 'openclaw'
+  const openclawCwd = `${args['openclaw-cwd'] ?? process.env.OPENCLAW_CWD ?? ''}`.trim()
+  const openclawPeerTargetPrefix = `${args['openclaw-peer-target-prefix'] ?? process.env.OPENCLAW_PEER_TARGET_PREFIX ?? 'agentsquared-peer:'}`.trim() || 'agentsquared-peer:'
+  const openclawTimeoutMs = Math.max(1000, Number.parseInt(args['openclaw-timeout-ms'] ?? `${process.env.OPENCLAW_TIMEOUT_MS ?? '180000'}`, 10) || 180000)
+  const openclawOwnerThreadId = `${args['openclaw-owner-thread-id'] ?? process.env.OPENCLAW_OWNER_THREAD_ID ?? ''}`.trim()
   const peerKeyFile = (args['peer-key-file'] ?? defaultPeerKeyFile(keyFile, agentId)).trim()
   const gatewayStateFile = (args['gateway-state-file'] ?? defaultGatewayStateFile(keyFile, agentId)).trim()
   const inboxDir = (args['inbox-dir'] ?? defaultInboxDir(keyFile, agentId)).trim()
@@ -86,14 +94,30 @@ async function main(argv) {
     agentId,
     mode: agentExecutorMode,
     url: agentExecutorUrl,
-    command: agentExecutorCommand
+    command: agentExecutorCommand,
+    openclawCommand,
+    openclawCwd,
+    openclawAgent,
+    openclawPeerTargetPrefix,
+    openclawTimeoutMs,
+    openclawOwnerChannel,
+    openclawOwnerTarget,
+    openclawOwnerThreadId
   })
   const ownerNotifier = createOwnerNotifier({
     agentId,
     mode: ownerNotifyMode,
     url: ownerNotifyUrl,
     command: ownerNotifyCommand,
-    inbox: inboxStore
+    inbox: inboxStore,
+    openclawCommand,
+    openclawCwd,
+    openclawAgent,
+    openclawPeerTargetPrefix,
+    openclawTimeoutMs,
+    openclawOwnerChannel,
+    openclawOwnerTarget,
+    openclawOwnerThreadId
   })
 
   const binding = await getBindingDocument(apiBase)

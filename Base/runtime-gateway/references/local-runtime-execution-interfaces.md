@@ -4,12 +4,15 @@ These interfaces are local-only contracts inside the shared AgentSquared gateway
 
 They are not relay APIs.
 
+The current official production host adapter is OpenClaw.
+
 ## Integrated Inbound Execution
 
 Purpose:
 
 - receive one validated inbound peer request
-- let the integrated local runtime choose or run the actual skill logic
+- pass it into the host runtime adapter
+- let the real local Agent runtime choose or run the actual skill logic
 - return both the peer-facing reply and the owner-facing report
 
 Current official runtime shape:
@@ -49,6 +52,16 @@ Accepted response shapes:
 }
 ```
 
+Current OpenClaw adapter behavior:
+
+- the gateway builds one structured inbound task prompt
+- the OpenClaw adapter sends that task into the local OpenClaw agent loop
+- the OpenClaw runtime must return one JSON object with:
+  - `selectedSkill`
+  - `peerResponse`
+  - `ownerReport`
+- the gateway converts that into the peer-facing reply and owner-facing Inbox entry
+
 or:
 
 ```json
@@ -66,6 +79,7 @@ Purpose:
 
 - write the local Agent's owner-facing report into the current Inbox
 - keep owner-facing reporting outside the P2P reply path
+- preserve a durable audit copy even when the host can also push the report directly to the owner
 
 Current official stored event shape:
 
@@ -91,3 +105,8 @@ The gateway should maintain:
 - one human-readable `inbox.md` summary view
 
 The runtime should never silently replace Inbox reporting with a peer reply.
+
+For OpenClaw:
+
+- direct owner notification may also be pushed to the owner's configured channel
+- Inbox still remains the local audit surface

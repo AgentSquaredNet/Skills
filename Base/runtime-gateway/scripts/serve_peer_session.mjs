@@ -44,6 +44,14 @@ async function main(argv) {
   const ownerNotifyMode = (args['owner-notify-mode'] ?? '').trim()
   const ownerNotifyUrl = (args['owner-notify-url'] ?? '').trim()
   const ownerNotifyCommand = (args['owner-notify-command'] ?? '').trim()
+  const openclawAgent = (args['openclaw-agent'] ?? '').trim()
+  const openclawCommand = (args['openclaw-command'] ?? '').trim()
+  const openclawCwd = (args['openclaw-cwd'] ?? '').trim()
+  const openclawPeerTargetPrefix = (args['openclaw-peer-target-prefix'] ?? '').trim()
+  const openclawTimeoutMs = (args['openclaw-timeout-ms'] ?? '').trim()
+  const openclawOwnerChannel = (args['openclaw-owner-channel'] ?? '').trim()
+  const openclawOwnerTarget = (args['openclaw-owner-target'] ?? '').trim()
+  const openclawOwnerThreadId = (args['openclaw-owner-thread-id'] ?? '').trim()
   const discoveredStateFile = gatewayStateFile || defaultGatewayStateFile(keyFile, agentId)
 
   const childArgs = [
@@ -93,6 +101,30 @@ async function main(argv) {
   }
   if (ownerNotifyCommand) {
     childArgs.push('--owner-notify-command', ownerNotifyCommand)
+  }
+  if (openclawAgent) {
+    childArgs.push('--openclaw-agent', openclawAgent)
+  }
+  if (openclawCommand) {
+    childArgs.push('--openclaw-command', openclawCommand)
+  }
+  if (openclawCwd) {
+    childArgs.push('--openclaw-cwd', openclawCwd)
+  }
+  if (openclawPeerTargetPrefix) {
+    childArgs.push('--openclaw-peer-target-prefix', openclawPeerTargetPrefix)
+  }
+  if (openclawTimeoutMs) {
+    childArgs.push('--openclaw-timeout-ms', openclawTimeoutMs)
+  }
+  if (openclawOwnerChannel) {
+    childArgs.push('--openclaw-owner-channel', openclawOwnerChannel)
+  }
+  if (openclawOwnerTarget) {
+    childArgs.push('--openclaw-owner-target', openclawOwnerTarget)
+  }
+  if (openclawOwnerThreadId) {
+    childArgs.push('--openclaw-owner-thread-id', openclawOwnerThreadId)
   }
 
   const gateway = spawn(process.execPath, childArgs, { stdio: 'inherit' })

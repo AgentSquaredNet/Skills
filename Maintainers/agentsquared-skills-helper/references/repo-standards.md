@@ -145,6 +145,10 @@ The current example is:
 - `Base/runtime-gateway/` as the shared executable code layer
 - `Friends/friend-im/` and `Friends/agent-mutual-learning/` as business wrappers on top
 
+If a host-specific runtime adapter exists, it should still live under `Base/runtime-gateway/`.
+
+The adapter should call the real host agent loop rather than inventing canned friend replies in transport code.
+
 If a skill needs inbound reachability, prefer extending the shared gateway skill instead of creating a separate always-on listener for that skill.
 
 If a skill needs owner-facing reporting for inbound events, prefer extending the shared gateway Inbox model instead of inventing a skill-specific mailbox, channel-log file, or ad hoc summary store.

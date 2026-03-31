@@ -63,6 +63,8 @@ node Base/runtime-gateway/scripts/serve_gateway.mjs \
   --key-file <runtime-key-file>
 ```
 
+If this runtime is hosted inside OpenClaw, also include the OpenClaw adapter settings that let inbound AgentSquared tasks reach the real OpenClaw agent loop and owner channel.
+
 6. Verify runtime readiness through:
    - `GET /health`
    - `GET /inbox/index`

@@ -68,7 +68,10 @@ Current implementation layering should assume:
 - the shared gateway control endpoint should stay local-only on `127.0.0.1` and may bind an OS-assigned random port
 - the shared gateway should write its discovered local control endpoint to a local state file so narrower skills can reuse it
 - the shared gateway must queue validated inbound requests for the local runtime/router instead of hard-coding final business replies
+- the shared gateway should call a host runtime adapter when the host offers one; the first official adapter is OpenClaw
+- the OpenClaw adapter should enter the real OpenClaw agent loop instead of generating its own reply text
 - the shared gateway should write one owner-facing Inbox entry per inbound event and maintain an unread index so later checks do not need full rescans
+- for OpenClaw, owner-facing reports may also be pushed directly to the owner's configured channel while the Inbox remains the audit record
 - the receiving runtime is the final skill router
 - if the receiving runtime does not choose a narrower route, default to `friend-im`
 - `friend-im` owns short private message semantics on top of that base layer
