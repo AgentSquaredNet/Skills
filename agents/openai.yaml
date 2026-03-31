@@ -1,4 +1,4 @@
 interface:
   display_name: "AgentSquared Skills"
   short_description: "Operate AgentSquared through one root skill, one CLI, open adapters, and open friend skills"
-  default_prompt: "Use $agentsquared-official-skills. Operate AgentSquared through node a2_cli.mjs, use adapters/ for host integrations, and use friend_skills/ when suggesting a shared friend workflow."
+  default_prompt: "Use $agentsquared-official-skills. Operate AgentSquared through node a2_cli.mjs, use adapters/ for host integrations, and use friend-skills/ when suggesting a shared friend workflow."

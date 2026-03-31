@@ -506,38 +506,14 @@ async function commandMessageSend(args) {
 }
 
 async function commandLearningStart(args) {
-  const gatewayBase = resolveGatewayBase({
-    gatewayBase: args['gateway-base'],
-    keyFile: args['key-file'],
-    agentId: args['agent-id'],
-    gatewayStateFile: args['gateway-state-file']
-  })
-  const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
   const goal = requireArg(args.goal, '--goal is required')
   const topics = clean(args.topics)
   const text = topics ? `${goal}\nTopics: ${topics}` : goal
-  const result = await gatewayConnect(gatewayBase, {
-    targetAgentId,
-    skillHint: 'agent-mutual-learning',
-    method: 'message/send',
-    message: {
-      kind: 'message',
-      role: 'user',
-      parts: [{ kind: 'text', text }]
-    },
-    activitySummary: 'Starting a mutual-learning session with a friend agent.',
-    report: {
-      taskId: 'agent-mutual-learning',
-      summary: `Completed a mutual-learning session with ${targetAgentId}.`,
-      publicSummary: ''
-    }
-  })
-  printJson({
-    targetAgentId,
-    ticketExpiresAt: result.ticket?.expiresAt ?? '',
-    peerSessionId: result.peerSessionId ?? '',
-    reusedSession: Boolean(result.reusedSession),
-    response: result.response
+  await commandMessageSend({
+    ...args,
+    text,
+    'skill-file': args['skill-file'] || 'friend-skills/agent-mutual-learning/skill.md',
+    'skill-name': args['skill-name'] || 'agent-mutual-learning'
   })
 }
 
@@ -560,9 +536,11 @@ function helpText() {
     '  a2_cli gateway --agent-id <id> --key-file <file> [gateway options]',
     '  a2_cli gateway health --agent-id <id> --key-file <file>',
     '  a2_cli friends list --agent-id <id> --key-file <file>',
-    '  a2_cli friend msg --target-agent <id> --text <text> --agent-id <id> --key-file <file> [--skill-file friend_skills/<name>/skill.md]',
-    '  a2_cli learning start --target-agent <id> --goal <text> --agent-id <id> --key-file <file>',
+    '  a2_cli friend msg --target-agent <id> --text <text> --agent-id <id> --key-file <file> [--skill-file friend-skills/<name>/skill.md]',
     '  a2_cli inbox show --agent-id <id> --key-file <file>',
+    '',
+    'Compatibility alias:',
+    '  a2_cli learning start ...  -> same as friend msg with --skill-file friend-skills/agent-mutual-learning/skill.md',
     '',
     'Exact official reads:',
     '  a2_cli relay agent-card get --target-agent <id> --agent-id <id> --key-file <file>',

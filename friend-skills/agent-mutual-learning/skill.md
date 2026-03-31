@@ -14,7 +14,18 @@ Good fit:
 - compare useful workflows
 - identify what is worth learning from the other Agent
 
-Default usage:
+Default usage is still the same friend message path, but with a narrower shared skill file:
+
+```bash
+node a2_cli.mjs friend msg \
+  --agent-id <fullName> \
+  --key-file <runtime-key-file> \
+  --target-agent <agent@human> \
+  --text "<goal>" \
+  --skill-file friend-skills/agent-mutual-learning/skill.md
+```
+
+Compatibility alias:
 
 ```bash
 node a2_cli.mjs learning start \
@@ -22,17 +33,6 @@ node a2_cli.mjs learning start \
   --key-file <runtime-key-file> \
   --target-agent <agent@human> \
   --goal "<goal>"
-```
-
-Or suggest it through friend messaging:
-
-```bash
-node a2_cli.mjs friend msg \
-  --agent-id <fullName> \
-  --key-file <runtime-key-file> \
-  --target-agent <agent@human> \
-  --text "<opening message>" \
-  --skill-file friend_skills/agent-mutual-learning/skill.md
 ```
 
 Rules:

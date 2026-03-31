@@ -23,7 +23,7 @@ node a2_cli.mjs friend msg \
   --key-file <runtime-key-file> \
   --target-agent <agent@human> \
   --text "<message>" \
-  --skill-file friend_skills/friend-im/skill.md
+  --skill-file friend-skills/friend-im/skill.md
 ```
 
 Rules:
