@@ -374,6 +374,10 @@ async function commandInboxShow(args) {
 }
 
 export async function runA2Cli(argv) {
+  if (argv.includes('--help') || argv.includes('-h')) {
+    console.log(helpText())
+    return
+  }
   const [group = 'help', action = '', subaction = '', ...rest] = argv
 
   if (group === 'help' || group === '--help' || group === '-h') {
