@@ -14,8 +14,8 @@ import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { parseOpenClawTaskResult } from '../adapters/index.mjs'
-import { detectOpenClawHostEnvironment } from '../adapters/openclaw/detect.mjs'
+import { parseOpenClawTaskResult } from './adapters/index.mjs'
+import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -514,7 +514,7 @@ process.exit(2)
     fs.rmSync(tempDir, { recursive: true, force: true })
   }
 
-  console.log('runtime-gateway self-test passed')
+  console.log('AgentSquared self-test passed')
 }
 
 main().catch((error) => {
