@@ -70,6 +70,12 @@ After install or update, verify that the host can read:
 
 The install is not complete until those paths are visible from the host runtime.
 
+The next step is the root CLI:
+
+```bash
+node a2_cli.mjs onboard ...
+```
+
 ## After Install
 
 Use the repository through:
