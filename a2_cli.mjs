@@ -96,6 +96,13 @@ function writeJson(filePath, payload) {
   return resolved
 }
 
+function writeText(filePath, content) {
+  const resolved = resolveUserPath(filePath)
+  fs.mkdirSync(path.dirname(resolved), { recursive: true })
+  fs.writeFileSync(resolved, content, { mode: 0o600 })
+  return resolved
+}
+
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(resolveUserPath(filePath), 'utf8'))
 }
@@ -130,6 +137,158 @@ function boolFlag(value, fallback = false) {
     return false
   }
   return fallback
+}
+
+function runCommand(command, args, {
+  cwd = '',
+  timeoutMs = 15000
+} = {}) {
+  const normalizedCommand = clean(command)
+  return new Promise((resolve) => {
+    const child = spawn(normalizedCommand, args, {
+      cwd: clean(cwd) || undefined,
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    let stdout = ''
+    let stderr = ''
+    let settled = false
+    const timer = setTimeout(() => {
+      if (settled) {
+        return
+      }
+      settled = true
+      child.kill('SIGTERM')
+      resolve({ ok: false, code: null, reason: 'timeout', stdout: stdout.trim(), stderr: stderr.trim() })
+    }, Math.max(1000, timeoutMs))
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString()
+    })
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
+    child.on('error', (error) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      resolve({ ok: false, code: null, reason: clean(error?.message) || 'spawn-error', stdout: stdout.trim(), stderr: stderr.trim() })
+    })
+    child.on('close', (code) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      resolve({ ok: code === 0, code, reason: code === 0 ? 'ok' : `exit-${code}`, stdout: stdout.trim(), stderr: stderr.trim() })
+    })
+  })
+}
+
+function resolveHostWorkspaceDir(detectedHostRuntime = null) {
+  return clean(
+    detectedHostRuntime?.workspaceDir
+      ?? detectedHostRuntime?.overviewStatus?.agents?.agents?.find?.((item) => clean(item?.workspaceDir))?.workspaceDir
+      ?? detectedHostRuntime?.overviewStatus?.agents?.agents?.[0]?.workspaceDir
+  )
+}
+
+function resolveAgentSquaredDir(args = {}, detectedHostRuntime = null) {
+  const explicit = clean(args['agentsquared-dir'])
+  if (explicit) {
+    return resolveUserPath(explicit)
+  }
+  const workspaceDir = resolveHostWorkspaceDir(detectedHostRuntime)
+  if (workspaceDir) {
+    return path.join(resolveUserPath(workspaceDir), 'AgentSquared')
+  }
+  if (process.env.HOME) {
+    return path.join(process.env.HOME, '.agentsquared')
+  }
+  return path.join(process.cwd(), 'AgentSquared')
+}
+
+function defaultRuntimeKeyFile(agentName, args = {}, detectedHostRuntime = null) {
+  return path.join(resolveAgentSquaredDir(args, detectedHostRuntime), `${safeAgentId(agentName)}_runtime_key.json`)
+}
+
+function memoryNoteFileFor(keyFile) {
+  return path.join(path.dirname(resolveUserPath(keyFile)), 'memory.md')
+}
+
+function buildMemoryNote({
+  agentId = '',
+  apiBase = '',
+  agentsquaredDir = '',
+  keyFile = '',
+  receiptFile = '',
+  onboardingSummaryFile = '',
+  gatewayStateFile = '',
+  inboxDir = '',
+  gatewayBase = '',
+  hostRuntime = '',
+  workspaceDir = ''
+} = {}) {
+  return [
+    '# AgentSquared Local Memory',
+    '',
+    `Updated: ${new Date().toISOString()}`,
+    '',
+    '## Canonical Local Paths',
+    '',
+    `- AgentSquared directory: ${agentsquaredDir || path.dirname(resolveUserPath(keyFile))}`,
+    `- Workspace directory: ${workspaceDir || 'unknown'}`,
+    `- Host runtime: ${hostRuntime || 'unknown'}`,
+    `- Agent ID: ${agentId || 'unknown'}`,
+    `- API base: ${apiBase || 'https://api.agentsquared.net'}`,
+    `- Runtime key file: ${keyFile || 'unknown'}`,
+    `- Receipt file: ${receiptFile || 'unknown'}`,
+    `- Onboarding summary file: ${onboardingSummaryFile || 'unknown'}`,
+    `- Gateway state file: ${gatewayStateFile || 'unknown'}`,
+    `- Inbox directory: ${inboxDir || 'unknown'}`,
+    `- Gateway base: ${gatewayBase || 'unknown'}`,
+    '',
+    '## Rules',
+    '',
+    '- Reinstalling or updating the official Skills does not imply re-onboarding.',
+    '- Reuse this local AgentSquared directory unless the owner explicitly wants a brand-new Agent.',
+    '- Prefer `node a2_cli.mjs local inspect` before asking for a fresh onboarding token.',
+    '- After Skills updates, prefer `node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>`.',
+    ''
+  ].join('\n')
+}
+
+async function refreshHostMemory({
+  args = {},
+  detectedHostRuntime = null,
+  memoryNoteFile = ''
+} = {}) {
+  const resolvedHostRuntime = clean(detectedHostRuntime?.resolved || detectedHostRuntime?.id)
+  if (resolvedHostRuntime !== 'openclaw') {
+    return {
+      attempted: false,
+      refreshed: false,
+      reason: 'host-memory-refresh-not-supported'
+    }
+  }
+  const command = clean(args['openclaw-command']) || 'openclaw'
+  const commandArgs = ['memory', 'index']
+  const openclawAgent = clean(args['openclaw-agent'])
+  if (openclawAgent) {
+    commandArgs.push('--agent', openclawAgent)
+  }
+  const result = await runCommand(command, commandArgs, {
+    cwd: clean(args['openclaw-cwd']) || resolveHostWorkspaceDir(detectedHostRuntime),
+    timeoutMs: 20000
+  })
+  return {
+    attempted: true,
+    refreshed: result.ok,
+    reason: result.reason,
+    stderr: result.stderr,
+    stdout: result.stdout,
+    memoryNoteFile
+  }
 }
 
 function sleep(ms) {
@@ -490,7 +649,8 @@ async function registerAgent(args) {
   const agentName = requireArg(args['agent-name'], '--agent-name is required')
   const keyTypeName = clean(args['key-type']) || 'ed25519'
   const displayName = clean(args['display-name']) || agentName
-  const keyFile = resolveUserPath(args['key-file'] || path.join(process.cwd(), `${safeAgentId(agentName)}_runtime_key.json`))
+  const detectedHostRuntime = args.__detectedHostRuntime ?? null
+  const keyFile = resolveUserPath(args['key-file'] || defaultRuntimeKeyFile(agentName, args, detectedHostRuntime))
   const keyBundle = generateRuntimeKeyBundle(keyTypeName)
   writeRuntimeKeyBundle(keyFile, keyBundle)
 
@@ -535,7 +695,6 @@ async function commandOnboard(args) {
     }
     throw new Error('--authorization-token is required for first-time onboarding.')
   }
-  const registration = await registerAgent(args)
   const detectedHostRuntime = await detectHostRuntimeEnvironment({
     preferred: clean(args['host-runtime']) || 'auto',
     openclaw: {
@@ -546,6 +705,10 @@ async function commandOnboard(args) {
       gatewayToken: clean(args['openclaw-gateway-token']),
       gatewayPassword: clean(args['openclaw-gateway-password'])
     }
+  })
+  const registration = await registerAgent({
+    ...args,
+    __detectedHostRuntime: detectedHostRuntime
   })
   const fullName = registration.result.fullName
   const shouldStartGateway = boolFlag(args['start-gateway'], true)
@@ -646,19 +809,44 @@ async function commandOnboard(args) {
     }
   }
 
+  const agentsquaredDir = path.dirname(resolveUserPath(registration.keyFile))
   const inboxDir = defaultInboxDir(registration.keyFile, fullName)
+  const onboardingSummaryFile = onboardingSummaryFileFor(registration.keyFile, fullName)
+  const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
+  const memoryNoteFile = writeText(memoryNoteFileFor(registration.keyFile), buildMemoryNote({
+    agentId: fullName,
+    apiBase: registration.apiBase,
+    agentsquaredDir,
+    keyFile: registration.keyFile,
+    receiptFile: registration.receiptFile,
+    onboardingSummaryFile,
+    gatewayStateFile,
+    inboxDir,
+    gatewayBase: gateway.gatewayBase,
+    hostRuntime: detectedHostRuntime.resolved !== 'none' ? detectedHostRuntime.resolved : detectedHostRuntime.suggested,
+    workspaceDir: resolveHostWorkspaceDir(detectedHostRuntime)
+  }))
+  const hostMemory = await refreshHostMemory({
+    args,
+    detectedHostRuntime,
+    memoryNoteFile
+  })
   const summary = {
     setupComplete: true,
     apiBase: registration.apiBase,
+    agentsquaredDir,
     hostRuntime: detectedHostRuntime,
     receiptFile: registration.receiptFile,
     keyFile: registration.keyFile,
     inboxDir,
+    memoryNoteFile,
+    hostMemory,
     registration: registration.result,
     gateway,
     ownerFacingLines: [
       'AgentSquared setup is complete.',
       `Agent: ${registration.result.fullName}`,
+      `AgentSquared directory: ${agentsquaredDir}.`,
       `Host runtime: ${detectedHostRuntime.resolved !== 'none' ? detectedHostRuntime.resolved : `not bound (${detectedHostRuntime.suggested || 'openclaw'} suggested)`}.`,
       gateway.started
         ? `Gateway was auto-started and is running at ${gateway.gatewayBase}.`
@@ -668,12 +856,17 @@ async function commandOnboard(args) {
       gateway.logFile
         ? `Gateway log file: ${gateway.logFile}.`
         : 'Gateway log file: unavailable.',
+      hostMemory.attempted
+        ? hostMemory.refreshed
+          ? `Host memory index was refreshed for ${memoryNoteFile}.`
+          : `Host memory refresh was attempted for ${memoryNoteFile} but not confirmed (${hostMemory.reason}).`
+        : `Local AgentSquared memory note: ${memoryNoteFile}.`,
       `Inbox audit path: ${inboxDir}.`,
       'AgentSquared, A², and A2 all mean the same platform.',
       'Use live official reads for exact current friends, agent cards, and relay facts.'
     ]
   }
-  writeJson(onboardingSummaryFileFor(registration.keyFile, fullName), summary)
+  writeJson(onboardingSummaryFile, summary)
   printJson(summary)
 }
 
@@ -745,11 +938,43 @@ async function commandGatewayRestart(args, rawArgs) {
     timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '30000', 10) || 30000
   })
 
+  const detectedHostRuntime = await detectHostRuntimeEnvironment({
+    preferred: clean(args['host-runtime']) || 'auto',
+    openclaw: {
+      command: clean(args['openclaw-command']) || 'openclaw',
+      cwd: clean(args['openclaw-cwd']),
+      openclawAgent: clean(args['openclaw-agent']),
+      gatewayUrl: clean(args['openclaw-gateway-url']),
+      gatewayToken: clean(args['openclaw-gateway-token']),
+      gatewayPassword: clean(args['openclaw-gateway-password'])
+    }
+  })
+  const memoryNoteFile = writeText(memoryNoteFileFor(keyFile), buildMemoryNote({
+    agentId,
+    agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
+    keyFile,
+    receiptFile: receiptFileFor(keyFile, agentId),
+    onboardingSummaryFile: onboardingSummaryFileFor(keyFile, agentId),
+    gatewayStateFile,
+    inboxDir: defaultInboxDir(keyFile, agentId),
+    gatewayBase: ready.gatewayBase,
+    hostRuntime: detectedHostRuntime.resolved !== 'none' ? detectedHostRuntime.resolved : detectedHostRuntime.suggested,
+    workspaceDir: resolveHostWorkspaceDir(detectedHostRuntime)
+  }))
+  const hostMemory = await refreshHostMemory({
+    args,
+    detectedHostRuntime,
+    memoryNoteFile
+  })
+
   printJson({
     restarted: true,
     previousGatewayPid: priorPid,
     gatewayBase: ready.gatewayBase,
-    health: ready.health
+    health: ready.health,
+    agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
+    memoryNoteFile,
+    hostMemory
   })
 }
 

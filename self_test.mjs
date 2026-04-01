@@ -70,6 +70,11 @@ if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
 }
 if (args[0] === 'status' && args[1] === '--json') {
   process.stdout.write(JSON.stringify({
+    agents: {
+      agents: [{
+        workspaceDir: '/tmp/openclaw-workspace'
+      }]
+    },
     gateway: {
       installed: true,
       running: true
@@ -283,6 +288,7 @@ process.exit(2)
     assert.equal(detectedOpenClaw.id, 'openclaw')
     assert.equal(detectedOpenClaw.detected, true)
     assert.equal(detectedOpenClaw.reason, 'openclaw-gateway-status-json')
+    assert.equal(detectedOpenClaw.workspaceDir, '/tmp/openclaw-workspace')
 
     const openclawExecutor = createLocalRuntimeExecutor({
       agentId: 'agent-a@owner-a',

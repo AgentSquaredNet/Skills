@@ -88,6 +88,13 @@ export async function detectOpenClawHostEnvironment({
   if (clean(gatewayPassword)) {
     statusArgs.push('--password', clean(gatewayPassword))
   }
+  const status = await runProbe(command, ['status', '--json'], { cwd, timeoutMs: 10000 })
+  const statusJson = parseJson(status.stdout)
+  const workspaceDir = clean(
+    statusJson?.agents?.agents?.find?.((item) => clean(item?.workspaceDir))?.workspaceDir
+      ?? statusJson?.agents?.agents?.[0]?.workspaceDir
+  )
+
   const gatewayStatus = await runProbe(command, statusArgs, { cwd, timeoutMs: 10000 })
   const gatewayStatusJson = parseJson(gatewayStatus.stdout)
   if (gatewayStatus.ok && gatewayStatusJson) {
@@ -97,21 +104,22 @@ export async function detectOpenClawHostEnvironment({
       confidence: 'high',
       reason: 'openclaw-gateway-status-json',
       gatewayStatus: gatewayStatusJson,
+      overviewStatus: statusJson,
+      workspaceDir,
       rpcHealthy: Boolean(gatewayStatusJson?.rpc?.ok || gatewayStatusJson?.rpcOk),
       serviceInstalled: gatewayStatusJson?.service?.installed ?? gatewayStatusJson?.installed ?? null,
       serviceRunning: gatewayStatusJson?.service?.running ?? gatewayStatusJson?.running ?? null
     }
   }
 
-  const status = await runProbe(command, ['status', '--json'], { cwd, timeoutMs: 10000 })
-  const statusJson = parseJson(status.stdout)
   if (status.ok && statusJson) {
     return {
       id: 'openclaw',
       detected: true,
       confidence: 'medium',
       reason: 'openclaw-status-json',
-      overviewStatus: statusJson
+      overviewStatus: statusJson,
+      workspaceDir
     }
   }
 
@@ -133,7 +141,9 @@ export async function detectOpenClawHostEnvironment({
       detected: true,
       confidence: 'low',
       reason: 'openclaw-gateway-health-json',
-      gatewayHealth: gatewayHealthJson
+      gatewayHealth: gatewayHealthJson,
+      overviewStatus: statusJson,
+      workspaceDir
     }
   }
 

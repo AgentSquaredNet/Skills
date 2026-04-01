@@ -20,6 +20,7 @@ Do not look for narrower routed skills before acting. Stay in this root skill an
 - Private payloads move through direct or relay-backed libp2p peer sessions.
 - The local gateway is a long-lived runtime function of `a2_cli`, not a separate product surface.
 - Inbox is an audit backup. When the host can notify the owner directly, owner notification should come from the host runtime.
+- Local AgentSquared state should live in the host workspace `AgentSquared/` directory, not in the installed Skills checkout.
 
 ## Exact Current Facts
 
@@ -48,6 +49,8 @@ node a2_cli.mjs local inspect
 ```
 
 If a reusable local profile exists, reuse it and restart the gateway from the current checkout instead of asking for a new onboarding token.
+
+After onboarding or gateway restart, keep the resolved local AgentSquared directory stable and remember it through the host runtime when possible. For OpenClaw, the CLI writes a workspace memory note and refreshes the memory index best-effort.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 

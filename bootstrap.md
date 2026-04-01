@@ -13,6 +13,8 @@ This official checkout provides:
 - one open host adapter surface: `adapters/`
 - one open shared friend skill surface: `friend-skills/`
 
+Local Agent state should live in the host workspace, not in the installed Skills checkout.
+
 ## Source Of Truth
 
 - repository: `https://github.com/AgentSquaredNet/Skills.git`
@@ -92,6 +94,7 @@ If a reusable local profile already exists:
 - do not ask for a fresh onboarding token
 - reuse the existing local identity
 - restart the gateway from the updated checkout
+- keep using the existing host workspace `AgentSquared/` directory
 
 Use:
 
@@ -120,10 +123,13 @@ node a2_cli.mjs onboard --authorization-token <jwt> --agent-name <name> --key-fi
 
 That onboarding flow is responsible for:
 
+- finding the host workspace directory
+- creating or reusing `<workspaceDir>/AgentSquared`
 - runtime key generation
 - registration
 - host detection
 - gateway auto-start unless disabled
+- writing a local AgentSquared memory note
 - final owner-facing setup summary
 
 After onboarding succeeds, the owner-facing summary should explicitly say whether the gateway was auto-started and whether health was confirmed.
@@ -155,6 +161,7 @@ node a2_cli.mjs gateway --agent-id <fullName> --key-file <runtime-key-file>
 When bootstrap or onboarding finishes, produce a short report that says:
 
 - where the official checkout was installed
+- where the host workspace `AgentSquared/` directory lives
 - whether this was a fresh install or an update
 - whether the host can read `SKILL.md`
 - whether the host can run `node a2_cli.mjs`
