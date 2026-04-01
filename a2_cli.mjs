@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { parseArgs, requireArg } from './lib/cli.mjs'
 import { gatewayConnect, gatewayHealth, gatewayInboxIndex } from './lib/gateway_control.mjs'
-import { resolveGatewayBase, defaultGatewayStateFile } from './lib/gateway_runtime.mjs'
+import { resolveGatewayBase, defaultGatewayStateFile, readGatewayState } from './lib/gateway_runtime.mjs'
 import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTicket, introspectConnectTicket, reportSession } from './lib/relay_http.mjs'
 import { loadRuntimeKeyBundle } from './lib/runtime_key.mjs'
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
@@ -85,6 +85,10 @@ function boolFlag(value, fallback = false) {
     return false
   }
   return fallback
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function buildGatewayArgs(args, fullName, keyFile, detectedHostRuntime) {
@@ -314,8 +318,8 @@ async function commandOnboard(args) {
       `Agent: ${registration.result.fullName}`,
       `Host runtime: ${detectedHostRuntime.resolved !== 'none' ? detectedHostRuntime.resolved : `not bound (${detectedHostRuntime.suggested || 'openclaw'} suggested)`}.`,
       gateway.started
-        ? `Gateway is running at ${gateway.gatewayBase}.`
-        : `Gateway is not confirmed running${gateway.error ? `: ${gateway.error}` : '.'}`,
+        ? `Gateway was auto-started and is running at ${gateway.gatewayBase}.`
+        : `Gateway auto-start is not confirmed${gateway.error ? `: ${gateway.error}` : '.'}`,
       `Inbox audit path: ${inboxDir}.`,
       'AgentSquared, A², and A2 all mean the same platform.',
       'Use live official reads for exact current friends, agent cards, and relay facts.'
@@ -327,6 +331,56 @@ async function commandOnboard(args) {
 
 async function commandGateway(args, rawArgs) {
   await runGateway(rawArgs)
+}
+
+async function commandGatewayRestart(args) {
+  const agentId = requireArg(args['agent-id'], '--agent-id is required')
+  const keyFile = requireArg(args['key-file'], '--key-file is required')
+  const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(keyFile, agentId)
+  const priorState = readGatewayState(gatewayStateFile)
+  const priorPid = Number.parseInt(`${priorState?.gatewayPid ?? ''}`, 10)
+
+  if (Number.isFinite(priorPid) && priorPid > 0) {
+    try {
+      process.kill(priorPid, 'SIGTERM')
+    } catch (error) {
+      if (error?.code !== 'ESRCH') {
+        throw error
+      }
+    }
+    const deadline = Date.now() + 8000
+    while (Date.now() < deadline) {
+      try {
+        process.kill(priorPid, 0)
+        await sleep(250)
+      } catch (error) {
+        if (error?.code === 'ESRCH') {
+          break
+        }
+        throw error
+      }
+    }
+  }
+
+  const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...process.argv.slice(3)], {
+    detached: true,
+    stdio: 'ignore'
+  })
+  child.unref()
+
+  const ready = await waitForGatewayReady({
+    keyFile,
+    agentId,
+    gatewayStateFile,
+    timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '30000', 10) || 30000
+  })
+
+  printJson({
+    restarted: true,
+    previousGatewayPid: Number.isFinite(priorPid) && priorPid > 0 ? priorPid : null,
+    gatewayBase: ready.gatewayBase,
+    health: ready.health
+  })
 }
 
 async function commandHealth(args) {
@@ -535,6 +589,7 @@ function helpText() {
     '  a2_cli onboard --authorization-token <jwt> --agent-name <name> --key-file <file>',
     '  a2_cli gateway --agent-id <id> --key-file <file> [gateway options]',
     '  a2_cli gateway health --agent-id <id> --key-file <file>',
+    '  a2_cli gateway restart --agent-id <id> --key-file <file> [gateway options]',
     '  a2_cli friends list --agent-id <id> --key-file <file>',
     '  a2_cli friend msg --target-agent <id> --text <text> --agent-id <id> --key-file <file> [--skill-file friend-skills/<name>/skill.md]',
     '  a2_cli inbox show --agent-id <id> --key-file <file>',
@@ -627,6 +682,10 @@ export async function runA2Cli(argv) {
   }
   if (group === 'gateway' && action === 'health') {
     await commandHealth(parseArgs(rest))
+    return
+  }
+  if (group === 'gateway' && action === 'restart') {
+    await commandGatewayRestart(parseArgs(rest))
     return
   }
   if (group === 'init' && action === 'detect') {

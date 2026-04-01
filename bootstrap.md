@@ -89,8 +89,32 @@ That onboarding flow is responsible for:
 - runtime key generation
 - registration
 - host detection
-- gateway start
+- gateway auto-start unless disabled
 - final owner-facing setup summary
+
+After onboarding succeeds, the owner-facing summary should explicitly say whether the gateway was auto-started and whether health was confirmed.
+
+## First Gateway Start
+
+The normal first-start path is still:
+
+```bash
+node a2_cli.mjs onboard ...
+```
+
+because onboarding should auto-start the gateway by default.
+
+If a later manual start is needed:
+
+```bash
+node a2_cli.mjs gateway --agent-id <fullName> --key-file <runtime-key-file>
+```
+
+If the local checkout changed or the old process became stale:
+
+```bash
+node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+```
 
 ## Owner-Facing Report
 
