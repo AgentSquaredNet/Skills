@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { parseArgs, requireArg } from './lib/cli.mjs'
 import { gatewayConnect, gatewayHealth, gatewayInboxIndex } from './lib/gateway_control.mjs'
-import { resolveGatewayBase, defaultGatewayStateFile, readGatewayState, currentRuntimeRevision } from './lib/gateway_runtime.mjs'
+import { resolveGatewayBase, defaultGatewayStateFile, readGatewayState, currentRuntimeRevision, discoverGatewayStateFiles } from './lib/gateway_runtime.mjs'
 import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTicket, introspectConnectTicket, reportSession } from './lib/relay_http.mjs'
 import { loadRuntimeKeyBundle } from './lib/runtime_key.mjs'
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
@@ -38,6 +38,10 @@ function parseFrontmatterName(text) {
   }
   const nameMatch = match[1].match(/^\s*name\s*:\s*(.+)\s*$/m)
   return clean(nameMatch?.[1] ?? '').replace(/^["']|["']$/g, '')
+}
+
+function unique(values = []) {
+  return Array.from(new Set(values.filter(Boolean)))
 }
 
 function loadSharedSkillFile(skillFile) {
@@ -182,6 +186,69 @@ async function waitForGatewayReady({ gatewayBase = '', keyFile = '', agentId = '
   throw new Error('Timed out waiting for the local AgentSquared gateway to become healthy.')
 }
 
+function defaultGatewaySearchRoots() {
+  return unique([
+    process.cwd(),
+    ROOT,
+    process.env.HOME ? path.join(process.env.HOME, '.openclaw') : '',
+    process.env.HOME ? path.join(process.env.HOME, '.agentsquared') : ''
+  ])
+}
+
+function findSingletonGatewayState() {
+  const candidates = discoverGatewayStateFiles(defaultGatewaySearchRoots())
+  const valid = []
+  for (const stateFile of candidates) {
+    try {
+      const state = readGatewayState(stateFile)
+      if (!state?.agentId || !state?.keyFile || !state?.gatewayBase) {
+        continue
+      }
+      if (!state?.runtimeRevision || state.runtimeRevision !== currentRuntimeRevision()) {
+        continue
+      }
+      valid.push({
+        stateFile,
+        state
+      })
+    } catch {
+      // ignore malformed state files
+    }
+  }
+  if (valid.length === 1) {
+    return valid[0]
+  }
+  if (valid.length > 1) {
+    throw new Error('Multiple local AgentSquared gateway instances were discovered. Pass --agent-id and --key-file explicitly.')
+  }
+  return null
+}
+
+function resolveAgentContext(args = {}) {
+  const explicitAgentId = clean(args['agent-id'])
+  const explicitKeyFile = clean(args['key-file'])
+  const explicitGatewayStateFile = clean(args['gateway-state-file'])
+
+  if (explicitAgentId && explicitKeyFile) {
+    return {
+      agentId: explicitAgentId,
+      keyFile: resolveUserPath(explicitKeyFile),
+      gatewayStateFile: explicitGatewayStateFile || defaultGatewayStateFile(explicitKeyFile, explicitAgentId)
+    }
+  }
+
+  const singleton = findSingletonGatewayState()
+  if (!singleton) {
+    throw new Error('No local AgentSquared gateway instance could be discovered automatically. Pass --agent-id and --key-file explicitly.')
+  }
+
+  return {
+    agentId: clean(singleton.state.agentId),
+    keyFile: resolveUserPath(singleton.state.keyFile),
+    gatewayStateFile: singleton.stateFile
+  }
+}
+
 async function inspectExistingGateway({ gatewayBase = '', keyFile = '', agentId = '', gatewayStateFile = '' } = {}) {
   const stateFile = clean(gatewayStateFile) || (keyFile && agentId ? defaultGatewayStateFile(keyFile, agentId) : '')
   const state = stateFile ? readGatewayState(stateFile) : null
@@ -219,11 +286,12 @@ async function inspectExistingGateway({ gatewayBase = '', keyFile = '', agentId 
 
 function resolveGatewayBaseIfAvailable(args) {
   try {
+    const context = resolveAgentContext(args)
     return resolveGatewayBase({
       gatewayBase: args['gateway-base'],
-      keyFile: args['key-file'],
-      agentId: args['agent-id'],
-      gatewayStateFile: args['gateway-state-file']
+      keyFile: context.keyFile,
+      agentId: context.agentId,
+      gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
     })
   } catch {
     return ''
@@ -259,9 +327,10 @@ async function resolveGatewayTransport(args) {
 
 async function signedRelayContext(args) {
   const apiBase = clean(args['api-base']) || 'https://api.agentsquared.net'
-  const agentId = requireArg(args['agent-id'], '--agent-id is required')
-  const keyFile = requireArg(args['key-file'], '--key-file is required')
-  const bundle = loadRuntimeKeyBundle(resolveUserPath(keyFile))
+  const context = resolveAgentContext(args)
+  const agentId = context.agentId
+  const keyFile = context.keyFile
+  const bundle = loadRuntimeKeyBundle(keyFile)
   const { gatewayBase, health, transport } = await resolveGatewayTransport(args)
   return {
     apiBase,
@@ -482,9 +551,10 @@ async function commandGateway(args, rawArgs) {
 }
 
 async function commandGatewayRestart(args, rawArgs) {
-  const agentId = requireArg(args['agent-id'], '--agent-id is required')
-  const keyFile = requireArg(args['key-file'], '--key-file is required')
-  const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(keyFile, agentId)
+  const context = resolveAgentContext(args)
+  const agentId = context.agentId
+  const keyFile = context.keyFile
+  const gatewayStateFile = clean(args['gateway-state-file']) || context.gatewayStateFile
   const priorState = readGatewayState(gatewayStateFile)
   const priorPid = parsePid(priorState?.gatewayPid)
 
@@ -532,11 +602,12 @@ async function commandGatewayRestart(args, rawArgs) {
 }
 
 async function commandHealth(args) {
+  const context = resolveAgentContext(args)
   const gatewayBase = resolveGatewayBase({
     gatewayBase: args['gateway-base'],
-    keyFile: args['key-file'],
-    agentId: args['agent-id'],
-    gatewayStateFile: args['gateway-state-file']
+    keyFile: context.keyFile,
+    agentId: context.agentId,
+    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
   })
   printJson(await gatewayHealth(gatewayBase))
 }
@@ -631,11 +702,12 @@ async function commandSessionReport(args) {
 }
 
 async function commandPeerOpen(args) {
+  const context = resolveAgentContext(args)
   const gatewayBase = resolveGatewayBase({
     gatewayBase: args['gateway-base'],
-    keyFile: args['key-file'],
-    agentId: args['agent-id'],
-    gatewayStateFile: args['gateway-state-file']
+    keyFile: context.keyFile,
+    agentId: context.agentId,
+    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
   })
   const payload = {
     targetAgentId: requireArg(args['target-agent'], '--target-agent is required'),
@@ -667,11 +739,12 @@ async function commandPeerOpen(args) {
 }
 
 async function commandMessageSend(args) {
+  const context = resolveAgentContext(args)
   const gatewayBase = resolveGatewayBase({
     gatewayBase: args['gateway-base'],
-    keyFile: args['key-file'],
-    agentId: args['agent-id'],
-    gatewayStateFile: args['gateway-state-file']
+    keyFile: context.keyFile,
+    agentId: context.agentId,
+    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
   })
   const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
   const text = requireArg(args.text, '--text is required')
@@ -720,11 +793,12 @@ async function commandLearningStart(args) {
 }
 
 async function commandInboxShow(args) {
+  const context = resolveAgentContext(args)
   const gatewayBase = resolveGatewayBase({
     gatewayBase: args['gateway-base'],
-    keyFile: args['key-file'],
-    agentId: args['agent-id'],
-    gatewayStateFile: args['gateway-state-file']
+    keyFile: context.keyFile,
+    agentId: context.agentId,
+    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
   })
   printJson(await gatewayInboxIndex(gatewayBase))
 }
@@ -732,6 +806,8 @@ async function commandInboxShow(args) {
 function helpText() {
   return [
     'AgentSquared CLI',
+    '',
+    'If exactly one local AgentSquared gateway instance exists, friend, relay, inbox, and health commands can reuse it automatically.',
     '',
     'Primary commands:',
     '  a2_cli onboard --authorization-token <jwt> --agent-name <name> --key-file <file>',
