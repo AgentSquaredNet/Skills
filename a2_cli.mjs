@@ -62,6 +62,10 @@ function onboardingSummaryFileFor(keyFile, fullName) {
   return path.join(path.dirname(resolveUserPath(keyFile)), `${safeAgentId(fullName)}_onboarding_summary.json`)
 }
 
+function gatewayLogFileFor(keyFile, fullName) {
+  return path.join(path.dirname(resolveUserPath(keyFile)), `${safeAgentId(fullName)}_gateway.log`)
+}
+
 function writeJson(filePath, payload) {
   const resolved = resolveUserPath(filePath)
   fs.mkdirSync(path.dirname(resolved), { recursive: true })
@@ -71,6 +75,19 @@ function writeJson(filePath, payload) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(resolveUserPath(filePath), 'utf8'))
+}
+
+function pidExists(pid) {
+  const numeric = Number.parseInt(`${pid ?? ''}`, 10)
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return false
+  }
+  try {
+    process.kill(numeric, 0)
+    return true
+  } catch (error) {
+    return error?.code !== 'ESRCH'
+  }
 }
 
 function boolFlag(value, fallback = false) {
@@ -273,32 +290,59 @@ async function commandOnboard(args) {
   const shouldStartGateway = boolFlag(args['start-gateway'], true)
   let gateway = {
     started: false,
+    launchRequested: false,
+    pending: false,
     gatewayBase: '',
     health: null,
-    error: ''
+    error: '',
+    logFile: '',
+    pid: null
   }
 
   if (shouldStartGateway) {
+    gateway.launchRequested = true
     const gatewayArgs = buildGatewayArgs(args, fullName, registration.keyFile, detectedHostRuntime)
+    const gatewayLogFile = gatewayLogFileFor(registration.keyFile, fullName)
+    fs.mkdirSync(path.dirname(gatewayLogFile), { recursive: true })
+    const stdoutFd = fs.openSync(gatewayLogFile, 'a')
+    const stderrFd = fs.openSync(gatewayLogFile, 'a')
     const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...gatewayArgs], {
       detached: true,
-      stdio: 'ignore'
+      cwd: ROOT,
+      stdio: ['ignore', stdoutFd, stderrFd]
     })
+    fs.closeSync(stdoutFd)
+    fs.closeSync(stderrFd)
     child.unref()
+    gateway.logFile = gatewayLogFile
+    gateway.pid = child.pid ?? null
     try {
       const ready = await waitForGatewayReady({
         keyFile: registration.keyFile,
         agentId: fullName,
         gatewayStateFile: clean(args['gateway-state-file']),
-        timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '30000', 10) || 30000
+        timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '90000', 10) || 90000
       })
       gateway = {
         started: true,
+        launchRequested: true,
+        pending: false,
         gatewayBase: ready.gatewayBase,
         health: ready.health,
-        error: ''
+        error: '',
+        logFile: gatewayLogFile,
+        pid: child.pid ?? null
       }
     } catch (error) {
+      const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
+      const gatewayState = readGatewayState(gatewayStateFile)
+      const discoveredPid = gatewayState?.gatewayPid ?? child.pid ?? null
+      const discoveredBase = clean(gatewayState?.gatewayBase)
+      gateway.pending = pidExists(discoveredPid)
+      gateway.gatewayBase = discoveredBase
+      gateway.pid = Number.isFinite(Number.parseInt(`${discoveredPid ?? ''}`, 10))
+        ? Number.parseInt(`${discoveredPid ?? ''}`, 10)
+        : null
       gateway.error = error.message
     }
   }
@@ -319,7 +363,12 @@ async function commandOnboard(args) {
       `Host runtime: ${detectedHostRuntime.resolved !== 'none' ? detectedHostRuntime.resolved : `not bound (${detectedHostRuntime.suggested || 'openclaw'} suggested)`}.`,
       gateway.started
         ? `Gateway was auto-started and is running at ${gateway.gatewayBase}.`
-        : `Gateway auto-start is not confirmed${gateway.error ? `: ${gateway.error}` : '.'}`,
+        : gateway.pending
+          ? `Gateway launch was requested and the background process is still running${gateway.gatewayBase ? ` at ${gateway.gatewayBase}` : ''}, but health was not confirmed before timeout.`
+          : `Gateway auto-start is not confirmed${gateway.error ? `: ${gateway.error}` : '.'}`,
+      gateway.logFile
+        ? `Gateway log file: ${gateway.logFile}.`
+        : 'Gateway log file: unavailable.',
       `Inbox audit path: ${inboxDir}.`,
       'AgentSquared, A², and A2 all mean the same platform.',
       'Use live official reads for exact current friends, agent cards, and relay facts.'
