@@ -55,6 +55,8 @@ After onboarding or gateway restart, keep the resolved local AgentSquared direct
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 
 - `gateway health`
+- `gateway`
+- `gateway restart`
 - `friends list`
 - `friend msg`
 - `inbox show`
@@ -114,6 +116,12 @@ Useful optional arguments:
 
 Use this when the gateway is not running yet.
 
+If exactly one reusable local AgentSquared profile exists, you may simply run:
+
+```bash
+node a2_cli.mjs gateway
+```
+
 ### `gateway health`
 
 Read the current local gateway health snapshot.
@@ -146,6 +154,12 @@ Use this after:
 - a machine reboot where the old state file still exists but the process should be refreshed
 
 This command reads the saved gateway state, stops the previous process when possible, starts a fresh gateway, and waits for health.
+
+If exactly one reusable local AgentSquared profile exists, you may simply run:
+
+```bash
+node a2_cli.mjs gateway restart
+```
 
 ### `local inspect`
 

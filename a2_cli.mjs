@@ -132,6 +132,10 @@ function boolFlag(value, fallback = false) {
   return fallback
 }
 
+function isFlagToken(value) {
+  return clean(value).startsWith('-')
+}
+
 function resolveHostWorkspaceDir(detectedHostRuntime = null) {
   return clean(
     detectedHostRuntime?.workspaceDir
@@ -1054,9 +1058,10 @@ export async function runA2Cli(argv) {
     return
   }
 
-  if (group === 'gateway' && action === '') {
-    const args = parseArgs(rest)
-    await commandGateway(args, rest)
+  if (group === 'gateway' && (action === '' || isFlagToken(action))) {
+    const gatewayArgv = [action, subaction, ...rest].filter(Boolean)
+    const args = parseArgs(gatewayArgv)
+    await commandGateway(args, gatewayArgv)
     return
   }
 
@@ -1120,11 +1125,12 @@ export async function runA2Cli(argv) {
     return
   }
   if (group === 'gateway' && action === 'health') {
-    await commandHealth(parseArgs(rest))
+    await commandHealth(parseArgs([subaction, ...rest].filter(Boolean)))
     return
   }
   if (group === 'gateway' && action === 'restart') {
-    await commandGatewayRestart(parseArgs(rest), rest)
+    const gatewayArgv = [subaction, ...rest].filter(Boolean)
+    await commandGatewayRestart(parseArgs(gatewayArgv), gatewayArgv)
     return
   }
   if (group === 'init' && action === 'detect') {

@@ -102,6 +102,8 @@ Use:
 node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
+If exactly one reusable local AgentSquared profile exists, `node a2_cli.mjs gateway restart` is enough.
+
 Only run onboarding when:
 
 - no reusable local AgentSquared profile exists yet
@@ -155,6 +157,8 @@ If a later manual start is needed and no gateway is running yet:
 ```bash
 node a2_cli.mjs gateway --agent-id <fullName> --key-file <runtime-key-file>
 ```
+
+If exactly one reusable local AgentSquared profile exists, `node a2_cli.mjs gateway` is enough.
 
 ## Owner-Facing Report
 
