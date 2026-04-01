@@ -44,6 +44,25 @@ function unique(values = []) {
   return Array.from(new Set(values.filter(Boolean)))
 }
 
+function walkLocalFiles(dirPath, out, depth = 0, maxDepth = 4) {
+  if (!dirPath || !fs.existsSync(dirPath) || depth > maxDepth) {
+    return
+  }
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const entryPath = path.join(dirPath, entry.name)
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name === '.git') {
+        continue
+      }
+      walkLocalFiles(entryPath, out, depth + 1, maxDepth)
+      continue
+    }
+    if (entry.isFile()) {
+      out.push(entryPath)
+    }
+  }
+}
+
 function loadSharedSkillFile(skillFile) {
   const resolved = resolveUserPath(skillFile)
   const text = fs.readFileSync(resolved, 'utf8')
@@ -191,8 +210,121 @@ function defaultGatewaySearchRoots() {
     process.cwd(),
     ROOT,
     process.env.HOME ? path.join(process.env.HOME, '.openclaw') : '',
+    process.env.HOME ? path.join(process.env.HOME, '.nanobot') : '',
     process.env.HOME ? path.join(process.env.HOME, '.agentsquared') : ''
   ])
+}
+
+function safeReadJson(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function discoverLocalAgentProfiles(searchRoots = defaultGatewaySearchRoots()) {
+  const files = []
+  for (const root of searchRoots) {
+    walkLocalFiles(root, files)
+  }
+
+  const grouped = new Map()
+
+  function bucketFor(baseKey) {
+    if (!grouped.has(baseKey)) {
+      grouped.set(baseKey, {
+        baseKey,
+        agentId: '',
+        keyFile: '',
+        receiptFile: '',
+        onboardingSummaryFile: '',
+        gatewayStateFile: '',
+        gatewayBase: '',
+        gatewayPid: null
+      })
+    }
+    return grouped.get(baseKey)
+  }
+
+  for (const filePath of unique(files)) {
+    const name = path.basename(filePath)
+    if (name.endsWith('_receipt.json')) {
+      const baseKey = name.slice(0, -'_receipt.json'.length)
+      const bucket = bucketFor(baseKey)
+      const payload = safeReadJson(filePath)
+      bucket.receiptFile = filePath
+      bucket.agentId = bucket.agentId || clean(payload?.fullName)
+    } else if (name.endsWith('_onboarding_summary.json')) {
+      const baseKey = name.slice(0, -'_onboarding_summary.json'.length)
+      const bucket = bucketFor(baseKey)
+      const payload = safeReadJson(filePath)
+      bucket.onboardingSummaryFile = filePath
+      bucket.agentId = bucket.agentId || clean(payload?.registration?.fullName)
+      bucket.keyFile = bucket.keyFile || clean(payload?.keyFile)
+    } else if (name.endsWith('_gateway.json')) {
+      const baseKey = name.slice(0, -'_gateway.json'.length)
+      const bucket = bucketFor(baseKey)
+      const payload = safeReadJson(filePath)
+      bucket.gatewayStateFile = filePath
+      bucket.agentId = bucket.agentId || clean(payload?.agentId)
+      bucket.keyFile = bucket.keyFile || clean(payload?.keyFile)
+      bucket.gatewayBase = bucket.gatewayBase || clean(payload?.gatewayBase)
+      bucket.gatewayPid = bucket.gatewayPid || parsePid(payload?.gatewayPid)
+    } else if (name.endsWith('_runtime_key.json')) {
+      const baseKey = name.slice(0, -'_runtime_key.json'.length)
+      const bucket = bucketFor(baseKey)
+      bucket.keyFile = bucket.keyFile || filePath
+    }
+  }
+
+  const normalized = Array.from(grouped.values())
+    .filter((item) => item.agentId || item.keyFile || item.gatewayStateFile || item.receiptFile)
+    .map((item) => ({
+      ...item,
+      keyFile: item.keyFile ? resolveUserPath(item.keyFile) : '',
+      gatewayStateFile: item.gatewayStateFile ? resolveUserPath(item.gatewayStateFile) : '',
+      receiptFile: item.receiptFile ? resolveUserPath(item.receiptFile) : '',
+      onboardingSummaryFile: item.onboardingSummaryFile ? resolveUserPath(item.onboardingSummaryFile) : '',
+      gatewayRunning: pidExists(item.gatewayPid)
+    }))
+
+  const merged = new Map()
+
+  function mergedKeyFor(item) {
+    return item.agentId || item.keyFile || item.baseKey
+  }
+
+  for (const item of normalized) {
+    const mergedKey = mergedKeyFor(item)
+    if (!merged.has(mergedKey)) {
+      merged.set(mergedKey, { ...item })
+      continue
+    }
+    const existing = merged.get(mergedKey)
+    existing.baseKey = existing.baseKey || item.baseKey
+    existing.agentId = existing.agentId || item.agentId
+    existing.keyFile = existing.keyFile || item.keyFile
+    existing.receiptFile = existing.receiptFile || item.receiptFile
+    existing.onboardingSummaryFile = existing.onboardingSummaryFile || item.onboardingSummaryFile
+    existing.gatewayStateFile = existing.gatewayStateFile || item.gatewayStateFile
+    existing.gatewayBase = existing.gatewayBase || item.gatewayBase
+    existing.gatewayPid = existing.gatewayPid || item.gatewayPid
+    existing.gatewayRunning = existing.gatewayRunning || item.gatewayRunning
+  }
+
+  return Array.from(merged.values()).sort((a, b) => a.baseKey.localeCompare(b.baseKey))
+}
+
+function findSingletonAgentProfile() {
+  const profiles = discoverLocalAgentProfiles().filter((item) => item.agentId && item.keyFile)
+  if (profiles.length === 1) {
+    return profiles[0]
+  }
+  if (profiles.length > 1) {
+    throw new Error('Multiple local AgentSquared agent profiles were discovered. Pass --agent-id and --key-file explicitly.')
+  }
+  return null
 }
 
 function findSingletonGatewayState() {
@@ -238,14 +370,23 @@ function resolveAgentContext(args = {}) {
   }
 
   const singleton = findSingletonGatewayState()
-  if (!singleton) {
-    throw new Error('No local AgentSquared gateway instance could be discovered automatically. Pass --agent-id and --key-file explicitly.')
+  if (singleton) {
+    return {
+      agentId: clean(singleton.state.agentId),
+      keyFile: resolveUserPath(singleton.state.keyFile),
+      gatewayStateFile: singleton.stateFile
+    }
+  }
+
+  const profile = findSingletonAgentProfile()
+  if (!profile) {
+    throw new Error('No local AgentSquared gateway or agent profile could be discovered automatically. Pass --agent-id and --key-file explicitly.')
   }
 
   return {
-    agentId: clean(singleton.state.agentId),
-    keyFile: resolveUserPath(singleton.state.keyFile),
-    gatewayStateFile: singleton.stateFile
+    agentId: clean(profile.agentId),
+    keyFile: resolveUserPath(profile.keyFile),
+    gatewayStateFile: profile.gatewayStateFile || defaultGatewayStateFile(profile.keyFile, profile.agentId)
   }
 }
 
@@ -383,6 +524,17 @@ async function registerAgent(args) {
 }
 
 async function commandOnboard(args) {
+  const authorizationToken = clean(args['authorization-token'])
+  if (!authorizationToken) {
+    const reusableProfiles = discoverLocalAgentProfiles().filter((item) => item.agentId && item.keyFile)
+    if (reusableProfiles.length === 1) {
+      throw new Error(`A reusable local AgentSquared profile already exists for ${reusableProfiles[0].agentId}. Reinstalling or updating the official Skills does not require onboarding again. Use \`node a2_cli.mjs local inspect\` and then \`node a2_cli.mjs gateway restart --agent-id ${reusableProfiles[0].agentId} --key-file ${reusableProfiles[0].keyFile}\`.`)
+    }
+    if (reusableProfiles.length > 1) {
+      throw new Error('Multiple reusable local AgentSquared profiles already exist. Reinstalling or updating the official Skills does not require onboarding again. Run `node a2_cli.mjs local inspect` and then choose one profile explicitly with `--agent-id` and `--key-file`.')
+    }
+    throw new Error('--authorization-token is required for first-time onboarding.')
+  }
   const registration = await registerAgent(args)
   const detectedHostRuntime = await detectHostRuntimeEnvironment({
     preferred: clean(args['host-runtime']) || 'auto',
@@ -803,11 +955,24 @@ async function commandInboxShow(args) {
   printJson(await gatewayInboxIndex(gatewayBase))
 }
 
+async function commandLocalInspect() {
+  const profiles = discoverLocalAgentProfiles()
+  const reusableProfiles = profiles.filter((item) => item.agentId && item.keyFile)
+  printJson({
+    source: 'local-agent-profiles',
+    profileCount: profiles.length,
+    reusableProfileCount: reusableProfiles.length,
+    canReuseWithoutOnboarding: reusableProfiles.length > 0,
+    profiles
+  })
+}
+
 function helpText() {
   return [
     'AgentSquared CLI',
     '',
     'If exactly one local AgentSquared gateway instance exists, friend, relay, inbox, and health commands can reuse it automatically.',
+    'Reinstalling or updating the official Skills does not imply re-onboarding. Use `a2_cli local inspect` first.',
     '',
     'Primary commands:',
     '  a2_cli onboard --authorization-token <jwt> --agent-name <name> --key-file <file>',
@@ -817,6 +982,7 @@ function helpText() {
     '  a2_cli friends list --agent-id <id> --key-file <file>',
     '  a2_cli friend msg --target-agent <id> --text <text> --agent-id <id> --key-file <file> [--skill-file friend-skills/<name>/skill.md]',
     '  a2_cli inbox show --agent-id <id> --key-file <file>',
+    '  a2_cli local inspect',
     '',
     'Compatibility alias:',
     '  a2_cli learning start ...  -> same as friend msg with --skill-file friend-skills/agent-mutual-learning/skill.md',
@@ -902,6 +1068,10 @@ export async function runA2Cli(argv) {
   }
   if (group === 'inbox' && (action === 'show' || action === 'index')) {
     await commandInboxShow(args)
+    return
+  }
+  if (group === 'local' && action === 'inspect') {
+    await commandLocalInspect()
     return
   }
   if (group === 'gateway' && action === 'health') {

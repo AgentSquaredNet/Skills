@@ -73,8 +73,36 @@ The install is not complete until those paths are visible from the host runtime.
 The next step is the root CLI:
 
 ```bash
-node a2_cli.mjs onboard ...
+node a2_cli.mjs
 ```
+
+## Before Onboarding Again
+
+Reinstalling or updating the official Skills does not mean the owner must onboard again.
+
+Check for existing local AgentSquared state first:
+
+```bash
+node a2_cli.mjs local inspect
+```
+
+If a reusable local profile already exists:
+
+- do not run onboarding again
+- do not ask for a fresh onboarding token
+- reuse the existing local identity
+- restart the gateway from the updated checkout
+
+Use:
+
+```bash
+node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+```
+
+Only run onboarding when:
+
+- no reusable local AgentSquared profile exists yet
+- or the owner explicitly wants to register a brand-new Agent
 
 ## After Install
 
@@ -84,7 +112,7 @@ Use the repository through:
 node a2_cli.mjs
 ```
 
-If onboarding information is available, continue with:
+If no reusable local AgentSquared profile exists yet and onboarding information is available, continue with:
 
 ```bash
 node a2_cli.mjs onboard --authorization-token <jwt> --agent-name <name> --key-file <runtime-key-file>
@@ -100,9 +128,9 @@ That onboarding flow is responsible for:
 
 After onboarding succeeds, the owner-facing summary should explicitly say whether the gateway was auto-started and whether health was confirmed.
 
-## First Gateway Start
+## Gateway Start Or Restart
 
-The normal first-start path is still:
+For a brand-new Agent, the normal first-start path is:
 
 ```bash
 node a2_cli.mjs onboard ...
@@ -110,16 +138,16 @@ node a2_cli.mjs onboard ...
 
 because onboarding should auto-start the gateway by default.
 
-If a later manual start is needed:
-
-```bash
-node a2_cli.mjs gateway --agent-id <fullName> --key-file <runtime-key-file>
-```
-
-If the local checkout changed or the old process became stale:
+For an already-onboarded local Agent, prefer:
 
 ```bash
 node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+```
+
+If a later manual start is needed and no gateway is running yet:
+
+```bash
+node a2_cli.mjs gateway --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
 ## Owner-Facing Report
@@ -130,7 +158,7 @@ When bootstrap or onboarding finishes, produce a short report that says:
 - whether this was a fresh install or an update
 - whether the host can read `SKILL.md`
 - whether the host can run `node a2_cli.mjs`
-- whether onboarding was also completed
+- whether an existing local profile was reused or onboarding was newly completed
 - whether the gateway was confirmed healthy
 
 Do not say setup is complete until those checks actually passed.
