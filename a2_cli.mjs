@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { parseArgs, requireArg } from './lib/cli.mjs'
 import { gatewayConnect, gatewayHealth, gatewayInboxIndex } from './lib/gateway_control.mjs'
-import { resolveGatewayBase, defaultGatewayStateFile, readGatewayState } from './lib/gateway_runtime.mjs'
+import { resolveGatewayBase, defaultGatewayStateFile, readGatewayState, currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTicket, introspectConnectTicket, reportSession } from './lib/relay_http.mjs'
 import { loadRuntimeKeyBundle } from './lib/runtime_key.mjs'
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
@@ -88,6 +88,11 @@ function pidExists(pid) {
   } catch (error) {
     return error?.code !== 'ESRCH'
   }
+}
+
+function parsePid(value) {
+  const numeric = Number.parseInt(`${value ?? ''}`, 10)
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null
 }
 
 function boolFlag(value, fallback = false) {
@@ -175,6 +180,41 @@ async function waitForGatewayReady({ gatewayBase = '', keyFile = '', agentId = '
     await new Promise((resolve) => setTimeout(resolve, 750))
   }
   throw new Error('Timed out waiting for the local AgentSquared gateway to become healthy.')
+}
+
+async function inspectExistingGateway({ gatewayBase = '', keyFile = '', agentId = '', gatewayStateFile = '' } = {}) {
+  const stateFile = clean(gatewayStateFile) || (keyFile && agentId ? defaultGatewayStateFile(keyFile, agentId) : '')
+  const state = stateFile ? readGatewayState(stateFile) : null
+  const pid = parsePid(state?.gatewayPid)
+  const discoveredBase = clean(gatewayBase) || clean(state?.gatewayBase)
+  const running = pidExists(pid)
+  const expectedRevision = currentRuntimeRevision()
+  const stateRevision = clean(state?.runtimeRevision)
+  const revisionMatches = !state || (stateRevision && stateRevision === expectedRevision)
+  let health = null
+  let healthy = false
+
+  if (running && discoveredBase && revisionMatches) {
+    try {
+      health = await gatewayHealth(discoveredBase)
+      healthy = Boolean(health?.peerId)
+    } catch {
+      healthy = false
+    }
+  }
+
+  return {
+    stateFile,
+    state,
+    pid,
+    running,
+    healthy,
+    expectedRevision,
+    stateRevision,
+    revisionMatches,
+    gatewayBase: discoveredBase,
+    health
+  }
 }
 
 function resolveGatewayBaseIfAvailable(args) {
@@ -302,48 +342,86 @@ async function commandOnboard(args) {
   if (shouldStartGateway) {
     gateway.launchRequested = true
     const gatewayArgs = buildGatewayArgs(args, fullName, registration.keyFile, detectedHostRuntime)
-    const gatewayLogFile = gatewayLogFileFor(registration.keyFile, fullName)
-    fs.mkdirSync(path.dirname(gatewayLogFile), { recursive: true })
-    const stdoutFd = fs.openSync(gatewayLogFile, 'a')
-    const stderrFd = fs.openSync(gatewayLogFile, 'a')
-    const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...gatewayArgs], {
-      detached: true,
-      cwd: ROOT,
-      stdio: ['ignore', stdoutFd, stderrFd]
+    const existingGateway = await inspectExistingGateway({
+      keyFile: registration.keyFile,
+      agentId: fullName,
+      gatewayStateFile: clean(args['gateway-state-file'])
     })
-    fs.closeSync(stdoutFd)
-    fs.closeSync(stderrFd)
-    child.unref()
-    gateway.logFile = gatewayLogFile
-    gateway.pid = child.pid ?? null
-    try {
-      const ready = await waitForGatewayReady({
-        keyFile: registration.keyFile,
-        agentId: fullName,
-        gatewayStateFile: clean(args['gateway-state-file']),
-        timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '90000', 10) || 90000
-      })
+    if (existingGateway.running && !existingGateway.revisionMatches) {
+      gateway = {
+        started: false,
+        launchRequested: true,
+        pending: false,
+        gatewayBase: existingGateway.gatewayBase,
+        health: existingGateway.health,
+        error: 'An existing AgentSquared gateway process is running from an older Skills revision. Use `node a2_cli.mjs gateway restart ...` before onboarding tries to reuse it.',
+        logFile: gatewayLogFileFor(registration.keyFile, fullName),
+        pid: existingGateway.pid
+      }
+    } else if (existingGateway.running && existingGateway.healthy) {
       gateway = {
         started: true,
         launchRequested: true,
         pending: false,
-        gatewayBase: ready.gatewayBase,
-        health: ready.health,
+        gatewayBase: existingGateway.gatewayBase,
+        health: existingGateway.health,
         error: '',
-        logFile: gatewayLogFile,
-        pid: child.pid ?? null
+        logFile: gatewayLogFileFor(registration.keyFile, fullName),
+        pid: existingGateway.pid
       }
-    } catch (error) {
-      const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
-      const gatewayState = readGatewayState(gatewayStateFile)
-      const discoveredPid = gatewayState?.gatewayPid ?? child.pid ?? null
-      const discoveredBase = clean(gatewayState?.gatewayBase)
-      gateway.pending = pidExists(discoveredPid)
-      gateway.gatewayBase = discoveredBase
-      gateway.pid = Number.isFinite(Number.parseInt(`${discoveredPid ?? ''}`, 10))
-        ? Number.parseInt(`${discoveredPid ?? ''}`, 10)
-        : null
-      gateway.error = error.message
+    } else if (existingGateway.running) {
+      gateway = {
+        started: false,
+        launchRequested: true,
+        pending: true,
+        gatewayBase: existingGateway.gatewayBase,
+        health: existingGateway.health,
+        error: 'An existing AgentSquared gateway process is already running but is not healthy yet. Use `node a2_cli.mjs gateway restart ...` instead of starting another one.',
+        logFile: gatewayLogFileFor(registration.keyFile, fullName),
+        pid: existingGateway.pid
+      }
+    } else {
+      const gatewayLogFile = gatewayLogFileFor(registration.keyFile, fullName)
+      fs.mkdirSync(path.dirname(gatewayLogFile), { recursive: true })
+      const stdoutFd = fs.openSync(gatewayLogFile, 'a')
+      const stderrFd = fs.openSync(gatewayLogFile, 'a')
+      const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...gatewayArgs], {
+        detached: true,
+        cwd: ROOT,
+        stdio: ['ignore', stdoutFd, stderrFd]
+      })
+      fs.closeSync(stdoutFd)
+      fs.closeSync(stderrFd)
+      child.unref()
+      gateway.logFile = gatewayLogFile
+      gateway.pid = child.pid ?? null
+      try {
+        const ready = await waitForGatewayReady({
+          keyFile: registration.keyFile,
+          agentId: fullName,
+          gatewayStateFile: clean(args['gateway-state-file']),
+          timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '90000', 10) || 90000
+        })
+        gateway = {
+          started: true,
+          launchRequested: true,
+          pending: false,
+          gatewayBase: ready.gatewayBase,
+          health: ready.health,
+          error: '',
+          logFile: gatewayLogFile,
+          pid: child.pid ?? null
+        }
+      } catch (error) {
+        const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
+        const gatewayState = readGatewayState(gatewayStateFile)
+        const discoveredPid = gatewayState?.gatewayPid ?? child.pid ?? null
+        const discoveredBase = clean(gatewayState?.gatewayBase)
+        gateway.pending = pidExists(discoveredPid)
+        gateway.gatewayBase = discoveredBase
+        gateway.pid = parsePid(discoveredPid)
+        gateway.error = error.message
+      }
     }
   }
 
@@ -379,17 +457,38 @@ async function commandOnboard(args) {
 }
 
 async function commandGateway(args, rawArgs) {
+  const existingGateway = await inspectExistingGateway({
+    gatewayBase: args['gateway-base'],
+    keyFile: args['key-file'],
+    agentId: args['agent-id'],
+    gatewayStateFile: args['gateway-state-file']
+  })
+  if (existingGateway.running && !existingGateway.revisionMatches) {
+    throw new Error('An AgentSquared gateway process is already running from an older Skills revision. Use `node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>` instead of reusing it.')
+  }
+  if (existingGateway.running && existingGateway.healthy) {
+    printJson({
+      alreadyRunning: true,
+      gatewayBase: existingGateway.gatewayBase,
+      pid: existingGateway.pid,
+      health: existingGateway.health
+    })
+    return
+  }
+  if (existingGateway.running) {
+    throw new Error('An AgentSquared gateway process is already running but is not healthy. Use `node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>` instead of starting another instance.')
+  }
   await runGateway(rawArgs)
 }
 
-async function commandGatewayRestart(args) {
+async function commandGatewayRestart(args, rawArgs) {
   const agentId = requireArg(args['agent-id'], '--agent-id is required')
   const keyFile = requireArg(args['key-file'], '--key-file is required')
   const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(keyFile, agentId)
   const priorState = readGatewayState(gatewayStateFile)
-  const priorPid = Number.parseInt(`${priorState?.gatewayPid ?? ''}`, 10)
+  const priorPid = parsePid(priorState?.gatewayPid)
 
-  if (Number.isFinite(priorPid) && priorPid > 0) {
+  if (priorPid) {
     try {
       process.kill(priorPid, 'SIGTERM')
     } catch (error) {
@@ -411,7 +510,7 @@ async function commandGatewayRestart(args) {
     }
   }
 
-  const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...process.argv.slice(3)], {
+  const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...rawArgs], {
     detached: true,
     stdio: 'ignore'
   })
@@ -426,7 +525,7 @@ async function commandGatewayRestart(args) {
 
   printJson({
     restarted: true,
-    previousGatewayPid: Number.isFinite(priorPid) && priorPid > 0 ? priorPid : null,
+    previousGatewayPid: priorPid,
     gatewayBase: ready.gatewayBase,
     health: ready.health
   })
@@ -734,7 +833,7 @@ export async function runA2Cli(argv) {
     return
   }
   if (group === 'gateway' && action === 'restart') {
-    await commandGatewayRestart(parseArgs(rest))
+    await commandGatewayRestart(parseArgs(rest), rest)
     return
   }
   if (group === 'init' && action === 'detect') {
