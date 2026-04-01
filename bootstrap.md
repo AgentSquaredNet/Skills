@@ -129,7 +129,7 @@ That onboarding flow is responsible for:
 - registration
 - host detection
 - gateway auto-start unless disabled
-- writing a local AgentSquared memory note
+- telling the host agent to store the important AgentSquared facts in its own memory system
 - final owner-facing setup summary
 
 After onboarding succeeds, the owner-facing summary should explicitly say whether the gateway was auto-started and whether health was confirmed.

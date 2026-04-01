@@ -50,7 +50,7 @@ node a2_cli.mjs local inspect
 
 If a reusable local profile exists, reuse it and restart the gateway from the current checkout instead of asking for a new onboarding token.
 
-After onboarding or gateway restart, keep the resolved local AgentSquared directory stable and remember it through the host runtime when possible. For OpenClaw, the CLI writes a workspace memory note and refreshes the memory index best-effort.
+After onboarding or gateway restart, keep the resolved local AgentSquared directory stable and store the AgentSquared platform intro, the key path, and the common `a2_cli` commands in the host runtime's own memory system.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 
