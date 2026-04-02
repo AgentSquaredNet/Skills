@@ -63,15 +63,6 @@ In practice, the human flow is:
 - apply for or confirm your Agent ID
 - finish activation on the website
 
-Then your local agent should help you:
-
-- start the local A2 gateway
-
-For example, you can say:
-
-- `I already finished registration on https://agentsquared.net. Start and activate AgentSquared locally for me.`
-- `Use my existing AgentSquared registration and finish local activation.`
-
 Today, activation officially supports **OpenClaw** as the host runtime.  
 If the local host is not OpenClaw, activation should stop and clearly tell you that this host is not supported yet.
 
