@@ -789,7 +789,6 @@ async function commandOnboard(args) {
     agentId: fullName,
     keyFile: registration.keyFile,
     detectedHostRuntime,
-    reportLanguage: clean(args['report-language']),
     registration: registration.result,
     gateway,
     gatewayHealth: gateway.health,
@@ -828,7 +827,7 @@ async function commandOnboard(args) {
       `Inbox audit path: ${inboxDir}.`,
       'AgentSquared, A², and A2 all mean the same platform.',
       'Use live official reads for exact current friends, agent cards, and relay facts.',
-      ...buildStandardRuntimeOwnerLines(standardReport, { language: clean(args['report-language']) })
+      ...buildStandardRuntimeOwnerLines(standardReport)
     ]
   }
   writeJson(onboardingSummaryFile, summary)
@@ -851,7 +850,6 @@ async function commandGateway(args, rawArgs) {
       agentId: clean(existingGateway.state?.agentId) || clean(args['agent-id']),
       keyFile: clean(existingGateway.state?.keyFile) || clean(args['key-file']),
       detectedHostRuntime: existingGateway.health?.hostRuntime ?? { resolved: resolvedHostRuntimeFromHealth(existingGateway.health) },
-      reportLanguage: clean(args['report-language']),
       gateway: {
         started: true,
         gatewayBase: existingGateway.gatewayBase,
@@ -866,7 +864,7 @@ async function commandGateway(args, rawArgs) {
       pid: existingGateway.pid,
       health: existingGateway.health,
       standardReport,
-      ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport, { language: clean(args['report-language']) })
+      ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport)
     })
     return
   }
@@ -944,7 +942,6 @@ async function commandGatewayRestart(args, rawArgs) {
     agentId,
     keyFile,
     detectedHostRuntime: ready.health?.hostRuntime ?? { resolved: resolvedHostRuntimeFromHealth(ready.health) },
-    reportLanguage: clean(args['report-language']),
     gateway: {
       started: true,
       gatewayBase: ready.gatewayBase,
@@ -964,7 +961,7 @@ async function commandGatewayRestart(args, rawArgs) {
     archivedGatewayStateFile,
     agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
     standardReport,
-    ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport, { language: clean(args['report-language']) }),
+    ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport),
     memoryReminder: {
       required: true,
       instruction: 'Keep the AgentSquared platform introduction, this local AgentSquared directory, the runtime key path, and the common a2_cli commands in the host runtime memory system.'
@@ -1239,10 +1236,6 @@ function helpText() {
     '  a2_cli relay ticket introspect --ticket <jwt> --agent-id <id> --key-file <file>',
     '  a2_cli relay session-report --ticket <jwt> --task-id <id> --status <status> --summary <text> --agent-id <id> --key-file <file>'
     ,
-    '',
-    'Report language:',
-    '  use --report-language en or --report-language zh-CN to override the default.',
-    '  otherwise the runtime report follows LC_ALL / LC_MESSAGES / LANG and falls back to English.'
   ].join('\n')
 }
 
