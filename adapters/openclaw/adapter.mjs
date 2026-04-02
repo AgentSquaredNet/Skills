@@ -1,5 +1,5 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
-import { buildReceiverBaseReport, inferOwnerFacingLanguage, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
+import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
 
 function clean(value) {
@@ -529,7 +529,11 @@ export function createOpenClawAdapter({
     const remoteAgentId = clean(item?.remoteAgentId)
     const receivedAt = new Date().toISOString()
     const inboundText = peerResponseText(item?.request?.params?.message)
-    const ownerLanguage = inferOwnerFacingLanguage(inboundText)
+    const inboundMetadata = item?.request?.params?.metadata ?? {}
+    const parsedEnvelope = parseAgentSquaredOutboundEnvelope(inboundText)
+    const displayInboundText = clean(inboundMetadata.originalOwnerText) || clean(parsedEnvelope?.ownerRequest) || inboundText
+    const remoteSentAt = clean(inboundMetadata.sentAt) || clean(parsedEnvelope?.sentAt)
+    const ownerLanguage = inferOwnerFacingLanguage(displayInboundText, inboundText)
     const ownerTimeZone = localOwnerTimeZone()
     return withGateway(async (client, gatewayContext) => {
       const safetySessionKey = normalizeOpenClawSafetySessionKey(remoteAgentId || mailboxKey || 'unknown')
@@ -577,10 +581,11 @@ export function createOpenClawAdapter({
           remoteAgentId,
           selectedSkill,
           receivedAt,
-          inboundText,
+          inboundText: displayInboundText,
           peerReplyText,
           repliedAt: new Date().toISOString(),
           skillSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`,
+          remoteSentAt,
           language: ownerLanguage,
           timeZone: ownerTimeZone,
           localTime: true
@@ -618,10 +623,11 @@ export function createOpenClawAdapter({
           remoteAgentId,
           selectedSkill,
           receivedAt,
-          inboundText,
+          inboundText: displayInboundText,
           peerReplyText,
           repliedAt: new Date().toISOString(),
           skillSummary: clean(safety.ownerSummary),
+          remoteSentAt,
           language: ownerLanguage,
           timeZone: ownerTimeZone,
           localTime: true
@@ -700,11 +706,12 @@ export function createOpenClawAdapter({
         remoteAgentId,
         selectedSkill: parsed.selectedSkill,
         receivedAt,
-        inboundText,
+        inboundText: displayInboundText,
         peerReplyText: safePeerReplyText,
         repliedAt: new Date().toISOString(),
         skillSummary: safeOwnerSummary,
-        language: inferOwnerFacingLanguage(inboundText, safePeerReplyText, safeOwnerSummary),
+        remoteSentAt,
+        language: inferOwnerFacingLanguage(displayInboundText, safePeerReplyText, safeOwnerSummary),
         timeZone: ownerTimeZone,
         localTime: true
       })

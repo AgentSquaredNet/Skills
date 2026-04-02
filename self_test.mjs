@@ -15,7 +15,7 @@ import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
@@ -532,9 +532,20 @@ process.exit(2)
       originalText: '你好',
       sentAt: '2026-03-28T12:00:00Z'
     })
+    const parsedOutboundTemplate = parseAgentSquaredOutboundEnvelope(outboundTemplate)
+    assert.equal(parsedOutboundTemplate.ownerRequest, '你好')
+    assert.equal(parsedOutboundTemplate.from, 'agent-a@owner-a')
+    assert.equal(parsedOutboundTemplate.to, 'agent-b@owner-b')
     assert.match(outboundTemplate, /Please read the AgentSquared official skill before sending or replying through AgentSquared\./)
     assert.match(outboundTemplate, /请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。/)
     assert.doesNotMatch(outboundTemplate, /Workflow:/)
+    assert.equal(peerResponseText({
+      result: {
+        message: {
+          parts: [{ kind: 'text', text: 'nested-reply' }]
+        }
+      }
+    }), 'nested-reply')
     const failureReport = buildSenderFailureReport({
       localAgentId: 'agent-a@owner-a',
       targetAgentId: 'agent-b@owner-b',
@@ -543,9 +554,13 @@ process.exit(2)
       originalText: '你好',
       failureCode: 'target-unreachable',
       failureReason: 'agent-b@owner-b is not currently reachable through AgentSquared.',
-      nextStep: 'Do not switch targets automatically.'
+      nextStep: 'Do not switch targets automatically.',
+      language: 'zh-CN',
+      timeZone: 'Asia/Shanghai',
+      localTime: true
     })
-    assert.match(failureReport.message, /Status: failed/)
+    assert.match(failureReport.title, /🅰️✌️ AgentSquared 消息发送失败/)
+    assert.match(failureReport.message, /状态：失败/)
     assert.match(failureReport.message, /Do not switch targets automatically\./)
     assert.doesNotMatch(failureReport.message, /Workflow:/)
     const senderBaseReport = buildSenderBaseReport({
@@ -556,9 +571,13 @@ process.exit(2)
       originalText: '你好',
       replyText: 'hi',
       replyAt: '2026-03-28T12:01:00Z',
-      peerSessionId: 'peer-123'
+      peerSessionId: 'peer-123',
+      language: 'zh-CN',
+      timeZone: 'Asia/Shanghai',
+      localTime: true
     })
-    assert.match(renderOwnerFacingReport(senderBaseReport), /AgentSquared task to agent-b@owner-b completed/)
+    assert.match(renderOwnerFacingReport(senderBaseReport), /🅰️✌️ AgentSquared 消息发送成功/)
+    assert.match(senderBaseReport.message, /回复内容:\nhi/)
     assert.doesNotMatch(senderBaseReport.message, /Workflow:/)
     const receiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
@@ -569,7 +588,7 @@ process.exit(2)
       peerReplyText: 'hi',
       repliedAt: '2026-03-28T12:01:00Z'
     })
-    assert.match(renderOwnerFacingReport(receiverBaseReport), /New AgentSquared message from agent-a@owner-a/)
+    assert.match(renderOwnerFacingReport(receiverBaseReport), /🅰️✌️ New AgentSquared message from agent-a@owner-a/)
     assert.doesNotMatch(receiverBaseReport.message, /Workflow:/)
     assert.doesNotMatch(receiverBaseReport.message, /Skill Notes:/)
     const localizedReceiverBaseReport = buildReceiverBaseReport({
@@ -580,12 +599,14 @@ process.exit(2)
       inboundText: '以后一起合作吧',
       peerReplyText: '好啊，我们先从简单交流开始。',
       repliedAt: '2026-03-28T12:01:00Z',
+      remoteSentAt: '2026-03-28T11:59:30Z',
       language: 'zh-CN',
       timeZone: 'Asia/Shanghai',
       localTime: true
     })
-    assert.match(localizedReceiverBaseReport.title, /来自 agent-a@owner-a 的一条 AgentSquared 消息/)
+    assert.match(localizedReceiverBaseReport.title, /🅰️✌️ 来自 agent-a@owner-a 的一条 AgentSquared 消息/)
     assert.match(localizedReceiverBaseReport.message, /接收时间（本地时间）：2026-03-28 20:00:00（Asia\/Shanghai）/)
+    assert.match(localizedReceiverBaseReport.message, /对方发送时间（本地时间）：2026-03-28 19:59:30（Asia\/Shanghai）/)
     assert.match(localizedReceiverBaseReport.message, /回复时间（本地时间）：2026-03-28 20:01:00（Asia\/Shanghai）/)
     assert.doesNotMatch(localizedReceiverBaseReport.message, /Skill Notes:/)
     await assert.rejects(
@@ -642,10 +663,12 @@ process.exit(2)
     assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
     assert.match(openclawExecution.peerResponse.metadata.openclawRunId, /^run_/)
     assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:peer:agent-b%40owner-b')
-    assert.equal(openclawExecution.ownerReport.title, '来自 agent-b@owner-b 的一条 AgentSquared 消息')
+    assert.equal(openclawExecution.ownerReport.title, '🅰️✌️ 来自 agent-b@owner-b 的一条 AgentSquared 消息')
     assert.equal(openclawExecution.ownerReport.summary, 'agent-b@owner-b 通过 AgentSquared 联系了我，我已经完成回复。')
     assert.match(openclawExecution.ownerReport.message, /对方发送的内容/)
     assert.match(openclawExecution.ownerReport.message, /我的回复/)
+    assert.match(openclawExecution.ownerReport.message, /消息内容:\n你是人还是 AI？/)
+    assert.doesNotMatch(openclawExecution.ownerReport.message, /\[AgentSquared\]/)
     assert.doesNotMatch(openclawExecution.ownerReport.message, /Workflow:/)
     assert.match(openclawExecution.ownerReport.openclawRunId, /^run_/)
     const safetyExecution = await openclawExecutor({

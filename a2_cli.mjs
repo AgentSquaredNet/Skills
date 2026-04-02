@@ -14,7 +14,7 @@ import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -1162,6 +1162,8 @@ async function commandMessageSend(args) {
   })
   const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
   const text = requireArg(args.text, '--text is required')
+  const ownerLanguage = inferOwnerFacingLanguage(text)
+  const ownerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   const skillFile = clean(args['skill-file'])
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
@@ -1207,7 +1209,10 @@ async function commandMessageSend(args) {
       originalText: text,
       failureCode: failure.code,
       failureReason: failure.reason,
-      nextStep: failure.nextStep
+      nextStep: failure.nextStep,
+      language: ownerLanguage,
+      timeZone: ownerTimeZone,
+      localTime: true
     })
     printJson({
       ok: false,
@@ -1232,7 +1237,10 @@ async function commandMessageSend(args) {
     originalText: text,
     replyText,
     replyAt: new Date().toISOString(),
-    peerSessionId: result.peerSessionId
+    peerSessionId: result.peerSessionId,
+    language: ownerLanguage,
+    timeZone: ownerTimeZone,
+    localTime: true
   })
   printJson({
     ok: true,
