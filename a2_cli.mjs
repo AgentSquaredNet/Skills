@@ -14,7 +14,7 @@ import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
-import { buildSenderBaseReport, buildSkillOutboundText, peerResponseText } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, peerResponseText } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -257,6 +257,30 @@ function resolvedHostRuntimeFromHealth(health = null) {
 
 function toOwnerFacingText(lines = []) {
   return lines.filter(Boolean).join('\n')
+}
+
+function classifyOutboundFailure(error = '', targetAgentId = '') {
+  const message = clean(error)
+  const lower = message.toLowerCase()
+  if (lower.includes('peer identity') || lower.includes('not visible in friend directory')) {
+    return {
+      code: 'target-unreachable',
+      reason: `${clean(targetAgentId) || 'The target agent'} is not currently reachable through AgentSquared. Relay did not provide a usable live peer identity for this target.`,
+      nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this exact target is offline or unavailable. The owner can retry this same target later.'
+    }
+  }
+  if (lower.includes('gateway transport is unavailable') || lower.includes('recovering') || lower.includes('429') || lower.includes('too many requests') || lower.includes('relay')) {
+    return {
+      code: 'relay-or-gateway-unavailable',
+      reason: message || 'The local AgentSquared gateway or relay path was not healthy enough to deliver this message.',
+      nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this delivery failed because the current AgentSquared path is unstable. The owner can retry the same target later.'
+    }
+  }
+  return {
+    code: 'delivery-failed',
+    reason: message || 'The AgentSquared message could not be delivered.',
+    nextStep: 'Do not switch to another target automatically. Stop here and ask the owner whether they want to retry this same target later.'
+  }
 }
 
 function buildGatewayArgs(args, fullName, keyFile, detectedHostRuntime) {
@@ -1136,27 +1160,57 @@ async function commandMessageSend(args) {
     originalText: text,
     sentAt
   })
-  const result = await gatewayConnect(gatewayBase, {
-    targetAgentId,
-    skillHint,
-    method: 'message/send',
-    message: {
-      kind: 'message',
-      role: 'user',
-      parts: [{ kind: 'text', text: outboundText }]
-    },
-    metadata: {
-      ...(sharedSkill ? { sharedSkill } : {}),
-      originalOwnerText: text,
-      sentAt
-    },
-    activitySummary: 'Preparing a short friend IM.',
-    report: {
-      taskId: skillHint,
-      summary: `Delivered a short friend IM to ${targetAgentId}.`,
-      publicSummary: ''
-    }
-  })
+  let result
+  try {
+    result = await gatewayConnect(gatewayBase, {
+      targetAgentId,
+      skillHint,
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: outboundText }]
+      },
+      metadata: {
+        ...(sharedSkill ? { sharedSkill } : {}),
+        originalOwnerText: text,
+        sentAt
+      },
+      activitySummary: 'Preparing a short friend IM.',
+      report: {
+        taskId: skillHint,
+        summary: `Delivered a short friend IM to ${targetAgentId}.`,
+        publicSummary: ''
+      }
+    })
+  } catch (error) {
+    const failure = classifyOutboundFailure(error?.message, targetAgentId)
+    const senderReport = buildSenderFailureReport({
+      localAgentId: context.agentId,
+      targetAgentId,
+      selectedSkill: skillHint,
+      sentAt,
+      originalText: text,
+      failureCode: failure.code,
+      failureReason: failure.reason,
+      nextStep: failure.nextStep
+    })
+    printJson({
+      ok: false,
+      targetAgentId,
+      skillHint,
+      sharedSkill: sharedSkill ? { name: sharedSkill.name, path: sharedSkill.path } : null,
+      error: {
+        code: failure.code,
+        message: failure.reason,
+        detail: clean(error?.message)
+      },
+      senderReport,
+      ownerFacingText: senderReport.message
+    })
+    process.exitCode = 1
+    return
+  }
   const replyText = peerResponseText(result.response)
   const senderReport = buildSenderBaseReport({
     localAgentId: context.agentId,
@@ -1169,6 +1223,7 @@ async function commandMessageSend(args) {
     peerSessionId: result.peerSessionId
   })
   printJson({
+    ok: true,
     targetAgentId,
     skillHint,
     sharedSkill: sharedSkill ? { name: sharedSkill.name, path: sharedSkill.path } : null,
@@ -1176,7 +1231,8 @@ async function commandMessageSend(args) {
     peerSessionId: result.peerSessionId ?? '',
     reusedSession: Boolean(result.reusedSession),
     response: result.response,
-    senderReport
+    senderReport,
+    ownerFacingText: senderReport.message
   })
 }
 

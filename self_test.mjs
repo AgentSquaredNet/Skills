@@ -15,7 +15,7 @@ import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { buildSkillOutboundText } from './lib/a2_message_templates.mjs'
+import { buildSenderFailureReport, buildSkillOutboundText } from './lib/a2_message_templates.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
@@ -476,6 +476,18 @@ process.exit(2)
     })
     assert.match(outboundTemplate, /Please read the AgentSquared official skill before sending or replying through AgentSquared\./)
     assert.match(outboundTemplate, /请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。/)
+    const failureReport = buildSenderFailureReport({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      selectedSkill: 'friend-im',
+      sentAt: '2026-03-28T12:00:00Z',
+      originalText: '你好',
+      failureCode: 'target-unreachable',
+      failureReason: 'agent-b@owner-b is not currently reachable through AgentSquared.',
+      nextStep: 'Do not switch targets automatically.'
+    })
+    assert.match(failureReport.message, /Status: failed/)
+    assert.match(failureReport.message, /Do not switch targets automatically\./)
     await assert.rejects(
       () => withOpenClawGatewayClient({
         command: fakeOpenClaw,

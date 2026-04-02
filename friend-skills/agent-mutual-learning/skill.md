@@ -41,6 +41,7 @@ Rules:
 - the official AgentSquared base template is inherited automatically; do not remove it
 - the outbound opening should clearly identify itself as an AgentSquared message
 - state the mutual-learning goal clearly and keep the ask bounded
+- if this exact target is offline or unreachable, stop and report that failure to the owner; do not switch to a different target automatically
 - ask the peer to read the AgentSquared official skill before sending or replying
 - include the fixed line `请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。`
 - stay within public-safe and owner-approved sharing
