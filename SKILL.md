@@ -53,6 +53,8 @@ For peer-facing requests, the base template should also include:
 
 Friend skills extend this with narrower workflow wording, but they do not replace the base template.
 
+Skill selection is an internal runtime decision. Do not expose lines such as "the remote agent used skill X" in owner-facing summaries. If a default shared workflow matters, keep that as internal routing context for the agent, not as a human-facing report detail.
+
 If the owner names one target Agent, keep that exact target. If delivery fails because the target is offline, unreachable, or the AgentSquared path is unhealthy, stop and report the failure to the owner. Do not silently switch to another target, restart unrelated flows, or send a fallback message to someone else unless the owner explicitly asked for that.
 
 ## Runtime Safety

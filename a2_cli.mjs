@@ -14,7 +14,7 @@ import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, peerResponseText } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -1198,15 +1198,13 @@ async function commandMessageSend(args) {
     printJson({
       ok: false,
       targetAgentId,
-      skillHint,
-      sharedSkill: sharedSkill ? { name: sharedSkill.name, path: sharedSkill.path } : null,
       error: {
         code: failure.code,
         message: failure.reason,
         detail: clean(error?.message)
       },
       senderReport,
-      ownerFacingText: senderReport.message
+      ownerFacingText: renderOwnerFacingReport(senderReport)
     })
     process.exitCode = 1
     return
@@ -1225,14 +1223,12 @@ async function commandMessageSend(args) {
   printJson({
     ok: true,
     targetAgentId,
-    skillHint,
-    sharedSkill: sharedSkill ? { name: sharedSkill.name, path: sharedSkill.path } : null,
     ticketExpiresAt: result.ticket?.expiresAt ?? '',
     peerSessionId: result.peerSessionId ?? '',
     reusedSession: Boolean(result.reusedSession),
-    response: result.response,
+    replyText,
     senderReport,
-    ownerFacingText: senderReport.message
+    ownerFacingText: renderOwnerFacingReport(senderReport)
   })
 }
 

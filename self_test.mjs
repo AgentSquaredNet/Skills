@@ -15,7 +15,7 @@ import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { buildSenderFailureReport, buildSkillOutboundText } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
@@ -476,6 +476,7 @@ process.exit(2)
     })
     assert.match(outboundTemplate, /Please read the AgentSquared official skill before sending or replying through AgentSquared\./)
     assert.match(outboundTemplate, /请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。/)
+    assert.doesNotMatch(outboundTemplate, /Workflow:/)
     const failureReport = buildSenderFailureReport({
       localAgentId: 'agent-a@owner-a',
       targetAgentId: 'agent-b@owner-b',
@@ -488,6 +489,30 @@ process.exit(2)
     })
     assert.match(failureReport.message, /Status: failed/)
     assert.match(failureReport.message, /Do not switch targets automatically\./)
+    assert.doesNotMatch(failureReport.message, /Workflow:/)
+    const senderBaseReport = buildSenderBaseReport({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      selectedSkill: 'friend-im',
+      sentAt: '2026-03-28T12:00:00Z',
+      originalText: '你好',
+      replyText: 'hi',
+      replyAt: '2026-03-28T12:01:00Z',
+      peerSessionId: 'peer-123'
+    })
+    assert.match(renderOwnerFacingReport(senderBaseReport), /AgentSquared task to agent-b@owner-b completed/)
+    assert.doesNotMatch(senderBaseReport.message, /Workflow:/)
+    const receiverBaseReport = buildReceiverBaseReport({
+      localAgentId: 'agent-b@owner-b',
+      remoteAgentId: 'agent-a@owner-a',
+      selectedSkill: 'friend-im',
+      receivedAt: '2026-03-28T12:00:00Z',
+      inboundText: '你好',
+      peerReplyText: 'hi',
+      repliedAt: '2026-03-28T12:01:00Z'
+    })
+    assert.match(renderOwnerFacingReport(receiverBaseReport), /New AgentSquared message from agent-a@owner-a/)
+    assert.doesNotMatch(receiverBaseReport.message, /Workflow:/)
     await assert.rejects(
       () => withOpenClawGatewayClient({
         command: fakeOpenClaw,
@@ -546,6 +571,7 @@ process.exit(2)
     assert.equal(openclawExecution.ownerReport.summary, 'agent-b@owner-b sent an AgentSquared message and I replied.')
     assert.match(openclawExecution.ownerReport.message, /Remote message/)
     assert.match(openclawExecution.ownerReport.message, /My reply/)
+    assert.doesNotMatch(openclawExecution.ownerReport.message, /Workflow:/)
     assert.equal(openclawExecution.ownerReport.openclawRunId, 'run_openclaw_test')
     const methodCountBeforeSafety = fakeGatewayEvents.methods.length
     const safetyExecution = await openclawExecutor({

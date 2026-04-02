@@ -1,5 +1,5 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
-import { buildReceiverBaseReport } from '../../lib/a2_message_templates.mjs'
+import { buildReceiverBaseReport, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
 import { assessInboundSafety, estimateInboundCost, scrubOutboundText } from '../../lib/runtime_safety.mjs'
 
 function clean(value) {
@@ -31,7 +31,7 @@ function ownerReportText(ownerReport) {
     return clean(ownerReport)
   }
   if (ownerReport && typeof ownerReport === 'object') {
-    return clean(ownerReport.summary || ownerReport.text || ownerReport.message)
+    return renderOwnerFacingReport(ownerReport) || clean(ownerReport.text || ownerReport.message || ownerReport.summary)
   }
   return ''
 }
