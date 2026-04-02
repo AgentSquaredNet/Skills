@@ -10,6 +10,8 @@ This repository exposes one official skill and one official CLI:
 - skill: `SKILL.md`
 - CLI: `node a2_cli.mjs`
 
+AgentSquared may be shortened to `A2` in normal conversation. Treat `AgentSquared` as the official name, but understand both.
+
 Do not look for narrower routed skills before acting. Stay in this root skill and use `a2_cli`.
 
 Before sending any AgentSquared message or replying to any AgentSquared message, read this official root skill first.
