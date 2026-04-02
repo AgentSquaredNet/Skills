@@ -5,6 +5,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
 import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
@@ -40,22 +41,223 @@ async function main() {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-test-'))
   const fakeOpenClawLog = path.join(tempDir, 'fake-openclaw.log')
   const fakeOpenClaw = path.join(tempDir, 'fake-openclaw.mjs')
+  const approvalMarker = path.join(tempDir, 'openclaw-approved')
+  const fakeOpenClawConfig = path.join(tempDir, 'openclaw.config.json')
+  const fakeOpenClawStateDir = path.join(tempDir, 'openclaw-state')
+  fs.mkdirSync(fakeOpenClawStateDir, { recursive: true })
+  const fakeOpenClawGateway = new WebSocketServer({ host: '127.0.0.1', port: 0 })
+  await new Promise((resolve) => fakeOpenClawGateway.once('listening', resolve))
+  const fakeGatewayPort = fakeOpenClawGateway.address().port
+  const fakeGatewayUrl = `ws://127.0.0.1:${fakeGatewayPort}`
+  const fakeOpenClawReplyJson = JSON.stringify({
+    selectedSkill: 'friend-im',
+    peerResponse: 'I am an AI agent representing my owner.',
+    ownerReport: 'agentsquared:peer:agent-b%40owner-b handled the inbound question.'
+  })
+  const fakeGatewayEvents = {
+    connectAttempts: 0,
+    methods: [],
+    lastAgentParams: null,
+    lastSendParams: null,
+    lastSessionsParams: null,
+    connectAuths: []
+  }
+  fs.writeFileSync(fakeOpenClawConfig, `${JSON.stringify({
+    gateway: {
+      auth: {
+        mode: 'token',
+        token: 'test-openclaw-token'
+      }
+    }
+  }, null, 2)}\n`)
+  fakeOpenClawGateway.on('connection', (socket) => {
+    const nonce = `nonce-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    socket.send(JSON.stringify({
+      type: 'event',
+      event: 'connect.challenge',
+      payload: { nonce }
+    }))
+    socket.on('message', (chunk) => {
+      const frame = JSON.parse(chunk.toString())
+      if (frame?.type !== 'req') {
+        return
+      }
+      if (frame.method === 'connect') {
+        fakeGatewayEvents.connectAttempts += 1
+        fakeGatewayEvents.connectAuths.push(frame.params?.auth ?? null)
+        if (!fs.existsSync(approvalMarker)) {
+          socket.send(JSON.stringify({
+            type: 'res',
+            id: frame.id,
+            ok: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'pairing required',
+              details: {
+                code: 'PAIRING_REQUIRED',
+                requestId: 'req-pair'
+              }
+            }
+          }))
+          socket.close(1008, 'pairing required')
+          return
+        }
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            auth: {
+              role: 'operator',
+              scopes: [
+                'operator.read',
+                'operator.write',
+                'operator.admin',
+                'operator.approvals',
+                'operator.pairing'
+              ],
+              deviceToken: 'test-device-token'
+            }
+          }
+        }))
+        return
+      }
+
+      fakeGatewayEvents.methods.push(frame.method)
+      if (frame.method === 'agent') {
+        fakeGatewayEvents.lastAgentParams = frame.params
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            status: 'accepted',
+            runId: 'run_openclaw_test'
+          }
+        }))
+        return
+      }
+      if (frame.method === 'agent.wait') {
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            status: 'completed',
+            runId: 'run_openclaw_test'
+          }
+        }))
+        return
+      }
+      if (frame.method === 'chat.history') {
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            messages: [{
+              role: 'assistant',
+              runId: 'run_openclaw_test',
+              message: {
+                kind: 'message',
+                role: 'assistant',
+                parts: [{ kind: 'text', text: fakeOpenClawReplyJson }]
+              }
+            }]
+          }
+        }))
+        return
+      }
+      if (frame.method === 'sessions.list') {
+        fakeGatewayEvents.lastSessionsParams = frame.params
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            sessions: [
+              {
+                key: 'agent:bot1:webchat:main',
+                updatedAt: Date.now() - 2000,
+                deliveryContext: {
+                  channel: 'webchat',
+                  to: 'main'
+                }
+              },
+              {
+                key: 'agent:bot1:agentsquared:peer:agent-b%40owner-b',
+                updatedAt: Date.now() - 1000,
+                deliveryContext: {
+                  channel: 'internal',
+                  to: 'agent-b@owner-b'
+                }
+              },
+              {
+                key: 'agent:bot1:feishu:direct:ou_owner',
+                chatType: 'direct',
+                kind: 'direct',
+                updatedAt: Date.now(),
+                deliveryContext: {
+                  channel: 'feishu',
+                  to: 'user:ou_owner',
+                  accountId: 'default',
+                  threadId: 'thread-1'
+                }
+              },
+              {
+                key: 'agent:other:feishu:direct:ou_other',
+                chatType: 'direct',
+                kind: 'direct',
+                updatedAt: Date.now() + 1000,
+                deliveryContext: {
+                  channel: 'feishu',
+                  to: 'user:ou_other',
+                  accountId: 'default'
+                }
+              }
+            ]
+          }
+        }))
+        return
+      }
+      if (frame.method === 'send') {
+        fakeGatewayEvents.lastSendParams = frame.params
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            status: 'sent',
+            messageId: 'msg-owner-1'
+          }
+        }))
+        return
+      }
+      if (frame.method === 'health') {
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: { ok: true }
+        }))
+        return
+      }
+      socket.send(JSON.stringify({
+        type: 'res',
+        id: frame.id,
+        ok: false,
+        error: {
+          code: 'NOT_IMPLEMENTED',
+          message: `unsupported fake method ${frame.method}`
+        }
+      }))
+    })
+  })
   fs.writeFileSync(fakeOpenClaw, `#!/usr/bin/env node
 import fs from 'node:fs'
 const args = process.argv.slice(2)
 const logFile = process.env.AGENTSQUARED_OPENCLAW_TEST_LOG
 fs.appendFileSync(logFile, JSON.stringify(args) + '\\n')
-const readFlag = (name) => {
-  const index = args.indexOf(name)
-  return index >= 0 ? args[index + 1] ?? '' : ''
-}
-if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent') {
-  process.stdout.write(JSON.stringify({
-    runId: 'run_openclaw_test',
-    acceptedAt: '2026-03-31T10:00:00Z'
-  }))
-  process.exit(0)
-}
 if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
   process.stdout.write(JSON.stringify({
     service: {
@@ -63,7 +265,13 @@ if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
       running: true
     },
     rpc: {
-      ok: true
+      ok: true,
+      url: '${fakeGatewayUrl}'
+    },
+    config: {
+      daemon: {
+        path: '${fakeOpenClawConfig}'
+      }
     }
   }))
   process.exit(0)
@@ -71,7 +279,9 @@ if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
 if (args[0] === 'status' && args[1] === '--json') {
   process.stdout.write(JSON.stringify({
     agents: {
+      defaultId: 'bot1',
       agents: [{
+        id: 'bot1',
         workspaceDir: '/tmp/openclaw-workspace'
       }]
     },
@@ -88,35 +298,9 @@ if (args[0] === 'gateway' && args[1] === 'health' && args[2] === '--json') {
   }))
   process.exit(0)
 }
-if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'agent.wait') {
-  process.stdout.write(JSON.stringify({
-    runId: 'run_openclaw_test',
-    status: 'ok',
-    endedAt: '2026-03-31T10:00:01Z'
-  }))
-  process.exit(0)
-}
-if (args[0] === 'gateway' && args[1] === 'call' && args[2] === 'chat.history') {
-  const params = JSON.parse(readFlag('--params') || '{}')
-  process.stdout.write(JSON.stringify({
-    messages: [{
-      role: 'assistant',
-      runId: 'run_openclaw_test',
-      message: {
-        parts: [{
-          text: JSON.stringify({
-            selectedSkill: 'friend-im',
-            peerResponse: 'I am an AI agent representing my owner.',
-            ownerReport: \`\${params.sessionKey} handled the inbound question.\`
-          })
-        }]
-      }
-    }]
-  }))
-  process.exit(0)
-}
-if (args[0] === 'message' && args[1] === 'send') {
-  process.stdout.write(JSON.stringify({ delivered: true }))
+if (args[0] === 'devices' && args[1] === 'approve') {
+  fs.writeFileSync('${approvalMarker}', 'approved\\n')
+  process.stdout.write(JSON.stringify({ approved: true, requestId: 'req-pair' }))
   process.exit(0)
 }
 process.stderr.write('unexpected fake openclaw command')
@@ -294,11 +478,10 @@ process.exit(2)
       agentId: 'agent-a@owner-a',
       mode: 'host',
       hostRuntime: 'openclaw',
+      openclawStateDir: fakeOpenClawStateDir,
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
-      openclawSessionPrefix: 'agentsquared:peer:',
-      openclawOwnerChannel: 'telegram',
-      openclawOwnerTarget: '@skiyo'
+      openclawSessionPrefix: 'agentsquared:peer:'
     })
     const openclawExecution = await openclawExecutor({
       item: {
@@ -331,11 +514,10 @@ process.exit(2)
       mode: 'host',
       hostRuntime: 'openclaw',
       inbox: openclawInbox,
+      openclawStateDir: fakeOpenClawStateDir,
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
-      openclawSessionPrefix: 'agentsquared:peer:',
-      openclawOwnerChannel: 'telegram',
-      openclawOwnerTarget: '@skiyo'
+      openclawSessionPrefix: 'agentsquared:peer:'
     })
     const openclawNotifyResult = await openclawNotifier({
       item: {
@@ -354,12 +536,26 @@ process.exit(2)
     assert.equal(openclawNotifyResult.deliveredToOwner, true)
     assert.equal(openclawInbox.readIndex().totalCount, 1)
     assert.equal(openclawInbox.readIndex().ownerPushDeliveredCount, 1)
+    assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.channel, 'feishu')
+    assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.to, 'user:ou_owner')
+    assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.accountId, 'default')
+    assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.threadId, 'thread-1')
+    assert.ok(fs.existsSync(approvalMarker))
+    assert.ok(fs.existsSync(path.join(fakeOpenClawStateDir, 'openclaw-device.json')))
+    assert.ok(fs.existsSync(path.join(fakeOpenClawStateDir, 'openclaw-device-auth.json')))
+    assert.ok(fakeGatewayEvents.connectAttempts >= 2)
+    assert.equal(fakeGatewayEvents.connectAuths[0]?.token, 'test-openclaw-token')
+    assert.equal(fakeGatewayEvents.connectAuths.at(-1)?.deviceToken, 'test-device-token')
+    assert.equal(fakeGatewayEvents.lastAgentParams.agentId, 'bot1')
+    assert.equal(fakeGatewayEvents.lastAgentParams.sessionKey, 'agentsquared:peer:agent-b%40owner-b')
+    assert.equal(fakeGatewayEvents.lastSendParams.channel, 'feishu')
+    assert.equal(fakeGatewayEvents.lastSendParams.to, 'user:ou_owner')
+    assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')
+    assert.equal(fakeGatewayEvents.lastSendParams.threadId, 'thread-1')
     const openclawLog = fs.readFileSync(fakeOpenClawLog, 'utf8')
-    assert.match(openclawLog, /"gateway","call","agent"/)
-    assert.match(openclawLog, /"gateway","call","agent.wait"/)
-    assert.match(openclawLog, /"gateway","call","chat.history"/)
-    assert.match(openclawLog, /"message","send"/)
-    assert.match(openclawLog, /agentsquared:peer:agent-b%40owner-b/)
+    assert.match(openclawLog, /"gateway","status","--json"/)
+    assert.match(openclawLog, /"status","--json"/)
+    assert.match(openclawLog, /"devices","approve","--latest","--json"/)
 
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')
@@ -517,6 +713,7 @@ process.exit(2)
   } finally {
     await initiator.stop()
     await responder.stop()
+    await new Promise((resolve) => fakeOpenClawGateway.close(() => resolve(true)))
     fs.rmSync(tempDir, { recursive: true, force: true })
   }
 

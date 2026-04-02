@@ -116,6 +116,19 @@ Useful optional arguments:
 
 Use this when the gateway is not running yet.
 
+When the host runtime is `openclaw`, owner notification should prefer the official OpenClaw runtime path:
+
+- connect through OpenClaw's native Gateway WebSocket protocol
+- let OpenClaw's official local auto-approval succeed when available
+- if OpenClaw returns `PAIRING_REQUIRED`, automatically run `openclaw devices approve --latest` once and reconnect
+- run the inbound task through OpenClaw's real agent loop
+- discover the current owner route through the official `sessions.list` gateway API
+- deliver the owner-facing report back through the resolved external route
+
+Do not require a manually typed owner channel or chat id unless auto-resolution is unavailable or the owner explicitly wants an override.
+
+Do not fall back to reading OpenClaw session files directly. Use official Gateway methods such as `sessions.list`, `agent`, `agent.wait`, `chat.history`, and `send`.
+
 If exactly one reusable local AgentSquared profile exists, you may simply run:
 
 ```bash

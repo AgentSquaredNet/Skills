@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { withOpenClawGatewayClient } from './ws_client.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -10,6 +10,10 @@ function excerpt(text, maxLength = 240) {
     return ''
   }
   return compact.length > maxLength ? `${compact.slice(0, maxLength - 3)}...` : compact
+}
+
+function randomId(prefix = 'a2') {
+  return `${clean(prefix) || 'a2'}-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function normalizeOpenClawSessionKey(remoteAgentId, prefix = 'agentsquared:peer:') {
@@ -24,6 +28,103 @@ function ownerReportText(ownerReport) {
     return clean(ownerReport.summary || ownerReport.text || ownerReport.message)
   }
   return ''
+}
+
+function toNumber(value) {
+  const parsed = Number.parseInt(`${value ?? ''}`, 10)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
+function normalizeSessionList(payload) {
+  const value = unwrapResult(payload)
+  return asArray(value?.sessions ?? value?.items ?? value?.results ?? value)
+}
+
+function isExternalOwnerChannel(channel) {
+  const normalized = clean(channel).toLowerCase()
+  if (!normalized) {
+    return false
+  }
+  return !new Set([
+    'webchat',
+    'heartbeat',
+    'internal',
+    'control-ui',
+    'controlui',
+    'main'
+  ]).has(normalized)
+}
+
+function extractRouteFromSession(session) {
+  if (!session || typeof session !== 'object') {
+    return null
+  }
+  const deliveryContext = session.deliveryContext && typeof session.deliveryContext === 'object'
+    ? session.deliveryContext
+    : {}
+  const origin = session.origin && typeof session.origin === 'object'
+    ? session.origin
+    : {}
+  const channel = clean(deliveryContext.channel || session.lastChannel || origin.provider || origin.surface)
+  const to = clean(deliveryContext.to || session.lastTo || origin.to)
+  const accountId = clean(deliveryContext.accountId || session.lastAccountId || origin.accountId)
+  const threadId = clean(deliveryContext.threadId || session.lastThreadId || origin.threadId)
+  if (!channel || !to) {
+    return null
+  }
+  return {
+    channel,
+    to,
+    accountId,
+    threadId
+  }
+}
+
+function scoreOwnerRouteSession(session, {
+  agentName,
+  preferredChannel = ''
+} = {}) {
+  const key = clean(session?.key)
+  const route = extractRouteFromSession(session)
+  if (!route) {
+    return Number.NEGATIVE_INFINITY
+  }
+  const normalizedAgentName = clean(agentName)
+  if (!key.startsWith(`agent:${normalizedAgentName}:`)) {
+    return Number.NEGATIVE_INFINITY
+  }
+  if (key.startsWith(`agent:${normalizedAgentName}:agentsquared:peer:`)) {
+    return Number.NEGATIVE_INFINITY
+  }
+  if (!isExternalOwnerChannel(route.channel)) {
+    return Number.NEGATIVE_INFINITY
+  }
+
+  const normalizedPreferredChannel = clean(preferredChannel).toLowerCase()
+  let score = 0
+  if (normalizedPreferredChannel && route.channel.toLowerCase() === normalizedPreferredChannel) {
+    score += 1000
+  }
+  if (clean(session?.chatType).toLowerCase() === 'direct') {
+    score += 150
+  }
+  if (clean(session?.kind).toLowerCase() === 'direct') {
+    score += 100
+  }
+  if (key.includes(':direct:')) {
+    score += 75
+  }
+  if (route.to.toLowerCase().startsWith('user:') || route.to.startsWith('@')) {
+    score += 50
+  }
+  if (clean(session?.origin?.chatType).toLowerCase() === 'direct') {
+    score += 25
+  }
+  return score + toNumber(session?.updatedAt) / 1_000_000_000_000
 }
 
 function textParts(value) {
@@ -203,85 +304,6 @@ export function parseOpenClawTaskResult(text, {
   }
 }
 
-function runProcess(command, args, {
-  cwd = '',
-  input = '',
-  timeoutMs = 180000
-} = {}) {
-  const normalizedCommand = clean(command) || 'openclaw'
-  return new Promise((resolve, reject) => {
-    const child = spawn(normalizedCommand, args, {
-      cwd: clean(cwd) || undefined,
-      stdio: ['pipe', 'pipe', 'pipe']
-    })
-    let stdout = ''
-    let stderr = ''
-    let timedOut = false
-
-    const timer = setTimeout(() => {
-      timedOut = true
-      child.kill('SIGTERM')
-    }, Math.max(1000, timeoutMs))
-
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk.toString()
-    })
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString()
-    })
-    child.on('error', (error) => {
-      clearTimeout(timer)
-      reject(error)
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      if (timedOut) {
-        reject(new Error(`OpenClaw command timed out after ${timeoutMs}ms.`))
-        return
-      }
-      if (code !== 0) {
-        reject(new Error(clean(stderr) || `OpenClaw command exited with status ${code}`))
-        return
-      }
-      resolve({
-        stdout: stdout.trim(),
-        stderr: stderr.trim()
-      })
-    })
-
-    if (input) {
-      child.stdin.write(input)
-    }
-    child.stdin.end()
-  })
-}
-
-function gatewayCallArgs(method, {
-  params = null,
-  gatewayUrl = '',
-  gatewayToken = '',
-  gatewayPassword = '',
-  expectFinal = false
-} = {}) {
-  const args = ['gateway', 'call', clean(method), '--json']
-  if (expectFinal) {
-    args.push('--expect-final')
-  }
-  if (clean(gatewayUrl)) {
-    args.push('--url', clean(gatewayUrl))
-  }
-  if (clean(gatewayToken)) {
-    args.push('--token', clean(gatewayToken))
-  }
-  if (clean(gatewayPassword)) {
-    args.push('--password', clean(gatewayPassword))
-  }
-  if (params && typeof params === 'object') {
-    args.push('--params', JSON.stringify(params))
-  }
-  return args
-}
-
 export function buildOpenClawTaskPrompt({
   localAgentId,
   remoteAgentId,
@@ -339,6 +361,7 @@ export function createOpenClawAdapter({
   openclawAgent = '',
   command = 'openclaw',
   cwd = '',
+  stateDir = '',
   sessionPrefix = 'agentsquared:peer:',
   timeoutMs = 180000,
   ownerChannel = '',
@@ -353,29 +376,57 @@ export function createOpenClawAdapter({
     throw new Error('openclaw agent name is required')
   }
 
-  async function gatewayCall(method, options = {}) {
-    const args = gatewayCallArgs(method, {
-      ...options,
+  async function withGateway(fn) {
+    return withOpenClawGatewayClient({
+      command,
+      cwd,
+      stateDir,
       gatewayUrl,
       gatewayToken,
-      gatewayPassword
-    })
-    const result = await runProcess(command, args, { cwd, timeoutMs: options.timeoutMs ?? timeoutMs })
-    return parseJsonOutput(result.stdout || result.stderr, `OpenClaw ${method} response`)
+      gatewayPassword,
+      requestTimeoutMs: timeoutMs
+    }, fn)
   }
 
-  async function fetchSessionResult({ sessionKey, runId }) {
-    const history = await gatewayCall('chat.history', {
-      params: {
-        sessionKey,
-        limit: 12
+  async function listSessions(client) {
+    return normalizeSessionList(await client.request('sessions.list', {}, timeoutMs))
+  }
+
+  async function resolveOwnerRoute(client) {
+    if (clean(ownerChannel) && clean(ownerTarget)) {
+      return {
+        channel: clean(ownerChannel),
+        to: clean(ownerTarget),
+        accountId: '',
+        threadId: clean(ownerThreadId),
+        sessionKey: '',
+        routeSource: 'explicit'
       }
-    })
-    const responseText = latestAssistantText(history, { runId })
-    if (!responseText) {
-      throw new Error(`OpenClaw chat.history did not include a final assistant message for session ${sessionKey}.`)
     }
-    return responseText
+
+    const sessions = await listSessions(client)
+    const ranked = sessions
+      .map((session) => ({
+        session,
+        route: extractRouteFromSession(session),
+        score: scoreOwnerRouteSession(session, {
+          agentName,
+          preferredChannel: ownerChannel
+        })
+      }))
+      .filter((candidate) => Number.isFinite(candidate.score) && candidate.route)
+      .sort((left, right) => right.score - left.score)
+
+    const selected = ranked[0]
+    if (!selected?.route) {
+      return null
+    }
+    return {
+      ...selected.route,
+      threadId: clean(ownerThreadId) || clean(selected.route.threadId),
+      sessionKey: clean(selected.session?.key),
+      routeSource: 'sessions.list'
+    }
   }
 
   async function executeInbound({
@@ -392,52 +443,60 @@ export function createOpenClawAdapter({
       item
     })
 
-    const accepted = await gatewayCall('agent', {
-      params: {
+    return withGateway(async (client, gatewayContext) => {
+      const accepted = await client.request('agent', {
         agentId: agentName,
         sessionKey,
-        message: prompt
+        message: prompt,
+        idempotencyKey: `agentsquared-agent-${clean(item?.inboundId) || randomId('inbound')}`
+      }, timeoutMs)
+      const runId = readOpenClawRunId(accepted)
+      if (!runId) {
+        throw new Error('OpenClaw agent call did not return a runId.')
       }
-    })
-    const runId = readOpenClawRunId(accepted)
-    if (!runId) {
-      throw new Error('OpenClaw agent call did not return a runId.')
-    }
 
-    const waited = await gatewayCall('agent.wait', {
-      params: {
+      const waited = await client.request('agent.wait', {
         runId,
         timeoutMs
-      },
-      timeoutMs: timeoutMs + 1000
-    })
-    const status = readOpenClawStatus(waited).toLowerCase()
-    if (status && status !== 'ok' && status !== 'completed' && status !== 'done') {
-      throw new Error(`OpenClaw agent.wait returned ${status || 'an unknown status'} for run ${runId}.`)
-    }
-
-    const resultText = latestAssistantText(waited, { runId }) || await fetchSessionResult({ sessionKey, runId })
-    const parsed = parseOpenClawTaskResult(resultText, {
-      defaultSkill: selectedSkill,
-      remoteAgentId,
-      inboundId: clean(item?.inboundId)
-    })
-    return {
-      ...parsed,
-      peerResponse: {
-        ...parsed.peerResponse,
-        metadata: {
-          ...(parsed.peerResponse?.metadata ?? {}),
-          openclawRunId: runId,
-          openclawSessionKey: sessionKey
-        }
-      },
-      ownerReport: {
-        ...(parsed.ownerReport ?? {}),
-        openclawRunId: runId,
-        openclawSessionKey: sessionKey
+      }, timeoutMs + 1000)
+      const status = readOpenClawStatus(waited).toLowerCase()
+      if (status && status !== 'ok' && status !== 'completed' && status !== 'done') {
+        throw new Error(`OpenClaw agent.wait returned ${status || 'an unknown status'} for run ${runId}.`)
       }
-    }
+
+      const history = await client.request('chat.history', {
+        sessionKey,
+        limit: 12
+      }, timeoutMs)
+      const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
+      if (!resultText) {
+        throw new Error(`OpenClaw chat.history did not include a final assistant message for session ${sessionKey}.`)
+      }
+
+      const parsed = parseOpenClawTaskResult(resultText, {
+        defaultSkill: selectedSkill,
+        remoteAgentId,
+        inboundId: clean(item?.inboundId)
+      })
+      return {
+        ...parsed,
+        peerResponse: {
+          ...parsed.peerResponse,
+          metadata: {
+            ...(parsed.peerResponse?.metadata ?? {}),
+            openclawRunId: runId,
+            openclawSessionKey: sessionKey,
+            openclawGatewayUrl: gatewayContext.gatewayUrl
+          }
+        },
+        ownerReport: {
+          ...(parsed.ownerReport ?? {}),
+          openclawRunId: runId,
+          openclawSessionKey: sessionKey,
+          openclawGatewayUrl: gatewayContext.gatewayUrl
+        }
+      }
+    })
   }
 
   async function pushOwnerReport({
@@ -447,40 +506,35 @@ export function createOpenClawAdapter({
     if (!summary) {
       return { delivered: false, attempted: false, mode: 'openclaw', reason: 'empty-owner-report' }
     }
-    if (!clean(ownerChannel) || !clean(ownerTarget)) {
-      return { delivered: false, attempted: false, mode: 'openclaw', reason: 'owner-channel-not-configured' }
-    }
-    const args = [
-      'message',
-      'send',
-      '--channel', clean(ownerChannel),
-      '--target', clean(ownerTarget),
-      '--message', summary
-    ]
-    if (clean(ownerThreadId)) {
-      args.push('--thread-id', clean(ownerThreadId))
-    }
-    if (clean(gatewayUrl)) {
-      args.push('--url', clean(gatewayUrl))
-    }
-    if (clean(gatewayToken)) {
-      args.push('--token', clean(gatewayToken))
-    }
-    if (clean(gatewayPassword)) {
-      args.push('--password', clean(gatewayPassword))
-    }
-    const result = await runProcess(command, args, { cwd, timeoutMs })
-    return {
-      delivered: true,
-      attempted: true,
-      mode: 'openclaw',
-      stdout: result.stdout
-    }
+
+    return withGateway(async (client) => {
+      const ownerRoute = await resolveOwnerRoute(client)
+      if (!ownerRoute?.channel || !ownerRoute?.to) {
+        return { delivered: false, attempted: true, mode: 'openclaw', reason: 'owner-route-not-found' }
+      }
+      const payload = await client.request('send', {
+        to: clean(ownerRoute.to),
+        channel: clean(ownerRoute.channel),
+        ...(clean(ownerRoute.accountId) ? { accountId: clean(ownerRoute.accountId) } : {}),
+        ...(clean(ownerRoute.threadId) ? { threadId: clean(ownerRoute.threadId) } : {}),
+        ...(clean(ownerRoute.sessionKey) ? { sessionKey: clean(ownerRoute.sessionKey) } : {}),
+        message: summary,
+        idempotencyKey: `agentsquared-owner-${randomId('owner')}`
+      }, timeoutMs)
+      return {
+        delivered: true,
+        attempted: true,
+        mode: 'openclaw',
+        payload,
+        ownerRoute
+      }
+    })
   }
 
   return {
     id: 'openclaw',
     mode: 'openclaw',
+    transport: 'gateway-ws',
     command: clean(command) || 'openclaw',
     agent: agentName,
     ownerChannel: clean(ownerChannel),

@@ -130,6 +130,8 @@ That onboarding flow is responsible for:
 - runtime key generation
 - registration
 - host detection
+- preparing the OpenClaw native Gateway WS client when the host runtime is OpenClaw
+- preferring OpenClaw local auto-approval and, when required, automatically retrying after `openclaw devices approve --latest`
 - gateway auto-start unless disabled
 - telling the host agent to store the important AgentSquared facts in its own memory system
 - final owner-facing setup summary

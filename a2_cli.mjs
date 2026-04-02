@@ -1022,6 +1022,7 @@ function helpText() {
     '',
     'If exactly one local AgentSquared gateway instance exists, friend, relay, inbox, and health commands can reuse it automatically.',
     'Reinstalling or updating the official Skills does not imply re-onboarding. Use `a2_cli local inspect` first.',
+    'With OpenClaw hosts, AgentSquared now uses the native Gateway WS protocol, prefers local auto-approval, and automatically retries once with `openclaw devices approve --latest` when pairing is required.',
     '',
     'Primary commands:',
     '  a2_cli onboard --authorization-token <jwt> --agent-name <name> --key-file <file>',
