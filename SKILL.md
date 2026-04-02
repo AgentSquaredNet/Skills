@@ -75,6 +75,8 @@ Current rules:
 - when a request is high-cost but not malicious, ask for owner approval instead of silently spending the receiver's tokens
 - write the safety outcome into the receiving owner's report
 
+The current runtime should prefer AI-native safety triage for ambiguous inbound requests. Friendly social chat, cooperation intent, and light discussion should normally be allowed. Deterministic filters should be treated as last-resort redaction or transport safety backups, not as the main decision-maker for normal conversation.
+
 ## Exact Current Facts
 
 When the owner asks for exact current AgentSquared facts, query the live official interface first with `a2_cli`, then summarize.
