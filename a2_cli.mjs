@@ -750,6 +750,8 @@ async function commandGatewayRestart(args, rawArgs) {
   const gatewayStateFile = clean(args['gateway-state-file']) || context.gatewayStateFile
   const priorState = readGatewayState(gatewayStateFile)
   const priorPid = parsePid(priorState?.gatewayPid)
+  const gatewayArgs = buildGatewayArgs(args, agentId, keyFile, null)
+  const gatewayLogFile = gatewayLogFileFor(keyFile, agentId)
 
   if (priorPid) {
     try {
@@ -773,24 +775,37 @@ async function commandGatewayRestart(args, rawArgs) {
     }
   }
 
-  const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...rawArgs], {
+  fs.mkdirSync(path.dirname(gatewayLogFile), { recursive: true })
+  const stdoutFd = fs.openSync(gatewayLogFile, 'a')
+  const stderrFd = fs.openSync(gatewayLogFile, 'a')
+  const child = spawn(process.execPath, [path.join(ROOT, 'a2_cli.mjs'), 'gateway', ...gatewayArgs], {
     detached: true,
-    stdio: 'ignore'
+    cwd: ROOT,
+    stdio: ['ignore', stdoutFd, stderrFd]
   })
+  fs.closeSync(stdoutFd)
+  fs.closeSync(stderrFd)
   child.unref()
 
-  const ready = await waitForGatewayReady({
-    keyFile,
-    agentId,
-    gatewayStateFile,
-    timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '30000', 10) || 30000
-  })
+  let ready
+  try {
+    ready = await waitForGatewayReady({
+      keyFile,
+      agentId,
+      gatewayStateFile,
+      timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '30000', 10) || 30000
+    })
+  } catch (error) {
+    throw new Error(`${error.message} Check the gateway log at ${gatewayLogFile}.`)
+  }
 
   printJson({
     restarted: true,
     previousGatewayPid: priorPid,
+    gatewayPid: child.pid ?? null,
     gatewayBase: ready.gatewayBase,
     health: ready.health,
+    gatewayLogFile,
     agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
     memoryReminder: {
       required: true,
