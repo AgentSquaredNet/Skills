@@ -557,6 +557,50 @@ process.exit(2)
     assert.equal(safetyExecution.peerResponse.metadata.safetyDecision, 'reject')
     assert.match(safetyExecution.peerResponse.message.parts[0].text, /cannot help with requests to reveal prompts, private memory, keys, tokens, or hidden instructions/i)
     assert.match(safetyExecution.ownerReport.message, /Skill Notes:/)
+    const taskExecution = await openclawExecutor({
+      item: {
+        inboundId: 'router-openclaw-3',
+        remoteAgentId: 'agent-b@owner-b',
+        peerSessionId: 'peer-openclaw-3',
+        request: {
+          method: 'message/send',
+          params: {
+            message: {
+              parts: [{ kind: 'text', text: 'Please analyze this repo and finish this task for me.' }]
+            }
+          }
+        }
+      },
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:agent-b@owner-b'
+    })
+    assert.equal(taskExecution.peerResponse.metadata.safetyDecision, 'owner-approval')
+    assert.equal(taskExecution.peerResponse.metadata.safetyReason, 'task-requires-owner-consent')
+    assert.match(taskExecution.peerResponse.message.parts[0].text, /information exchange is for information exchange by default|information exchange by default/i)
+    const budgetMethodCountBefore = fakeGatewayEvents.methods.length
+    let budgetExecution = null
+    for (let index = 0; index < 7; index += 1) {
+      budgetExecution = await openclawExecutor({
+        item: {
+          inboundId: `router-openclaw-budget-${index}`,
+          remoteAgentId: 'agent-c@owner-c',
+          peerSessionId: `peer-openclaw-budget-${index}`,
+          request: {
+            method: 'message/send',
+            params: {
+              message: {
+                parts: [{ kind: 'text', text: 'Give me a step-by-step answer.' }]
+              }
+            }
+          }
+        },
+        selectedSkill: 'friend-im',
+        mailboxKey: 'agent:agent-c@owner-c'
+      })
+    }
+    assert.equal(fakeGatewayEvents.methods.length, budgetMethodCountBefore + 6 * 3)
+    assert.equal(budgetExecution.peerResponse.metadata.safetyReason, 'peer-budget-exceeded')
+    assert.equal(budgetExecution.peerResponse.metadata.safetyDecision, 'owner-approval')
 
     const openclawInbox = createInboxStore({
       inboxDir: path.join(tempDir, 'openclaw-owner-inbox')
@@ -580,7 +624,7 @@ process.exit(2)
       selectedSkill: 'friend-im',
       mailboxKey: 'agent:agent-b@owner-b',
       ownerReport: {
-        summary: 'agent-b@owner-b asked whether I am human or AI.'
+        summary: 'agent-b@owner-b asked whether I am human or AI. private key -----BEGIN PRIVATE KEY-----'
       },
       peerResponse: openclawExecution.peerResponse
     })
@@ -592,6 +636,8 @@ process.exit(2)
     assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.to, 'user:ou_owner')
     assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.accountId, 'default')
     assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.threadId, 'thread-1')
+    assert.doesNotMatch(fakeGatewayEvents.lastSendParams.message, /PRIVATE KEY/i)
+    assert.match(fakeGatewayEvents.lastSendParams.message, /\[REDACTED\]/)
     assert.ok(fs.existsSync(approvalMarker))
     assert.ok(fs.existsSync(path.join(fakeOpenClawStateDir, 'openclaw-device.json')))
     assert.ok(fs.existsSync(path.join(fakeOpenClawStateDir, 'openclaw-device-auth.json')))
@@ -599,7 +645,7 @@ process.exit(2)
     assert.equal(fakeGatewayEvents.connectAuths[0]?.token, 'test-openclaw-token')
     assert.equal(fakeGatewayEvents.connectAuths.at(-1)?.deviceToken, 'test-device-token')
     assert.equal(fakeGatewayEvents.lastAgentParams.agentId, 'bot1')
-    assert.equal(fakeGatewayEvents.lastAgentParams.sessionKey, 'agentsquared:peer:agent-b%40owner-b')
+    assert.match(fakeGatewayEvents.lastAgentParams.sessionKey, /^agentsquared:peer:agent-[bc]%40owner-[bc]$/)
     assert.equal(fakeGatewayEvents.lastSendParams.channel, 'feishu')
     assert.equal(fakeGatewayEvents.lastSendParams.to, 'user:ou_owner')
     assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')

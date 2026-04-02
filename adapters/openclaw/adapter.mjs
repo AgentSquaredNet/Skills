@@ -1,6 +1,6 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport } from '../../lib/a2_message_templates.mjs'
-import { assessInboundSafety } from '../../lib/runtime_safety.mjs'
+import { assessInboundSafety, estimateInboundCost, scrubOutboundText } from '../../lib/runtime_safety.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -16,6 +16,10 @@ function excerpt(text, maxLength = 240) {
 
 function randomId(prefix = 'a2') {
   return `${clean(prefix) || 'a2'}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function nowMs() {
+  return Date.now()
 }
 
 function normalizeOpenClawSessionKey(remoteAgentId, prefix = 'agentsquared:peer:') {
@@ -376,6 +380,9 @@ export function createOpenClawAdapter({
   if (!agentName) {
     throw new Error('openclaw agent name is required')
   }
+  const peerBudget = new Map()
+  const budgetWindowMs = 10 * 60 * 1000
+  const maxWindowCost = 18
 
   async function withGateway(fn) {
     return withOpenClawGatewayClient({
@@ -430,6 +437,26 @@ export function createOpenClawAdapter({
     }
   }
 
+  function consumePeerBudget({
+    remoteAgentId = '',
+    selectedSkill = '',
+    text = ''
+  } = {}) {
+    const key = clean(remoteAgentId).toLowerCase() || 'unknown'
+    const estimated = estimateInboundCost({ text, selectedSkill })
+    const currentTime = nowMs()
+    const existing = peerBudget.get(key)
+    const recentEvents = (existing?.events ?? []).filter((event) => currentTime - event.at <= budgetWindowMs)
+    const nextCost = recentEvents.reduce((sum, event) => sum + event.cost, 0) + estimated.score
+    recentEvents.push({ at: currentTime, cost: estimated.score })
+    peerBudget.set(key, { events: recentEvents })
+    return {
+      ...estimated,
+      windowCost: nextCost,
+      overBudget: nextCost > maxWindowCost
+    }
+  }
+
   async function executeInbound({
     item,
     selectedSkill,
@@ -442,8 +469,51 @@ export function createOpenClawAdapter({
       item,
       selectedSkill
     })
+    const budget = consumePeerBudget({
+      remoteAgentId,
+      selectedSkill,
+      text: inboundText
+    })
+    if (budget.overBudget) {
+      const peerReplyText = 'I am pausing this AgentSquared request because the recent request budget from this peer is too high. My owner can decide whether to continue later.'
+      const ownerReport = buildReceiverBaseReport({
+        localAgentId,
+        remoteAgentId,
+        selectedSkill,
+        receivedAt,
+        inboundText,
+        peerReplyText,
+        repliedAt: new Date().toISOString(),
+        skillSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`
+      })
+      return {
+        selectedSkill,
+        peerResponse: {
+          message: {
+            kind: 'message',
+            role: 'agent',
+            parts: [{ kind: 'text', text: peerReplyText }]
+          },
+          metadata: {
+            selectedSkill,
+            runtimeAdapter: 'openclaw',
+            safetyDecision: 'owner-approval',
+            safetyReason: 'peer-budget-exceeded',
+            windowCost: budget.windowCost
+          }
+        },
+        ownerReport: {
+          ...ownerReport,
+          selectedSkill,
+          runtimeAdapter: 'openclaw',
+          safetyDecision: 'owner-approval',
+          safetyReason: 'peer-budget-exceeded',
+          windowCost: budget.windowCost
+        }
+      }
+    }
     if (safety.action !== 'allow') {
-      const peerReplyText = clean(safety.peerResponse)
+      const peerReplyText = scrubOutboundText(clean(safety.peerResponse))
       const ownerReport = buildReceiverBaseReport({
         localAgentId,
         remoteAgentId,
@@ -521,21 +591,27 @@ export function createOpenClawAdapter({
         remoteAgentId,
         inboundId: clean(item?.inboundId)
       })
-      const peerReplyText = peerResponseText(parsed.peerResponse)
+      const safePeerReplyText = scrubOutboundText(peerResponseText(parsed.peerResponse))
+      const safeOwnerSummary = scrubOutboundText(clean(parsed.ownerReport?.summary))
       const ownerReport = buildReceiverBaseReport({
         localAgentId,
         remoteAgentId,
         selectedSkill: parsed.selectedSkill,
         receivedAt,
         inboundText,
-        peerReplyText,
+        peerReplyText: safePeerReplyText,
         repliedAt: new Date().toISOString(),
-        skillSummary: clean(parsed.ownerReport?.summary)
+        skillSummary: safeOwnerSummary
       })
       return {
         ...parsed,
         peerResponse: {
           ...parsed.peerResponse,
+          message: {
+            kind: parsed.peerResponse?.message?.kind ?? 'message',
+            role: parsed.peerResponse?.message?.role ?? 'agent',
+            parts: [{ kind: 'text', text: safePeerReplyText }]
+          },
           metadata: {
             ...(parsed.peerResponse?.metadata ?? {}),
             openclawRunId: runId,
@@ -558,7 +634,7 @@ export function createOpenClawAdapter({
   async function pushOwnerReport({
     ownerReport
   }) {
-    const summary = ownerReportText(ownerReport)
+    const summary = scrubOutboundText(ownerReportText(ownerReport))
     if (!summary) {
       return { delivered: false, attempted: false, mode: 'openclaw', reason: 'empty-owner-report' }
     }
