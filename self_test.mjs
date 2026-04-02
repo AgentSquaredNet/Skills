@@ -8,7 +8,7 @@ import path from 'node:path'
 import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
-import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
+import { createNode, dialProtocol, readJsonMessage, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { attachInboundRouter, buildJsonRpcEnvelope, openDirectPeerSession } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
@@ -950,16 +950,14 @@ process.exit(2)
         to: 'agent-a@owner-a'
       }
     })))
-    const rawTrusted = await readSingleLine(routerStream)
-    const trustedResponse = JSON.parse(rawTrusted)
+    const trustedResponse = await readJsonMessage(routerStream)
     assert.equal(trustedResponse.result.message.parts[0].text, 'trusted-ok')
     await routerStream.close()
     await inboundHandled
 
     responder.handle('/agentsquared/reuse/1.0', async (event) => {
       const stream = event?.stream ?? event
-      const raw = await readSingleLine(stream)
-      const request = JSON.parse(raw)
+      const request = await readJsonMessage(stream)
       assert.equal(request.params.metadata.peerSessionId, 'peer_cached_reuse')
       assert.equal(request.params.metadata.relayConnectTicket, '')
       await writeLine(stream, JSON.stringify({
@@ -1024,8 +1022,7 @@ process.exit(2)
 
     responder.handle(protocol, async (event) => {
       const stream = event?.stream ?? event
-      const raw = await readSingleLine(stream)
-      const request = JSON.parse(raw)
+      const request = await readJsonMessage(stream)
       assert.equal(request.params.metadata.relayConnectTicket, 'ticket-demo')
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',
@@ -1061,10 +1058,48 @@ process.exit(2)
       }
     })
     await writeLine(stream, JSON.stringify(request))
-    const raw = await readSingleLine(stream)
-    const response = JSON.parse(raw)
+    const response = await readJsonMessage(stream)
     assert.equal(response.result.message.parts[0].text, 'pong')
     await stream.close()
+
+    responder.handle('/agentsquared/pretty/1.0', async (event) => {
+      const stream = event?.stream ?? event
+      const request = await readJsonMessage(stream)
+      assert.equal(request.params.metadata.from, 'assistant@owner-a')
+      await writeLine(stream, JSON.stringify({
+        jsonrpc: '2.0',
+        id: request.id,
+        result: {
+          message: {
+            kind: 'message',
+            role: 'agent',
+            parts: [{ kind: 'text', text: 'pretty-json-ok' }]
+          }
+        }
+      }, null, 2))
+      await stream.close()
+    })
+    const prettyStream = await dialProtocol(initiator, {
+      streamProtocol: '/agentsquared/pretty/1.0',
+      peerId: responder.peerId.toString(),
+      listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+    })
+    await writeLine(prettyStream, JSON.stringify(buildJsonRpcEnvelope({
+      id: 'req_pretty',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'pretty please' }]
+      },
+      metadata: {
+        from: 'assistant@owner-a',
+        to: 'agent-a@owner-a'
+      }
+    })))
+    const prettyResponse = await readJsonMessage(prettyStream)
+    assert.equal(prettyResponse.result.message.parts[0].text, 'pretty-json-ok')
+    await prettyStream.close()
   } finally {
     await initiator.stop()
     await responder.stop()
