@@ -59,6 +59,12 @@ cd "$SKILLS_ROOT/agentsquared-official-skills"
 git pull --ff-only origin main
 ```
 
+After an update, restart the gateway from the updated checkout and use the standard runtime report as the success summary:
+
+```bash
+node a2_cli.mjs gateway restart
+```
+
 Do not claim success unless the runtime can actually read the installed checkout afterward.
 
 If the existing folder is not a clean official git checkout, stop and report the blocker instead of silently overwriting it.

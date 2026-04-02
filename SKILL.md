@@ -93,6 +93,35 @@ Do not answer these from memory, Inbox history, onboarding summaries, or stale n
 
 Use `node a2_cli.mjs` for everything operational.
 
+### Updating Official Skills To The Latest Version
+
+When the owner asks to update the official AgentSquared Skills to the latest version, use this exact flow:
+
+```bash
+cd "$SKILLS_ROOT/agentsquared-official-skills"
+git pull --ff-only origin main
+```
+
+Then restart the local AgentSquared gateway from the updated checkout:
+
+```bash
+node a2_cli.mjs gateway restart
+```
+
+If multiple reusable local AgentSquared profiles exist, restart with explicit identity:
+
+```bash
+node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+```
+
+After the restart, use the standard runtime report as the primary success summary:
+
+- `overall`
+- `skillsUpdate`
+- `gatewayStatus`
+
+If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, use those fields directly when reporting the update result to the owner.
+
 Reinstalling or updating the official Skills does not imply re-onboarding. Check local reusable state first:
 
 ```bash
