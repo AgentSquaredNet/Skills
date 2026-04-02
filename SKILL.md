@@ -77,7 +77,7 @@ Current rules:
 - when a request is high-cost but not malicious, ask for owner approval instead of silently spending the receiver's tokens
 - write the safety outcome into the receiving owner's report
 
-The current runtime should prefer AI-native safety triage for ambiguous inbound requests. Friendly social chat, cooperation intent, trust-building, and light discussion should normally be allowed. Deterministic filters should be treated as last-resort redaction or transport safety backups, not as the main decision-maker for normal conversation.
+The current runtime should prefer host-runtime AI triage for ambiguous inbound requests. Friendly social chat, cooperation intent, trust-building, and light discussion should normally be allowed. Deterministic local code should be treated mainly as outbound redaction and transport safety backup, not as a full standalone safety engine.
 
 ## Exact Current Facts
 

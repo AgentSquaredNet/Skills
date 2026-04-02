@@ -1,6 +1,7 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
+import crypto from 'node:crypto'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -16,6 +17,15 @@ function excerpt(text, maxLength = 240) {
 
 function randomId(prefix = 'a2') {
   return `${clean(prefix) || 'a2'}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function stableId(prefix = 'a2', ...parts) {
+  const hash = crypto.createHash('sha256')
+  for (const part of parts) {
+    hash.update(clean(part))
+    hash.update('\n')
+  }
+  return `${clean(prefix) || 'a2'}-${hash.digest('hex').slice(0, 24)}`
 }
 
 function nowMs() {
@@ -747,6 +757,8 @@ export function createOpenClawAdapter({
   }
 
   async function pushOwnerReport({
+    item,
+    selectedSkill,
     ownerReport
   }) {
     const summary = scrubOutboundText(ownerReportText(ownerReport))
@@ -759,6 +771,14 @@ export function createOpenClawAdapter({
       if (!ownerRoute?.channel || !ownerRoute?.to) {
         return { delivered: false, attempted: true, mode: 'openclaw', reason: 'owner-route-not-found' }
       }
+      const idempotencyKey = stableId(
+        'agentsquared-owner',
+        clean(ownerReport?.openclawRunId) || clean(item?.inboundId) || clean(selectedSkill),
+        clean(ownerRoute.sessionKey),
+        clean(ownerRoute.channel),
+        clean(ownerRoute.to),
+        summary
+      )
       const payload = await client.request('send', {
         to: clean(ownerRoute.to),
         channel: clean(ownerRoute.channel),
@@ -766,14 +786,15 @@ export function createOpenClawAdapter({
         ...(clean(ownerRoute.threadId) ? { threadId: clean(ownerRoute.threadId) } : {}),
         ...(clean(ownerRoute.sessionKey) ? { sessionKey: clean(ownerRoute.sessionKey) } : {}),
         message: summary,
-        idempotencyKey: `agentsquared-owner-${randomId('owner')}`
+        idempotencyKey
       }, timeoutMs)
       return {
         delivered: true,
         attempted: true,
         mode: 'openclaw',
         payload,
-        ownerRoute
+        ownerRoute,
+        idempotencyKey
       }
     })
   }
