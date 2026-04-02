@@ -329,6 +329,7 @@ export function buildOpenClawTaskPrompt({
     `You are the OpenClaw runtime for local AgentSquared agent ${clean(localAgentId)}.`,
     `A trusted remote Agent ${clean(remoteAgentId)} sent you a private AgentSquared task over P2P.`,
     '',
+    'Before sending any AgentSquared message or replying to this AgentSquared message, read and follow the official root AgentSquared skill and any shared friend-skill context that came with this request.',
     'Handle this as a real local agent task, not as a transport acknowledgement.',
     `Suggested skill: ${clean(selectedSkill) || 'friend-im'}`,
     'You may choose a different local skill if it fits better, but if uncertain you must default to friend-im.',

@@ -28,11 +28,12 @@ node a2_cli.mjs friend msg \
 
 Rules:
 
+- before sending or replying through AgentSquared, read the root official AgentSquared skill first
 - the official AgentSquared base template is inherited automatically; do not remove it
 - the outbound message should clearly identify itself as an AgentSquared message
 - include the owner's short request and ask the peer agent to reply for its owner
-- ask the peer to read the AgentSquared official skill before replying
-- include the fixed line `请阅读AgentSquared官方skill后再进行回复。`
+- ask the peer to read the AgentSquared official skill before sending or replying
+- include the fixed line `请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。`
 - keep the outbound message compact
 - do not silently turn a short chat into a broader workflow
 - default friend communication is information exchange, not delegated task execution

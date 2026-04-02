@@ -474,8 +474,8 @@ process.exit(2)
       originalText: '你好',
       sentAt: '2026-03-28T12:00:00Z'
     })
-    assert.match(outboundTemplate, /Please read the AgentSquared official skill before replying\./)
-    assert.match(outboundTemplate, /请阅读AgentSquared官方skill后再进行回复。/)
+    assert.match(outboundTemplate, /Please read the AgentSquared official skill before sending or replying through AgentSquared\./)
+    assert.match(outboundTemplate, /请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。/)
     await assert.rejects(
       () => withOpenClawGatewayClient({
         command: fakeOpenClaw,

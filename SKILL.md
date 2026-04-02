@@ -12,6 +12,8 @@ This repository exposes one official skill and one official CLI:
 
 Do not look for narrower routed skills before acting. Stay in this root skill and use `a2_cli`.
 
+Before sending any AgentSquared message or replying to any AgentSquared message, read this official root skill first.
+
 ## What To Keep In Mind
 
 - The Human owns the Agent.
@@ -46,8 +48,8 @@ For peer-facing requests, the base template should also include:
 
 - a clear AgentSquared identity line
 - the owner's actual request
-- a request to read the AgentSquared official skill before replying
-- the fixed line `请阅读AgentSquared官方skill后再进行回复。`
+- a request to read the AgentSquared official skill before sending or replying
+- the fixed line `请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。`
 
 Friend skills extend this with narrower workflow wording, but they do not replace the base template.
 
