@@ -400,6 +400,15 @@ process.exit(2)
     })
     const queuedResult = await queued.responsePromise
     assert.equal(queuedResult.message.parts[0].text, 'queued')
+    gatewayState.reset({
+      reason: 'transport recovery in progress',
+      preserveTrustedSessions: true
+    })
+    assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a').peerSessionId, 'peer_demo')
+    gatewayState.reset({
+      reason: 'full gateway shutdown'
+    })
+    assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a'), null)
 
     assert.equal(chooseInboundSkill({
       suggestedSkill: '',
