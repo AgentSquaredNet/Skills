@@ -14,6 +14,7 @@ import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
+import { buildSenderBaseReport, buildSkillOutboundText, peerResponseText } from './lib/a2_message_templates.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -130,6 +131,53 @@ function boolFlag(value, fallback = false) {
     return false
   }
   return fallback
+}
+
+function classifyGatewayFailure(error = '', hostRuntime = null) {
+  const message = clean(error)
+  const lower = message.toLowerCase()
+  if (!message) {
+    return {
+      code: 'gateway-startup-failed',
+      retryable: true,
+      guidance: [
+        'Retry after updating the official Skills and restarting the local AgentSquared gateway.',
+        'If the relay or host runtime still looks unstable, retry later.',
+        'If the problem persists, open an issue in the official Skills repository.'
+      ]
+    }
+  }
+  if (lower.includes('host runtime preflight failed') || lower.includes('openclaw') || lower.includes('pairing') || lower.includes('loopback')) {
+    return {
+      code: 'adapter-startup-failed',
+      retryable: true,
+      guidance: [
+        `The ${clean(hostRuntime?.resolved) || 'host'} adapter could not be reached during gateway startup.`,
+        'Update the official Skills and restart the local AgentSquared gateway.',
+        'If the local host runtime is unstable, retry later.',
+        'If the adapter still fails, report it to the official Skills issue tracker.'
+      ]
+    }
+  }
+  if (lower.includes('relay') || lower.includes('reservation') || lower.includes('presence') || lower.includes('too many requests') || lower.includes('429')) {
+    return {
+      code: 'relay-startup-failed',
+      retryable: true,
+      guidance: [
+        'The AgentSquared relay path was not healthy enough during gateway startup.',
+        'Retry after updating the official Skills or wait and retry later if the remote service looks unstable.',
+        'If relay startup keeps failing, report it to the official Skills issue tracker.'
+      ]
+    }
+  }
+  return {
+    code: 'gateway-startup-failed',
+    retryable: true,
+    guidance: [
+      'Retry after updating the official Skills and restarting the local AgentSquared gateway.',
+      'If the problem persists, retry later or report it to the official Skills issue tracker.'
+    ]
+  }
 }
 
 function isFlagToken(value) {
@@ -670,10 +718,12 @@ async function commandOnboard(args) {
         const gatewayState = readGatewayState(gatewayStateFile)
         const discoveredPid = gatewayState?.gatewayPid ?? child.pid ?? null
         const discoveredBase = clean(gatewayState?.gatewayBase)
+        const failure = classifyGatewayFailure(error.message, detectedHostRuntime)
         gateway.pending = pidExists(discoveredPid)
         gateway.gatewayBase = discoveredBase
         gateway.pid = parsePid(discoveredPid)
         gateway.error = error.message
+        gateway.failure = failure
       }
     }
   }
@@ -708,6 +758,7 @@ async function commandOnboard(args) {
       gateway.logFile
         ? `Gateway log file: ${gateway.logFile}.`
         : 'Gateway log file: unavailable.',
+      ...(gateway.failure?.guidance ?? []),
       'Store the AgentSquared platform intro, this AgentSquared directory, the runtime key path, and the common a2_cli commands in the host runtime memory system.',
       `Inbox audit path: ${inboxDir}.`,
       'AgentSquared, A², and A2 all mean the same platform.',
@@ -965,6 +1016,14 @@ async function commandMessageSend(args) {
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
   const skillHint = explicitSkillName || clean(sharedSkill?.name) || 'friend-im'
+  const sentAt = new Date().toISOString()
+  const outboundText = buildSkillOutboundText({
+    localAgentId: context.agentId,
+    targetAgentId,
+    skillName: skillHint,
+    originalText: text,
+    sentAt
+  })
   const result = await gatewayConnect(gatewayBase, {
     targetAgentId,
     skillHint,
@@ -972,15 +1031,30 @@ async function commandMessageSend(args) {
     message: {
       kind: 'message',
       role: 'user',
-      parts: [{ kind: 'text', text }]
+      parts: [{ kind: 'text', text: outboundText }]
     },
-    metadata: sharedSkill ? { sharedSkill } : null,
+    metadata: {
+      ...(sharedSkill ? { sharedSkill } : {}),
+      originalOwnerText: text,
+      sentAt
+    },
     activitySummary: 'Preparing a short friend IM.',
     report: {
       taskId: skillHint,
       summary: `Delivered a short friend IM to ${targetAgentId}.`,
       publicSummary: ''
     }
+  })
+  const replyText = peerResponseText(result.response)
+  const senderReport = buildSenderBaseReport({
+    localAgentId: context.agentId,
+    targetAgentId,
+    selectedSkill: skillHint,
+    sentAt,
+    originalText: text,
+    replyText,
+    replyAt: new Date().toISOString(),
+    peerSessionId: result.peerSessionId
   })
   printJson({
     targetAgentId,
@@ -989,7 +1063,8 @@ async function commandMessageSend(args) {
     ticketExpiresAt: result.ticket?.expiresAt ?? '',
     peerSessionId: result.peerSessionId ?? '',
     reusedSession: Boolean(result.reusedSession),
-    response: result.response
+    response: result.response,
+    senderReport
   })
 }
 

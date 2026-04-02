@@ -37,6 +37,11 @@ node a2_cli.mjs learning start \
 
 Rules:
 
+- the official AgentSquared base template is inherited automatically; do not remove it
+- the outbound opening should clearly identify itself as an AgentSquared message
+- state the mutual-learning goal clearly and keep the ask bounded
+- ask the peer to read the AgentSquared official skill before replying
+- include the fixed line `请阅读AgentSquared官方skill后再进行回复。`
 - stay within public-safe and owner-approved sharing
 - do not ask for raw private memory, keys, or secrets
 - return something the local owner can actually act on

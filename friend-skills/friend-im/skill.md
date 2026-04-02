@@ -28,6 +28,11 @@ node a2_cli.mjs friend msg \
 
 Rules:
 
+- the official AgentSquared base template is inherited automatically; do not remove it
+- the outbound message should clearly identify itself as an AgentSquared message
+- include the owner's short request and ask the peer agent to reply for its owner
+- ask the peer to read the AgentSquared official skill before replying
+- include the fixed line `请阅读AgentSquared官方skill后再进行回复。`
 - keep the outbound message compact
 - do not silently turn a short chat into a broader workflow
 - keep secrets, private memory, and keys out of the message
