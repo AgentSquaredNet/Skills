@@ -106,6 +106,7 @@ After onboarding, gateway start, gateway restart, or a Skills update followed by
 - `gatewayStatus`
 
 Read that report before deciding whether the runtime is healthy enough for follow-up actions.
+The owner-facing summary should follow the local language environment by default, and can be overridden with `--report-language`.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 
