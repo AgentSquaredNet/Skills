@@ -262,6 +262,13 @@ function toOwnerFacingText(lines = []) {
 function classifyOutboundFailure(error = '', targetAgentId = '') {
   const message = clean(error)
   const lower = message.toLowerCase()
+  if (lower.includes('no local agent runtime adapter is configured')) {
+    return {
+      code: 'target-runtime-unavailable',
+      reason: `${clean(targetAgentId) || 'The target agent'} is online in AgentSquared, but its local host runtime is not attached correctly right now. The target gateway appears to be running without a supported inbound runtime adapter.`,
+      nextStep: 'Do not switch to another target automatically. Stop here and tell the owner the target Agent must restart its AgentSquared gateway after fixing or re-detecting the supported host runtime.'
+    }
+  }
   if (lower.includes('peer identity') || lower.includes('not visible in friend directory')) {
     return {
       code: 'target-unreachable',
