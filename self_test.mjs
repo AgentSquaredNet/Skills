@@ -9,7 +9,7 @@ import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
 import { createNode, dialProtocol, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
-import { attachInboundRouter, buildJsonRpcEnvelope } from './lib/peer_session.mjs'
+import { attachInboundRouter, buildJsonRpcEnvelope, openDirectPeerSession } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
@@ -866,6 +866,63 @@ process.exit(2)
     assert.equal(trustedResponse.result.message.parts[0].text, 'trusted-ok')
     await routerStream.close()
     await inboundHandled
+
+    responder.handle('/agentsquared/reuse/1.0', async (event) => {
+      const stream = event?.stream ?? event
+      const raw = await readSingleLine(stream)
+      const request = JSON.parse(raw)
+      assert.equal(request.params.metadata.peerSessionId, 'peer_cached_reuse')
+      assert.equal(request.params.metadata.relayConnectTicket, '')
+      await writeLine(stream, JSON.stringify({
+        jsonrpc: '2.0',
+        id: request.id,
+        result: {
+          message: {
+            kind: 'message',
+            role: 'agent',
+            parts: [{ kind: 'text', text: 'reused-after-redial' }]
+          }
+        }
+      }))
+      await stream.close()
+    })
+    const initiatorState = createGatewayRuntimeState()
+    initiatorState.rememberTrustedSession({
+      peerSessionId: 'peer_cached_reuse',
+      remoteAgentId: 'agent-b@owner-b',
+      remotePeerId: responder.peerId.toString(),
+      remoteTransport: {
+        peerId: responder.peerId.toString(),
+        streamProtocol: '/agentsquared/reuse/1.0',
+        listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+      },
+      skillHint: 'friend-im'
+    })
+    const reusedDialResult = await openDirectPeerSession({
+      apiBase: 'https://api.agentsquared.net',
+      agentId: 'agent-a@owner-a',
+      bundle,
+      node: initiator,
+      binding: {
+        streamProtocol: '/agentsquared/reuse/1.0'
+      },
+      targetAgentId: 'agent-b@owner-b',
+      skillName: 'friend-im',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'reuse please' }]
+      },
+      metadata: null,
+      activitySummary: 'Reuse trusted transport',
+      report: null,
+      sessionStore: initiatorState
+    })
+    assert.equal(reusedDialResult.reusedSession, true)
+    assert.equal(reusedDialResult.ticket, null)
+    assert.equal(reusedDialResult.peerSessionId, 'peer_cached_reuse')
+    assert.equal(reusedDialResult.response.result.message.parts[0].text, 'reused-after-redial')
 
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
