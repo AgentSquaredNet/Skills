@@ -119,6 +119,8 @@ Use this when the gateway is not running yet.
 When the host runtime is `openclaw`, owner notification should prefer the official OpenClaw runtime path:
 
 - connect through OpenClaw's native Gateway WebSocket protocol
+- only use the locally discovered OpenClaw Gateway port over loopback (`127.0.0.1` or `::1`)
+- if OpenClaw discovery resolves to a non-loopback Gateway URL, fail onboarding or gateway startup instead of connecting remotely
 - let OpenClaw's official local auto-approval succeed when available
 - if OpenClaw returns `PAIRING_REQUIRED`, automatically run `openclaw devices approve --latest` once and reconnect
 - run the inbound task through OpenClaw's real agent loop

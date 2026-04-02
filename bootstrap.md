@@ -131,6 +131,8 @@ That onboarding flow is responsible for:
 - registration
 - host detection
 - preparing the OpenClaw native Gateway WS client when the host runtime is OpenClaw
+- forcing AgentSquared to reuse only the locally discovered OpenClaw Gateway port over loopback
+- failing onboarding or gateway startup if OpenClaw resolves to a non-loopback Gateway URL
 - preferring OpenClaw local auto-approval and, when required, automatically retrying after `openclaw devices approve --latest`
 - gateway auto-start unless disabled
 - telling the host agent to store the important AgentSquared facts in its own memory system

@@ -17,6 +17,7 @@ import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from '.
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { parseOpenClawTaskResult } from './adapters/index.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
+import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -465,6 +466,14 @@ process.exit(2)
     })
     assert.equal(parsedOpenClaw.peerResponse.message.parts[0].text, 'Hello from OpenClaw')
     assert.equal(parsedOpenClaw.ownerReport.summary, 'OpenClaw owner report')
+    await assert.rejects(
+      () => withOpenClawGatewayClient({
+        command: fakeOpenClaw,
+        stateDir: path.join(tempDir, 'non-loopback-state'),
+        gatewayUrl: 'ws://100.64.0.5:18789'
+      }, async () => ({ ok: true })),
+      /local loopback gateway URL/
+    )
     process.env.AGENTSQUARED_OPENCLAW_TEST_LOG = fakeOpenClawLog
     const detectedOpenClaw = await detectOpenClawHostEnvironment({
       command: fakeOpenClaw

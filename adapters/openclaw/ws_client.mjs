@@ -243,6 +243,76 @@ function parseGatewayStatusJson(payload) {
   }
 }
 
+function isLoopbackHost(hostname) {
+  const normalized = clean(hostname).toLowerCase()
+  return normalized === '127.0.0.1' || normalized === 'localhost' || normalized === '::1' || normalized === '[::1]'
+}
+
+function normalizeGatewayProtocol(rawProtocol) {
+  const protocol = clean(rawProtocol).toLowerCase()
+  if (protocol === 'ws:' || protocol === 'wss:') {
+    return protocol
+  }
+  if (protocol === 'http:') {
+    return 'ws:'
+  }
+  if (protocol === 'https:') {
+    return 'wss:'
+  }
+  return 'ws:'
+}
+
+function parseGatewayUrl(rawGatewayUrl) {
+  const value = clean(rawGatewayUrl)
+  if (!value) {
+    return null
+  }
+  let parsed
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw new Error(`OpenClaw gateway URL was invalid: ${value}`)
+  }
+  return {
+    raw: value,
+    protocol: normalizeGatewayProtocol(parsed.protocol),
+    hostname: parsed.hostname,
+    port: parsed.port,
+    pathname: parsed.pathname || '',
+    search: parsed.search || ''
+  }
+}
+
+function resolveLoopbackGatewayUrl({
+  explicitGatewayUrl = '',
+  discoveredGatewayUrl = ''
+} = {}) {
+  const explicit = parseGatewayUrl(explicitGatewayUrl)
+  if (explicit) {
+    if (!isLoopbackHost(explicit.hostname)) {
+      throw new Error('OpenClaw host mode requires a local loopback gateway URL. Remote or tailnet OpenClaw Gateway URLs are not supported for AgentSquared onboarding or gateway startup.')
+    }
+    return explicit.raw
+  }
+
+  const discovered = parseGatewayUrl(discoveredGatewayUrl)
+  if (!discovered) {
+    return DEFAULT_GATEWAY_URL
+  }
+  const port = clean(discovered.port)
+  if (!port) {
+    throw new Error('OpenClaw gateway status did not report a local port. AgentSquared can only connect to a loopback OpenClaw Gateway.')
+  }
+  const loopbackUrl = new URL(`${discovered.protocol}//127.0.0.1:${port}`)
+  if (clean(discovered.pathname) && discovered.pathname !== '/') {
+    loopbackUrl.pathname = discovered.pathname
+  }
+  if (clean(discovered.search)) {
+    loopbackUrl.search = discovered.search
+  }
+  return loopbackUrl.toString()
+}
+
 function runProcess(command, args, {
   cwd = '',
   timeoutMs = 10000
@@ -322,8 +392,12 @@ async function resolveGatewayBootstrap({
   const discovered = await discoverGatewayBootstrap(command, cwd)
   const configPath = clean(discovered.configPath) || resolveDefaultConfigPath()
   const authFromConfig = readGatewayAuthFromConfig(configPath)
+  const resolvedGatewayUrl = resolveLoopbackGatewayUrl({
+    explicitGatewayUrl: gatewayUrl,
+    discoveredGatewayUrl: discovered.gatewayUrl
+  })
   return {
-    gatewayUrl: clean(gatewayUrl) || clean(discovered.gatewayUrl) || DEFAULT_GATEWAY_URL,
+    gatewayUrl: resolvedGatewayUrl,
     gatewayToken: clean(gatewayToken) || clean(process.env.OPENCLAW_GATEWAY_TOKEN) || authFromConfig.token,
     gatewayPassword: clean(gatewayPassword) || clean(process.env.OPENCLAW_GATEWAY_PASSWORD) || authFromConfig.password,
     authMode: authFromConfig.mode,
