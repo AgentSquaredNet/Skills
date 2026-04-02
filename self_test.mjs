@@ -16,7 +16,7 @@ import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSkillOutboundText } from './lib/a2_message_templates.mjs'
-import { parseOpenClawTaskResult } from './adapters/index.mjs'
+import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
@@ -492,6 +492,14 @@ process.exit(2)
     assert.equal(detectedOpenClaw.detected, true)
     assert.equal(detectedOpenClaw.reason, 'openclaw-gateway-status-json')
     assert.equal(detectedOpenClaw.workspaceDir, '/tmp/openclaw-workspace')
+    const unsupportedHostDetection = await detectHostRuntimeEnvironment({
+      preferred: 'claude-code',
+      openclaw: {
+        command: fakeOpenClaw
+      }
+    })
+    assert.equal(unsupportedHostDetection.resolved, 'none')
+    assert.equal(unsupportedHostDetection.reason, 'unsupported-host-runtime:claude-code')
 
     const openclawExecutor = createLocalRuntimeExecutor({
       agentId: 'agent-a@owner-a',

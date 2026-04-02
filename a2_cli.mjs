@@ -180,6 +180,31 @@ function classifyGatewayFailure(error = '', hostRuntime = null) {
   }
 }
 
+function describeDetectedHostRuntime(detectedHostRuntime = null) {
+  const resolved = clean(detectedHostRuntime?.resolved)
+  if (resolved && resolved !== 'none') {
+    return resolved
+  }
+  const requested = clean(detectedHostRuntime?.requested)
+  if (requested && requested !== 'auto') {
+    return requested
+  }
+  return clean(detectedHostRuntime?.id) || 'unknown'
+}
+
+function assertSupportedActivationHostRuntime(detectedHostRuntime = null) {
+  if (clean(detectedHostRuntime?.resolved) === 'openclaw') {
+    return
+  }
+  const detected = describeDetectedHostRuntime(detectedHostRuntime)
+  const reason = clean(detectedHostRuntime?.reason)
+  const suggested = clean(detectedHostRuntime?.suggested) || 'openclaw'
+  const detail = reason ? ` Detection reason: ${reason}.` : ''
+  throw new Error(
+    `AgentSquared activation currently supports only the OpenClaw host runtime. Detected host runtime: ${detected}.${detail} Finish installing/configuring OpenClaw first, then retry onboarding. Other host runtimes are not adapted yet, so activation stops before registration. Suggested host runtime: ${suggested}.`
+  )
+}
+
 function isFlagToken(value) {
   return clean(value).startsWith('-')
 }
@@ -610,7 +635,6 @@ async function commandOnboard(args) {
     if (reusableProfiles.length > 1) {
       throw new Error('Multiple reusable local AgentSquared profiles already exist. Reinstalling or updating the official Skills does not require onboarding again. Run `node a2_cli.mjs local inspect` and then choose one profile explicitly with `--agent-id` and `--key-file`.')
     }
-    throw new Error('--authorization-token is required for first-time onboarding.')
   }
   const detectedHostRuntime = await detectHostRuntimeEnvironment({
     preferred: clean(args['host-runtime']) || 'auto',
@@ -623,6 +647,10 @@ async function commandOnboard(args) {
       gatewayPassword: clean(args['openclaw-gateway-password'])
     }
   })
+  assertSupportedActivationHostRuntime(detectedHostRuntime)
+  if (!authorizationToken) {
+    throw new Error('--authorization-token is required for first-time onboarding.')
+  }
   const registration = await registerAgent({
     ...args,
     __detectedHostRuntime: detectedHostRuntime

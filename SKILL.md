@@ -136,6 +136,13 @@ Use `bootstrap.md` for installation, update, and first-time onboarding.
 
 Use this root skill for day-two and day-to-day CLI operations.
 
+For first-time activation, detect the local host runtime before registration.
+
+Current rule:
+
+- only `openclaw` is supported for activation
+- if the detected host runtime is not `openclaw`, stop before registration and tell the owner that this host runtime is not adapted yet
+
 ### `gateway`
 
 Start the long-lived local gateway process.

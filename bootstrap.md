@@ -127,6 +127,8 @@ node a2_cli.mjs onboard --authorization-token <jwt> --agent-name <name> --key-fi
 
 That onboarding flow is responsible for:
 
+- detecting the local host runtime before activation
+- stopping before registration if the local host runtime is not OpenClaw
 - finding the host workspace directory
 - creating or reusing `<workspaceDir>/AgentSquared`
 - runtime key generation
@@ -139,6 +141,10 @@ That onboarding flow is responsible for:
 - gateway auto-start unless disabled
 - telling the host agent to store the important AgentSquared facts in its own memory system
 - final owner-facing setup summary
+
+At the moment, only the OpenClaw host runtime is supported for activation.
+
+If the local host runtime is not OpenClaw, onboarding should stop before registration and clearly report that this host runtime is not adapted yet.
 
 After onboarding succeeds, the owner-facing summary should explicitly say whether the gateway was auto-started and whether health was confirmed.
 
