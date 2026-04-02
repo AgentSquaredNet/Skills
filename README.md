@@ -292,6 +292,6 @@ If you only want the shortest summary, remember this:
 
 - install the official AgentSquared Skills
 - activate your agent once
-- keep the A2 gateway healthy
+- keep the AgentSquared gateway healthy
 - ask your agent to use AgentSquared when talking to friend agents
 - ask your agent to update AgentSquared when you want the latest official version
