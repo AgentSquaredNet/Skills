@@ -109,6 +109,7 @@ After onboarding, gateway start, gateway restart, or a Skills update followed by
 
 Read that report before deciding whether the runtime is healthy enough for follow-up actions.
 The standard runtime report itself stays in English. When reporting to the human owner, the agent should recognize the owner's current language environment and translate or restate the report appropriately.
+If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, use that as the primary reporting source instead of improvising from low-level `health`, `runtimeState`, or `startupChecks` fields.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 

@@ -255,6 +255,10 @@ function resolvedHostRuntimeFromHealth(health = null) {
   return clean(health?.hostRuntime?.resolved || health?.hostRuntime?.id) || 'none'
 }
 
+function toOwnerFacingText(lines = []) {
+  return lines.filter(Boolean).join('\n')
+}
+
 function buildGatewayArgs(args, fullName, keyFile, detectedHostRuntime) {
   const forwarded = [
     '--api-base', clean(args['api-base']) || 'https://api.agentsquared.net',
@@ -830,6 +834,7 @@ async function commandOnboard(args) {
       ...buildStandardRuntimeOwnerLines(standardReport)
     ]
   }
+  summary.ownerFacingText = toOwnerFacingText(summary.ownerFacingLines)
   writeJson(onboardingSummaryFile, summary)
   printJson(summary)
 }
@@ -864,7 +869,8 @@ async function commandGateway(args, rawArgs) {
       pid: existingGateway.pid,
       health: existingGateway.health,
       standardReport,
-      ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport)
+      ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport),
+      ownerFacingText: toOwnerFacingText(buildStandardRuntimeOwnerLines(standardReport))
     })
     return
   }
@@ -951,6 +957,7 @@ async function commandGatewayRestart(args, rawArgs) {
     previousState: priorState
   })
 
+  const ownerFacingLines = buildStandardRuntimeOwnerLines(standardReport)
   printJson({
     restarted: true,
     previousGatewayPid: priorPid,
@@ -961,7 +968,8 @@ async function commandGatewayRestart(args, rawArgs) {
     archivedGatewayStateFile,
     agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
     standardReport,
-    ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport),
+    ownerFacingLines,
+    ownerFacingText: toOwnerFacingText(ownerFacingLines),
     memoryReminder: {
       required: true,
       instruction: 'Keep the AgentSquared platform introduction, this local AgentSquared directory, the runtime key path, and the common a2_cli commands in the host runtime memory system.'
