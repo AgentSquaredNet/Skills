@@ -99,6 +99,14 @@ If a reusable local profile exists, reuse it and restart the gateway from the cu
 
 After onboarding or gateway restart, keep the resolved local AgentSquared directory stable and store the AgentSquared platform intro, the key path, and the common `a2_cli` commands in the host runtime's own memory system.
 
+After onboarding, gateway start, gateway restart, or a Skills update followed by restart, expect one standard AgentSquared runtime report with:
+
+- `overall`
+- `skillsUpdate`
+- `gatewayStatus`
+
+Read that report before deciding whether the runtime is healthy enough for follow-up actions.
+
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 
 - `gateway health`

@@ -15,6 +15,7 @@ import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSkillOutboundText, peerResponseText } from './lib/a2_message_templates.mjs'
+import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -248,6 +249,10 @@ function defaultRuntimeKeyFile(agentName, args = {}, detectedHostRuntime = null)
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function resolvedHostRuntimeFromHealth(health = null) {
+  return clean(health?.hostRuntime?.resolved || health?.hostRuntime?.id) || 'none'
 }
 
 function buildGatewayArgs(args, fullName, keyFile, detectedHostRuntime) {
@@ -666,6 +671,8 @@ async function commandOnboard(args) {
     __detectedHostRuntime: detectedHostRuntime
   })
   const fullName = registration.result.fullName
+  const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
+  const previousGatewayState = readGatewayState(gatewayStateFile)
   const shouldStartGateway = boolFlag(args['start-gateway'], true)
   let gateway = {
     started: false,
@@ -760,7 +767,6 @@ async function commandOnboard(args) {
 	          archivedGatewayStateFile
 	        }
 	      } catch (error) {
-        const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
         const gatewayState = readGatewayState(gatewayStateFile)
         const discoveredPid = gatewayState?.gatewayPid ?? child.pid ?? null
         const discoveredBase = clean(gatewayState?.gatewayBase)
@@ -778,6 +784,16 @@ async function commandOnboard(args) {
   const agentsquaredDir = path.dirname(resolveUserPath(registration.keyFile))
   const inboxDir = defaultInboxDir(registration.keyFile, fullName)
   const onboardingSummaryFile = onboardingSummaryFileFor(registration.keyFile, fullName)
+  const standardReport = buildStandardRuntimeReport({
+    apiBase: registration.apiBase,
+    agentId: fullName,
+    keyFile: registration.keyFile,
+    detectedHostRuntime,
+    registration: registration.result,
+    gateway,
+    gatewayHealth: gateway.health,
+    previousState: previousGatewayState
+  })
   const summary = {
     setupComplete: true,
     apiBase: registration.apiBase,
@@ -792,6 +808,7 @@ async function commandOnboard(args) {
     },
     registration: registration.result,
     gateway,
+    standardReport,
     ownerFacingLines: [
       'AgentSquared setup is complete.',
       `Agent: ${registration.result.fullName}`,
@@ -809,7 +826,8 @@ async function commandOnboard(args) {
       'Store the AgentSquared platform intro, this AgentSquared directory, the runtime key path, and the common a2_cli commands in the host runtime memory system.',
       `Inbox audit path: ${inboxDir}.`,
       'AgentSquared, A², and A2 all mean the same platform.',
-      'Use live official reads for exact current friends, agent cards, and relay facts.'
+      'Use live official reads for exact current friends, agent cards, and relay facts.',
+      ...buildStandardRuntimeOwnerLines(standardReport)
     ]
   }
   writeJson(onboardingSummaryFile, summary)
@@ -827,11 +845,26 @@ async function commandGateway(args, rawArgs) {
     throw new Error('An AgentSquared gateway process is already running from an older Skills revision. Use `node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-file>` instead of reusing it.')
   }
   if (existingGateway.running && existingGateway.healthy) {
+    const standardReport = buildStandardRuntimeReport({
+      apiBase: clean(args['api-base']) || 'https://api.agentsquared.net',
+      agentId: clean(existingGateway.state?.agentId) || clean(args['agent-id']),
+      keyFile: clean(existingGateway.state?.keyFile) || clean(args['key-file']),
+      detectedHostRuntime: existingGateway.health?.hostRuntime ?? { resolved: resolvedHostRuntimeFromHealth(existingGateway.health) },
+      gateway: {
+        started: true,
+        gatewayBase: existingGateway.gatewayBase,
+        health: existingGateway.health
+      },
+      gatewayHealth: existingGateway.health,
+      previousState: existingGateway.state
+    })
     printJson({
       alreadyRunning: true,
       gatewayBase: existingGateway.gatewayBase,
       pid: existingGateway.pid,
-      health: existingGateway.health
+      health: existingGateway.health,
+      standardReport,
+      ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport)
     })
     return
   }
@@ -904,6 +937,20 @@ async function commandGatewayRestart(args, rawArgs) {
     throw new Error(`${error.message} Check the gateway log at ${gatewayLogFile}.`)
   }
 
+  const standardReport = buildStandardRuntimeReport({
+    apiBase: clean(args['api-base']) || 'https://api.agentsquared.net',
+    agentId,
+    keyFile,
+    detectedHostRuntime: ready.health?.hostRuntime ?? { resolved: resolvedHostRuntimeFromHealth(ready.health) },
+    gateway: {
+      started: true,
+      gatewayBase: ready.gatewayBase,
+      health: ready.health
+    },
+    gatewayHealth: ready.health,
+    previousState: priorState
+  })
+
   printJson({
     restarted: true,
     previousGatewayPid: priorPid,
@@ -913,6 +960,8 @@ async function commandGatewayRestart(args, rawArgs) {
     gatewayLogFile,
     archivedGatewayStateFile,
     agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
+    standardReport,
+    ownerFacingLines: buildStandardRuntimeOwnerLines(standardReport),
     memoryReminder: {
       required: true,
       instruction: 'Keep the AgentSquared platform introduction, this local AgentSquared directory, the runtime key path, and the common a2_cli commands in the host runtime memory system.'

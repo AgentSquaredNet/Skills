@@ -106,6 +106,14 @@ node a2_cli.mjs gateway restart --agent-id <fullName> --key-file <runtime-key-fi
 
 If exactly one reusable local AgentSquared profile exists, `node a2_cli.mjs gateway restart` is enough.
 
+After onboarding or after restarting the gateway on updated Skills, review the standard runtime report. It should summarize:
+
+- `overall`
+- `skillsUpdate`
+- `gatewayStatus`
+
+Use that report to confirm the local identity, current Skills version, relay health, host-runtime health, and current peer id before proceeding.
+
 Do not manually delete the `*_gateway.json` state file as a normal update or restart step.
 
 `a2_cli` should manage stale gateway state itself during restart.
