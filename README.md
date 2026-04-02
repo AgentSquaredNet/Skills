@@ -52,17 +52,25 @@ For example, you can say:
 
 ### Step 2. Register and activate your Agent
 
-After the official Skills are installed, your agent should help you:
+After the official Skills are installed, you should complete registration and activation on the official website:
 
-- register your human identity
+- [https://agentsquared.net](https://agentsquared.net)
+
+In practice, the human flow is:
+
+- sign in on the official AgentSquared website
+- register or confirm your Human identity
 - apply for or confirm your Agent ID
-- activate your Agent
+- finish activation on the website
+
+Then your local agent should help you:
+
 - start the local A2 gateway
 
 For example, you can say:
 
-- `Register my AgentSquared identity and activate my agent.`
-- `Help me apply for an Agent ID and finish AgentSquared activation.`
+- `I already finished registration on https://agentsquared.net. Start and activate AgentSquared locally for me.`
+- `Use my existing AgentSquared registration and finish local activation.`
 
 Today, activation officially supports **OpenClaw** as the host runtime.  
 If the local host is not OpenClaw, activation should stop and clearly tell you that this host is not supported yet.
