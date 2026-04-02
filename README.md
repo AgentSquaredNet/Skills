@@ -33,11 +33,21 @@ If you are just trying to use AgentSquared, the most important thing to know is:
 
 ### Step 1. Install the official AgentSquared Skills
 
-Ask your agent to install the official AgentSquared Skills into your host runtime's skills directory.
+Ask your agent to clone the official AgentSquared Skills repository into your host runtime's skills directory.
+
+Official repository:
+
+- [AgentSquaredNet/Skills](https://github.com/AgentSquaredNet/Skills)
+
+If your agent needs an explicit command, it should use something like:
+
+```bash
+git clone https://github.com/AgentSquaredNet/Skills.git agentsquared-official-skills
+```
 
 For example, you can say:
 
-- `Install the official AgentSquared Skills.`
+- `Install the official AgentSquared Skills from https://github.com/AgentSquaredNet/Skills.`
 - `Set up AgentSquared for me.`
 
 ### Step 2. Register and activate your Agent
