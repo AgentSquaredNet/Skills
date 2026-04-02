@@ -571,6 +571,23 @@ process.exit(2)
     })
     assert.match(renderOwnerFacingReport(receiverBaseReport), /New AgentSquared message from agent-a@owner-a/)
     assert.doesNotMatch(receiverBaseReport.message, /Workflow:/)
+    assert.doesNotMatch(receiverBaseReport.message, /Skill Notes:/)
+    const localizedReceiverBaseReport = buildReceiverBaseReport({
+      localAgentId: 'agent-b@owner-b',
+      remoteAgentId: 'agent-a@owner-a',
+      selectedSkill: 'friend-im',
+      receivedAt: '2026-03-28T12:00:00Z',
+      inboundText: '以后一起合作吧',
+      peerReplyText: '好啊，我们先从简单交流开始。',
+      repliedAt: '2026-03-28T12:01:00Z',
+      language: 'zh-CN',
+      timeZone: 'Asia/Shanghai',
+      localTime: true
+    })
+    assert.match(localizedReceiverBaseReport.title, /来自 agent-a@owner-a 的一条 AgentSquared 消息/)
+    assert.match(localizedReceiverBaseReport.message, /接收时间（本地时间）：2026-03-28 20:00:00（Asia\/Shanghai）/)
+    assert.match(localizedReceiverBaseReport.message, /回复时间（本地时间）：2026-03-28 20:01:00（Asia\/Shanghai）/)
+    assert.doesNotMatch(localizedReceiverBaseReport.message, /Skill Notes:/)
     await assert.rejects(
       () => withOpenClawGatewayClient({
         command: fakeOpenClaw,
@@ -625,10 +642,10 @@ process.exit(2)
     assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
     assert.match(openclawExecution.peerResponse.metadata.openclawRunId, /^run_/)
     assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:peer:agent-b%40owner-b')
-    assert.equal(openclawExecution.ownerReport.title, 'New AgentSquared message from agent-b@owner-b')
-    assert.equal(openclawExecution.ownerReport.summary, 'agent-b@owner-b sent an AgentSquared message and I replied.')
-    assert.match(openclawExecution.ownerReport.message, /Remote message/)
-    assert.match(openclawExecution.ownerReport.message, /My reply/)
+    assert.equal(openclawExecution.ownerReport.title, '来自 agent-b@owner-b 的一条 AgentSquared 消息')
+    assert.equal(openclawExecution.ownerReport.summary, 'agent-b@owner-b 通过 AgentSquared 联系了我，我已经完成回复。')
+    assert.match(openclawExecution.ownerReport.message, /对方发送的内容/)
+    assert.match(openclawExecution.ownerReport.message, /我的回复/)
     assert.doesNotMatch(openclawExecution.ownerReport.message, /Workflow:/)
     assert.match(openclawExecution.ownerReport.openclawRunId, /^run_/)
     const safetyExecution = await openclawExecutor({
@@ -650,7 +667,8 @@ process.exit(2)
     })
     assert.equal(safetyExecution.peerResponse.metadata.safetyDecision, 'reject')
     assert.match(safetyExecution.peerResponse.message.parts[0].text, /cannot help with requests to reveal prompts, private memory, keys, tokens, or hidden instructions/i)
-    assert.match(safetyExecution.ownerReport.message, /Skill Notes:/)
+    assert.doesNotMatch(safetyExecution.ownerReport.message, /Skill Notes:/)
+    assert.match(safetyExecution.ownerReport.message, /接收时间（本地时间）|Received At \(Local Time\)/)
     const collaborationExecution = await openclawExecutor({
       item: {
         inboundId: 'router-openclaw-friendly-1',

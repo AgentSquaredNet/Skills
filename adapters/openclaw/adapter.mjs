@@ -1,5 +1,5 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
-import { buildReceiverBaseReport, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
+import { buildReceiverBaseReport, inferOwnerFacingLanguage, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
 
 function clean(value) {
@@ -38,6 +38,10 @@ function ownerReportText(ownerReport) {
     return renderOwnerFacingReport(ownerReport) || clean(ownerReport.text || ownerReport.message || ownerReport.summary)
   }
   return ''
+}
+
+function localOwnerTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 }
 
 function parseOpenClawSafetyResult(text) {
@@ -525,6 +529,8 @@ export function createOpenClawAdapter({
     const remoteAgentId = clean(item?.remoteAgentId)
     const receivedAt = new Date().toISOString()
     const inboundText = peerResponseText(item?.request?.params?.message)
+    const ownerLanguage = inferOwnerFacingLanguage(inboundText)
+    const ownerTimeZone = localOwnerTimeZone()
     return withGateway(async (client, gatewayContext) => {
       const safetySessionKey = normalizeOpenClawSafetySessionKey(remoteAgentId || mailboxKey || 'unknown')
       const safetyPrompt = buildOpenClawSafetyPrompt({
@@ -574,7 +580,10 @@ export function createOpenClawAdapter({
           inboundText,
           peerReplyText,
           repliedAt: new Date().toISOString(),
-          skillSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`
+          skillSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`,
+          language: ownerLanguage,
+          timeZone: ownerTimeZone,
+          localTime: true
         })
         return {
           selectedSkill,
@@ -612,7 +621,10 @@ export function createOpenClawAdapter({
           inboundText,
           peerReplyText,
           repliedAt: new Date().toISOString(),
-          skillSummary: clean(safety.ownerSummary)
+          skillSummary: clean(safety.ownerSummary),
+          language: ownerLanguage,
+          timeZone: ownerTimeZone,
+          localTime: true
         })
         return {
           selectedSkill,
@@ -691,7 +703,10 @@ export function createOpenClawAdapter({
         inboundText,
         peerReplyText: safePeerReplyText,
         repliedAt: new Date().toISOString(),
-        skillSummary: safeOwnerSummary
+        skillSummary: safeOwnerSummary,
+        language: inferOwnerFacingLanguage(inboundText, safePeerReplyText, safeOwnerSummary),
+        timeZone: ownerTimeZone,
+        localTime: true
       })
       return {
         ...parsed,

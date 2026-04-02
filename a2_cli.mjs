@@ -276,6 +276,13 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
       nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this exact target is offline or unavailable. The owner can retry this same target later.'
     }
   }
+  if (lower.includes('missing dialaddrs')) {
+    return {
+      code: 'target-unreachable',
+      reason: `${clean(targetAgentId) || 'The target agent'} does not currently expose any dialable AgentSquared transport addresses. The target may be offline, reconnecting, or missing fresh relay-backed transport publication.`,
+      nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this exact target is not currently reachable. The owner can retry the same target later.'
+    }
+  }
   if (lower.includes('gateway transport is unavailable') || lower.includes('recovering') || lower.includes('429') || lower.includes('too many requests') || lower.includes('relay')) {
     return {
       code: 'relay-or-gateway-unavailable',
