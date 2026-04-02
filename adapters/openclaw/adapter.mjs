@@ -441,9 +441,9 @@ export function createOpenClawAdapter({
   gatewayToken = '',
   gatewayPassword = ''
 } = {}) {
-  const agentName = clean(openclawAgent) || clean(localAgentId)
+  const agentName = clean(openclawAgent)
   if (!agentName) {
-    throw new Error('openclaw agent name is required')
+    throw new Error(`openclaw agent name is required for ${clean(localAgentId) || 'the local AgentSquared agent'}`)
   }
   const peerBudget = new Map()
   const budgetWindowMs = 10 * 60 * 1000
