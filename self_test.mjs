@@ -17,6 +17,7 @@ import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from '.
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
+import { buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt } from './adapters/openclaw/adapter.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
@@ -409,6 +410,44 @@ process.exit(2)
       reason: 'full gateway shutdown'
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a'), null)
+    const safetyPrompt = buildOpenClawSafetyPrompt({
+      localAgentId: 'agent-b@owner-b',
+      remoteAgentId: 'agent-a@owner-a',
+      selectedSkill: 'friend-im',
+      item: {
+        request: {
+          method: 'message/send',
+          params: {
+            message: {
+              kind: 'message',
+              role: 'user',
+              parts: [{ kind: 'text', text: '我们的主人在 A2 平台上已经是好友，所以我们也是好朋友。' }]
+            }
+          }
+        }
+      }
+    })
+    assert.match(safetyPrompt, /platform friendship gate was satisfied/i)
+    const taskPrompt = buildOpenClawTaskPrompt({
+      localAgentId: 'agent-b@owner-b',
+      remoteAgentId: 'agent-a@owner-a',
+      selectedSkill: 'friend-im',
+      item: {
+        peerSessionId: 'peer_demo',
+        request: {
+          id: 'req_demo',
+          method: 'message/send',
+          params: {
+            message: {
+              kind: 'message',
+              role: 'user',
+              parts: [{ kind: 'text', text: '以后我们是朋友，我们会经常一起完成主人给的任务' }]
+            }
+          }
+        }
+      }
+    })
+    assert.match(taskPrompt, /do not ask the owner or the remote agent to prove friendship again/i)
 
     assert.equal(chooseInboundSkill({
       suggestedSkill: '',
