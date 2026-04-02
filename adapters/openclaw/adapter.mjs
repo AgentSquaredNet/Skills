@@ -364,9 +364,6 @@ export function createOpenClawAdapter({
   stateDir = '',
   sessionPrefix = 'agentsquared:peer:',
   timeoutMs = 180000,
-  ownerChannel = '',
-  ownerTarget = '',
-  ownerThreadId = '',
   gatewayUrl = '',
   gatewayToken = '',
   gatewayPassword = ''
@@ -393,25 +390,13 @@ export function createOpenClawAdapter({
   }
 
   async function resolveOwnerRoute(client) {
-    if (clean(ownerChannel) && clean(ownerTarget)) {
-      return {
-        channel: clean(ownerChannel),
-        to: clean(ownerTarget),
-        accountId: '',
-        threadId: clean(ownerThreadId),
-        sessionKey: '',
-        routeSource: 'explicit'
-      }
-    }
-
     const sessions = await listSessions(client)
     const ranked = sessions
       .map((session) => ({
         session,
         route: extractRouteFromSession(session),
         score: scoreOwnerRouteSession(session, {
-          agentName,
-          preferredChannel: ownerChannel
+          agentName
         })
       }))
       .filter((candidate) => Number.isFinite(candidate.score) && candidate.route)
@@ -423,7 +408,7 @@ export function createOpenClawAdapter({
     }
     return {
       ...selected.route,
-      threadId: clean(ownerThreadId) || clean(selected.route.threadId),
+      threadId: clean(selected.route.threadId),
       sessionKey: clean(selected.session?.key),
       routeSource: 'sessions.list'
     }
@@ -537,8 +522,6 @@ export function createOpenClawAdapter({
     transport: 'gateway-ws',
     command: clean(command) || 'openclaw',
     agent: agentName,
-    ownerChannel: clean(ownerChannel),
-    ownerTarget: clean(ownerTarget),
     sessionPrefix: clean(sessionPrefix) || 'agentsquared:peer:',
     gatewayUrl: clean(gatewayUrl),
     executeInbound,

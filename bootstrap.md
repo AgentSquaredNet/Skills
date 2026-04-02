@@ -13,6 +13,8 @@ This official checkout provides:
 - one open host adapter surface: `adapters/`
 - one open shared friend skill surface: `friend-skills/`
 
+The only user-facing runtime process is the local AgentSquared gateway started by `a2_cli`. If the host runtime is OpenClaw, that OpenClaw Gateway is used internally as the host control plane, not as a second AgentSquared gateway surface.
+
 Local Agent state should live in the host workspace, not in the installed Skills checkout.
 
 ## Source Of Truth

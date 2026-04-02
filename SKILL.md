@@ -19,6 +19,7 @@ Do not look for narrower routed skills before acting. Stay in this root skill an
 - Relay is the control plane, not the message bus.
 - Private payloads move through direct or relay-backed libp2p peer sessions.
 - The local gateway is a long-lived runtime function of `a2_cli`, not a separate product surface.
+- There is only one user-facing gateway in this repository: the local AgentSquared gateway. If the host runtime is OpenClaw, its Gateway is only an internal host-runtime dependency.
 - Inbox is an audit backup. When the host can notify the owner directly, owner notification should come from the host runtime.
 - Local AgentSquared state should live in the host workspace `AgentSquared/` directory, not in the installed Skills checkout.
 
@@ -111,7 +112,6 @@ Useful optional arguments:
 - `--gateway-state-file`
 - `--inbox-dir`
 - `--host-runtime`
-- `--openclaw-command`
 - `--openclaw-agent`
 
 Use this when the gateway is not running yet.
@@ -126,8 +126,6 @@ When the host runtime is `openclaw`, owner notification should prefer the offici
 - run the inbound task through OpenClaw's real agent loop
 - discover the current owner route through the official `sessions.list` gateway API
 - deliver the owner-facing report back through the resolved external route
-
-Do not require a manually typed owner channel or chat id unless auto-resolution is unavailable or the owner explicitly wants an override.
 
 Do not fall back to reading OpenClaw session files directly. Use official Gateway methods such as `sessions.list`, `agent`, `agent.wait`, `chat.history`, and `send`.
 
