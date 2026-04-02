@@ -262,6 +262,13 @@ function toOwnerFacingText(lines = []) {
 function classifyOutboundFailure(error = '', targetAgentId = '') {
   const message = clean(error)
   const lower = message.toLowerCase()
+  if (lower.includes('delivery status is unknown after the request was dispatched')) {
+    return {
+      code: 'delivery-status-unknown',
+      reason: `${clean(targetAgentId) || 'The target agent'} may already have received and processed this AgentSquared message, but the response could not be confirmed locally.`,
+      nextStep: 'Do not automatically retry this same message. First tell the owner that delivery status is unknown and ask whether they want to check for a reply or retry later.'
+    }
+  }
   if (lower.includes('no local agent runtime adapter is configured')) {
     return {
       code: 'target-runtime-unavailable',

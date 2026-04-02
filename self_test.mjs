@@ -955,6 +955,58 @@ process.exit(2)
     await routerStream.close()
     await inboundHandled
 
+    let duplicateRuns = 0
+    const duplicateHandled = (async () => {
+      const inbound = await responderState.nextInbound({ waitMs: 1000 })
+      assert.ok(inbound)
+      duplicateRuns += 1
+      responderState.respondInbound({
+        inboundId: inbound.inboundId,
+        result: {
+          message: {
+            kind: 'message',
+            role: 'agent',
+            parts: [{ kind: 'text', text: 'duplicate-ok' }]
+          }
+        }
+      })
+    })()
+    const duplicatePayload = JSON.stringify(buildJsonRpcEnvelope({
+      id: 'req_router_duplicate',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'duplicate ping' }]
+      },
+      metadata: {
+        peerSessionId: 'peer_existing',
+        from: 'assistant@owner-a',
+        to: 'agent-a@owner-a'
+      }
+    }))
+    const duplicateStream1 = await dialProtocol(initiator, {
+      streamProtocol: routerProtocol,
+      peerId: responder.peerId.toString(),
+      listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+    })
+    await writeLine(duplicateStream1, duplicatePayload)
+    const duplicateResponse1 = await readJsonMessage(duplicateStream1)
+    assert.equal(duplicateResponse1.result.message.parts[0].text, 'duplicate-ok')
+    await duplicateStream1.close()
+    await duplicateHandled
+
+    const duplicateStream2 = await dialProtocol(initiator, {
+      streamProtocol: routerProtocol,
+      peerId: responder.peerId.toString(),
+      listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+    })
+    await writeLine(duplicateStream2, duplicatePayload)
+    const duplicateResponse2 = await readJsonMessage(duplicateStream2)
+    assert.equal(duplicateResponse2.result.message.parts[0].text, 'duplicate-ok')
+    assert.equal(duplicateRuns, 1)
+    await duplicateStream2.close()
+
     responder.handle('/agentsquared/reuse/1.0', async (event) => {
       const stream = event?.stream ?? event
       const request = await readJsonMessage(stream)
@@ -1010,6 +1062,48 @@ process.exit(2)
     assert.equal(reusedDialResult.ticket, null)
     assert.equal(reusedDialResult.peerSessionId, 'peer_cached_reuse')
     assert.equal(reusedDialResult.response.result.message.parts[0].text, 'reused-after-redial')
+
+    responder.handle('/agentsquared/reuse-ambiguous/1.0', async (event) => {
+      const stream = event?.stream ?? event
+      await readJsonMessage(stream)
+      await stream.close()
+    })
+    const ambiguousState = createGatewayRuntimeState()
+    ambiguousState.rememberTrustedSession({
+      peerSessionId: 'peer_cached_ambiguous',
+      remoteAgentId: 'agent-b@owner-b',
+      remotePeerId: responder.peerId.toString(),
+      remoteTransport: {
+        peerId: responder.peerId.toString(),
+        streamProtocol: '/agentsquared/reuse-ambiguous/1.0',
+        listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+      },
+      skillHint: 'friend-im'
+    })
+    await assert.rejects(
+      () => openDirectPeerSession({
+        apiBase: 'https://api.agentsquared.net',
+        agentId: 'agent-a@owner-a',
+        bundle,
+        node: initiator,
+        binding: {
+          streamProtocol: '/agentsquared/reuse-ambiguous/1.0'
+        },
+        targetAgentId: 'agent-b@owner-b',
+        skillName: 'friend-im',
+        method: 'message/send',
+        message: {
+          kind: 'message',
+          role: 'user',
+          parts: [{ kind: 'text', text: 'ambiguous please' }]
+        },
+        metadata: null,
+        activitySummary: 'Ambiguous transport test',
+        report: null,
+        sessionStore: ambiguousState
+      }),
+      /delivery status is unknown after the request was dispatched/i
+    )
 
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
