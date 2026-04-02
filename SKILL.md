@@ -22,6 +22,7 @@ Do not look for narrower routed skills before acting. Stay in this root skill an
 - There is only one user-facing gateway in this repository: the local AgentSquared gateway. If the host runtime is OpenClaw, its Gateway is only an internal host-runtime dependency.
 - Inbox is an audit backup. When the host can notify the owner directly, owner notification should come from the host runtime.
 - Local AgentSquared state should live in the host workspace `AgentSquared/` directory, not in the installed Skills checkout.
+- The `*_gateway.json` file is an internal gateway state file managed by `a2_cli`. Do not manually delete it as a normal recovery step.
 
 ## Official Message Template Model
 

@@ -101,6 +101,16 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(resolveUserPath(filePath), 'utf8'))
 }
 
+function archiveGatewayStateFile(gatewayStateFile, reason = 'stale') {
+  const resolved = clean(gatewayStateFile) ? resolveUserPath(gatewayStateFile) : ''
+  if (!resolved || !fs.existsSync(resolved)) {
+    return ''
+  }
+  const archived = `${resolved}.${clean(reason) || 'archived'}.${Date.now()}.bak`
+  fs.renameSync(resolved, archived)
+  return archived
+}
+
 function pidExists(pid) {
   const numeric = Number.parseInt(`${pid ?? ''}`, 10)
   if (!Number.isFinite(numeric) || numeric <= 0) {
@@ -698,8 +708,8 @@ async function commandOnboard(args) {
         logFile: gatewayLogFileFor(registration.keyFile, fullName),
         pid: existingGateway.pid
       }
-    } else if (existingGateway.running) {
-      gateway = {
+	    } else if (existingGateway.running) {
+	      gateway = {
         started: false,
         launchRequested: true,
         pending: true,
@@ -707,10 +717,17 @@ async function commandOnboard(args) {
         health: existingGateway.health,
         error: 'An existing AgentSquared gateway process is already running but is not healthy yet. Use `node a2_cli.mjs gateway restart ...` instead of starting another one.',
         logFile: gatewayLogFileFor(registration.keyFile, fullName),
-        pid: existingGateway.pid
-      }
-    } else {
-      const gatewayLogFile = gatewayLogFileFor(registration.keyFile, fullName)
+	        pid: existingGateway.pid
+	      }
+	    } else {
+	      let archivedGatewayStateFile = ''
+	      if (existingGateway.stateFile && existingGateway.state) {
+	        const staleState = !existingGateway.revisionMatches || !clean(existingGateway.state?.gatewayBase)
+	        if (staleState) {
+	          archivedGatewayStateFile = archiveGatewayStateFile(existingGateway.stateFile, 'restart-required')
+	        }
+	      }
+	      const gatewayLogFile = gatewayLogFileFor(registration.keyFile, fullName)
       fs.mkdirSync(path.dirname(gatewayLogFile), { recursive: true })
       const stdoutFd = fs.openSync(gatewayLogFile, 'a')
       const stderrFd = fs.openSync(gatewayLogFile, 'a')
@@ -731,29 +748,31 @@ async function commandOnboard(args) {
           gatewayStateFile: clean(args['gateway-state-file']),
           timeoutMs: Number.parseInt(args['gateway-wait-ms'] ?? '90000', 10) || 90000
         })
-        gateway = {
-          started: true,
-          launchRequested: true,
-          pending: false,
-          gatewayBase: ready.gatewayBase,
-          health: ready.health,
-          error: '',
-          logFile: gatewayLogFile,
-          pid: child.pid ?? null
-        }
-      } catch (error) {
+	        gateway = {
+	          started: true,
+	          launchRequested: true,
+	          pending: false,
+	          gatewayBase: ready.gatewayBase,
+	          health: ready.health,
+	          error: '',
+	          logFile: gatewayLogFile,
+	          pid: child.pid ?? null,
+	          archivedGatewayStateFile
+	        }
+	      } catch (error) {
         const gatewayStateFile = clean(args['gateway-state-file']) || defaultGatewayStateFile(registration.keyFile, fullName)
         const gatewayState = readGatewayState(gatewayStateFile)
         const discoveredPid = gatewayState?.gatewayPid ?? child.pid ?? null
         const discoveredBase = clean(gatewayState?.gatewayBase)
         const failure = classifyGatewayFailure(error.message, detectedHostRuntime)
-        gateway.pending = pidExists(discoveredPid)
-        gateway.gatewayBase = discoveredBase
-        gateway.pid = parsePid(discoveredPid)
-        gateway.error = error.message
-        gateway.failure = failure
-      }
-    }
+	        gateway.pending = pidExists(discoveredPid)
+	        gateway.gatewayBase = discoveredBase
+	        gateway.pid = parsePid(discoveredPid)
+	        gateway.error = error.message
+	        gateway.failure = failure
+	        gateway.archivedGatewayStateFile = archivedGatewayStateFile
+	      }
+	    }
   }
 
   const agentsquaredDir = path.dirname(resolveUserPath(registration.keyFile))
@@ -829,6 +848,7 @@ async function commandGatewayRestart(args, rawArgs) {
   const gatewayStateFile = clean(args['gateway-state-file']) || context.gatewayStateFile
   const priorState = readGatewayState(gatewayStateFile)
   const priorPid = parsePid(priorState?.gatewayPid)
+  let archivedGatewayStateFile = ''
   const gatewayArgs = buildGatewayArgs(args, agentId, keyFile, null)
   const gatewayLogFile = gatewayLogFileFor(keyFile, agentId)
 
@@ -852,6 +872,12 @@ async function commandGatewayRestart(args, rawArgs) {
         throw error
       }
     }
+  }
+
+  const priorStateRevision = clean(priorState?.runtimeRevision)
+  const stalePriorState = priorState && (!priorStateRevision || priorStateRevision !== currentRuntimeRevision() || !clean(priorState?.gatewayBase))
+  if (stalePriorState && !pidExists(priorPid)) {
+    archivedGatewayStateFile = archiveGatewayStateFile(gatewayStateFile, 'restart-required')
   }
 
   fs.mkdirSync(path.dirname(gatewayLogFile), { recursive: true })
@@ -885,6 +911,7 @@ async function commandGatewayRestart(args, rawArgs) {
     gatewayBase: ready.gatewayBase,
     health: ready.health,
     gatewayLogFile,
+    archivedGatewayStateFile,
     agentsquaredDir: path.dirname(resolveUserPath(keyFile)),
     memoryReminder: {
       required: true,
