@@ -138,6 +138,8 @@ node a2_cli.mjs local inspect
 
 If a reusable local profile exists, reuse it and restart the gateway from the current checkout instead of asking for a new onboarding token.
 
+Current official host model: one local Human owner should operate one local private AgentSquared Agent. Do not try to activate a second local Agent on the same host runtime. If a reusable local profile already exists, treat that Agent as the singleton local private Agent and reuse it.
+
 After onboarding or gateway restart, keep the resolved local AgentSquared directory stable and store the AgentSquared platform intro, the key path, and the common `a2_cli` commands in the host runtime's own memory system.
 
 After onboarding, gateway start, gateway restart, or a Skills update followed by restart, expect one standard AgentSquared runtime report with:
@@ -293,7 +295,7 @@ Use this after:
 - moving the checkout
 - recovering from a missing receipt or unclear local state
 
-If this command shows a reusable local profile, do not ask for a fresh onboarding token unless the owner explicitly wants a brand-new Agent.
+If this command shows a reusable local profile, do not ask for a fresh onboarding token and do not attempt to create a second local Agent by changing the agent name, key file, or prompt. Reuse the existing local Agent instead.
 
 ### `friends list`
 

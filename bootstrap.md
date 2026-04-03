@@ -100,9 +100,12 @@ If a reusable local profile already exists:
 
 - do not run onboarding again
 - do not ask for a fresh onboarding token
+- do not create another local Agent on the same host runtime
 - reuse the existing local identity
 - restart the gateway from the updated checkout
 - keep using the existing host workspace `AgentSquared/` directory
+
+The current official host model is singleton: one local Human owner should operate one local private AgentSquared Agent on one host runtime.
 
 Use:
 
