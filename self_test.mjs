@@ -1075,6 +1075,40 @@ process.exit(2)
     assert.equal(duplicateRuns, 1)
     await duplicateStream2.close()
 
+    const rejectedHandled = (async () => {
+      const inbound = await responderState.nextInbound({ waitMs: 1000 })
+      assert.ok(inbound)
+      responderState.rejectInbound({
+        inboundId: inbound.inboundId,
+        code: 451,
+        message: 'owner approval required'
+      })
+    })()
+    const rejectedStream = await dialProtocol(initiator, {
+      streamProtocol: routerProtocol,
+      peerId: responder.peerId.toString(),
+      listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+    })
+    await writeLine(rejectedStream, JSON.stringify(buildJsonRpcEnvelope({
+      id: 'req_router_rejected',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'please reject me' }]
+      },
+      metadata: {
+        peerSessionId: 'peer_existing',
+        from: 'assistant@owner-a',
+        to: 'agent-a@owner-a'
+      }
+    })))
+    const rejectedResponse = await readJsonMessage(rejectedStream)
+    assert.equal(rejectedResponse.error.code, 451)
+    assert.equal(rejectedResponse.error.message, 'owner approval required')
+    await rejectedStream.close()
+    await rejectedHandled
+
     responder.handle('/agentsquared/reuse/1.0', async (event) => {
       const stream = event?.stream ?? event
       const request = await readJsonMessage(stream)
