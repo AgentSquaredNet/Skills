@@ -2,9 +2,11 @@
 
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
@@ -20,6 +22,9 @@ import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapter
 import { buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt } from './adapters/openclaw/adapter.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
+
+const __filename = fileURLToPath(import.meta.url)
+const ROOT = path.dirname(__filename)
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -856,6 +861,43 @@ process.exit(2)
     assert.match(openclawLog, /"args":\["gateway","status","--json"\],"logLevel":"error"/)
     assert.match(openclawLog, /"args":\["status","--json"\],"logLevel":"error"/)
     assert.match(openclawLog, /"args":\["devices","approve","--latest","--json"(?:,[^\]]+)?\],"logLevel":"error"/)
+
+    const cliHome = path.join(tempDir, 'cli-home')
+    const cliProfileDir = path.join(cliHome, '.agentsquared')
+    fs.mkdirSync(cliProfileDir, { recursive: true })
+    fs.writeFileSync(path.join(cliProfileDir, 'assistant_owner-alpha_runtime_key.json'), JSON.stringify({
+      keyType: 2,
+      publicKey: 'test-public-key'
+    }, null, 2))
+    fs.writeFileSync(path.join(cliProfileDir, 'assistant_owner-alpha_gateway.json'), JSON.stringify({
+      agentId: 'assistant@owner-alpha',
+      keyFile: path.join(cliProfileDir, 'assistant_owner-alpha_runtime_key.json'),
+      gatewayBase: 'http://127.0.0.1:39953'
+    }, null, 2))
+    const onboardingToken = [
+      Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url'),
+      Buffer.from(JSON.stringify({
+        hnm: 'owner-alpha',
+        anm: 'assistant'
+      })).toString('base64url'),
+      'signature'
+    ].join('.')
+    const cliOnboard = spawnSync(process.execPath, [
+      path.join(ROOT, 'a2_cli.mjs'),
+      'onboard',
+      '--authorization-token',
+      onboardingToken
+    ], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        HOME: cliHome
+      },
+      encoding: 'utf8'
+    })
+    assert.equal(cliOnboard.status, 1)
+    assert.match(cliOnboard.stderr, /already activated locally for assistant@owner-alpha/i)
+    assert.doesNotMatch(cliOnboard.stderr, /--authorization-token is required for first-time onboarding/i)
 
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')

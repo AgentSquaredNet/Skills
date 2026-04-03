@@ -25,6 +25,24 @@ function clean(value) {
   return `${value ?? ''}`.trim()
 }
 
+function parseJwtPayloadUnverified(token) {
+  const serialized = clean(token)
+  if (!serialized) {
+    return null
+  }
+  const parts = serialized.split('.')
+  if (parts.length < 2) {
+    return null
+  }
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'))
+  } catch {
+    return null
+  }
+}
+
 function printJson(payload) {
   console.log(JSON.stringify(payload, null, 2))
 }
@@ -492,6 +510,46 @@ function findSingletonAgentProfile() {
   return null
 }
 
+function reusableLocalProfiles() {
+  return discoverLocalAgentProfiles().filter((item) => item.agentId && item.keyFile)
+}
+
+function onboardingTokenTargetAgentId(authorizationToken) {
+  const payload = parseJwtPayloadUnverified(authorizationToken)
+  const humanName = clean(payload?.hnm)
+  const agentName = clean(payload?.anm)
+  if (!humanName || !agentName) {
+    return ''
+  }
+  return `${agentName}@${humanName}`
+}
+
+function assertNoExistingLocalActivation(authorizationToken) {
+  const profiles = reusableLocalProfiles()
+  if (profiles.length === 0) {
+    return
+  }
+
+  const tokenTargetAgentId = onboardingTokenTargetAgentId(authorizationToken)
+  if (profiles.length === 1) {
+    const profile = profiles[0]
+    const sameAgent = tokenTargetAgentId && tokenTargetAgentId === profile.agentId
+    if (sameAgent) {
+      throw new Error(`AgentSquared is already activated locally for ${profile.agentId}. Do not activate the same agent again. Use \`node a2_cli.mjs local inspect\` and then \`node a2_cli.mjs gateway restart --agent-id ${profile.agentId} --key-file ${profile.keyFile}\`.`)
+    }
+    throw new Error(`A reusable local AgentSquared profile already exists for ${profile.agentId}. Reinstalling or updating the official Skills does not require onboarding again. Use \`node a2_cli.mjs local inspect\` and then \`node a2_cli.mjs gateway restart --agent-id ${profile.agentId} --key-file ${profile.keyFile}\`.`)
+  }
+
+  if (tokenTargetAgentId) {
+    const matchingProfile = profiles.find((item) => item.agentId === tokenTargetAgentId)
+    if (matchingProfile) {
+      throw new Error(`AgentSquared is already activated locally for ${matchingProfile.agentId}. Do not activate the same agent again. Run \`node a2_cli.mjs local inspect\` and then choose the existing profile instead of onboarding again.`)
+    }
+  }
+
+  throw new Error('Multiple reusable local AgentSquared profiles already exist. Reinstalling or updating the official Skills does not require onboarding again. Run `node a2_cli.mjs local inspect` and then choose one profile explicitly with `--agent-id` and `--key-file`.')
+}
+
 function findSingletonGatewayState() {
   const candidates = discoverGatewayStateFiles(defaultGatewaySearchRoots())
   const valid = []
@@ -691,15 +749,7 @@ async function registerAgent(args) {
 
 async function commandOnboard(args) {
   const authorizationToken = clean(args['authorization-token'])
-  if (!authorizationToken) {
-    const reusableProfiles = discoverLocalAgentProfiles().filter((item) => item.agentId && item.keyFile)
-    if (reusableProfiles.length === 1) {
-      throw new Error(`A reusable local AgentSquared profile already exists for ${reusableProfiles[0].agentId}. Reinstalling or updating the official Skills does not require onboarding again. Use \`node a2_cli.mjs local inspect\` and then \`node a2_cli.mjs gateway restart --agent-id ${reusableProfiles[0].agentId} --key-file ${reusableProfiles[0].keyFile}\`.`)
-    }
-    if (reusableProfiles.length > 1) {
-      throw new Error('Multiple reusable local AgentSquared profiles already exist. Reinstalling or updating the official Skills does not require onboarding again. Run `node a2_cli.mjs local inspect` and then choose one profile explicitly with `--agent-id` and `--key-file`.')
-    }
-  }
+  assertNoExistingLocalActivation(authorizationToken)
   const detectedHostRuntime = await detectHostRuntimeEnvironment({
     preferred: clean(args['host-runtime']) || 'auto',
     openclaw: {
