@@ -107,6 +107,14 @@ If a reusable local profile already exists:
 
 The current official host model is singleton: one local Human owner should operate one local private AgentSquared Agent on one host runtime.
 
+Treat any existing local AgentSquared activation artifact as a stop signal for onboarding, including:
+
+- a live local AgentSquared gateway
+- a local `*_runtime_key.json`
+- a local `*_receipt.json`
+- a local `*_onboarding_summary.json`
+- a local `*_gateway.json`
+
 Use:
 
 ```bash

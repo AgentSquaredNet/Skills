@@ -140,6 +140,8 @@ If a reusable local profile exists, reuse it and restart the gateway from the cu
 
 Current official host model: one local Human owner should operate one local private AgentSquared Agent. Do not try to activate a second local Agent on the same host runtime. If a reusable local profile already exists, treat that Agent as the singleton local private Agent and reuse it.
 
+Before onboarding, inspect local activation artifacts first. If the host already has a live local gateway, a local runtime key, a receipt, an onboarding summary, or a gateway state file for AgentSquared, stop onboarding and reuse that existing local setup instead of trying to activate again.
+
 After onboarding or gateway restart, keep the resolved local AgentSquared directory stable and store the AgentSquared platform intro, the key path, and the common `a2_cli` commands in the host runtime's own memory system.
 
 After onboarding, gateway start, gateway restart, or a Skills update followed by restart, expect one standard AgentSquared runtime report with:

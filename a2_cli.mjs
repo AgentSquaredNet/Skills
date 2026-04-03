@@ -514,6 +514,16 @@ function reusableLocalProfiles() {
   return discoverLocalAgentProfiles().filter((item) => item.agentId && item.keyFile)
 }
 
+function localActivationArtifacts() {
+  return discoverLocalAgentProfiles().filter((item) =>
+    item.gatewayRunning ||
+    clean(item.gatewayStateFile) ||
+    clean(item.keyFile) ||
+    clean(item.receiptFile) ||
+    clean(item.onboardingSummaryFile)
+  )
+}
+
 function onboardingTokenTargetAgentId(authorizationToken) {
   const payload = parseJwtPayloadUnverified(authorizationToken)
   const humanName = clean(payload?.hnm)
@@ -525,12 +535,19 @@ function onboardingTokenTargetAgentId(authorizationToken) {
 }
 
 function assertNoExistingLocalActivation(authorizationToken) {
-  const profiles = reusableLocalProfiles()
-  if (profiles.length === 0) {
+  const artifacts = localActivationArtifacts()
+  if (artifacts.length === 0) {
     return
   }
 
+  const profiles = artifacts.filter((item) => item.agentId && item.keyFile)
   const tokenTargetAgentId = onboardingTokenTargetAgentId(authorizationToken)
+  if (profiles.length === 0) {
+    const artifact = artifacts[0]
+    const artifactPath = clean(artifact.gatewayStateFile) || clean(artifact.keyFile) || clean(artifact.receiptFile) || clean(artifact.onboardingSummaryFile)
+    throw new Error(`Local AgentSquared activation artifacts already exist${artifactPath ? ` at ${artifactPath}` : ''}. Do not start onboarding again on this host runtime. Reuse the existing local setup or clean up the abandoned local activation intentionally before retrying.`)
+  }
+
   if (profiles.length === 1) {
     const profile = profiles[0]
     const sameAgent = tokenTargetAgentId && tokenTargetAgentId === profile.agentId

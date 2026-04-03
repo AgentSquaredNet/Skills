@@ -899,6 +899,29 @@ process.exit(2)
     assert.match(cliOnboard.stderr, /already activated locally for assistant@owner-alpha/i)
     assert.doesNotMatch(cliOnboard.stderr, /--authorization-token is required for first-time onboarding/i)
 
+    const artifactOnlyHome = path.join(tempDir, 'cli-artifact-home')
+    const artifactOnlyDir = path.join(artifactOnlyHome, '.agentsquared')
+    fs.mkdirSync(artifactOnlyDir, { recursive: true })
+    fs.writeFileSync(path.join(artifactOnlyDir, 'orphan_runtime_key.json'), JSON.stringify({
+      keyType: 2,
+      publicKey: 'orphan-public-key'
+    }, null, 2))
+    const cliOnboardWithArtifactOnly = spawnSync(process.execPath, [
+      path.join(ROOT, 'a2_cli.mjs'),
+      'onboard',
+      '--authorization-token',
+      onboardingToken
+    ], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        HOME: artifactOnlyHome
+      },
+      encoding: 'utf8'
+    })
+    assert.equal(cliOnboardWithArtifactOnly.status, 1)
+    assert.match(cliOnboardWithArtifactOnly.stderr, /Local AgentSquared activation artifacts already exist/i)
+
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')
     })
