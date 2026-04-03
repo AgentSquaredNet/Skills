@@ -1,71 +1,27 @@
-import { spawn } from 'node:child_process'
+import { parseOpenClawJson, runOpenClawCli } from './cli.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
-}
-
-function parseJson(text) {
-  const trimmed = clean(text)
-  if (!trimmed) {
-    return null
-  }
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    return null
-  }
 }
 
 function runProbe(command, args, {
   cwd = '',
   timeoutMs = 3000
 } = {}) {
-  const normalizedCommand = clean(command) || 'openclaw'
-  return new Promise((resolve) => {
-    const child = spawn(normalizedCommand, args, {
-      cwd: clean(cwd) || undefined,
-      stdio: ['ignore', 'pipe', 'pipe']
-    })
-    let stdout = ''
-    let stderr = ''
-    let settled = false
-    const timer = setTimeout(() => {
-      if (settled) {
-        return
+  return runOpenClawCli(command, args, { cwd, timeoutMs })
+    .then((result) => ({
+      ok: true,
+      reason: 'ok',
+      stdout: result.stdout,
+      stderr: result.stderr
+    }))
+    .catch((error) => {
+      const message = clean(error?.message)
+      if (message.includes('timed out after')) {
+        return { ok: false, reason: 'timeout', stdout: '', stderr: message }
       }
-      settled = true
-      child.kill('SIGTERM')
-      resolve({ ok: false, reason: 'timeout', stdout, stderr })
-    }, Math.max(500, timeoutMs))
-
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk.toString()
+      return { ok: false, reason: message || 'spawn-error', stdout: '', stderr: message }
     })
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString()
-    })
-    child.on('error', (error) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      clearTimeout(timer)
-      resolve({ ok: false, reason: clean(error?.message) || 'spawn-error', stdout, stderr })
-    })
-    child.on('close', (code) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      clearTimeout(timer)
-      resolve({
-        ok: code === 0,
-        reason: code === 0 ? 'ok' : `exit-${code}`,
-        stdout: stdout.trim(),
-        stderr: stderr.trim()
-      })
-    })
-  })
 }
 
 export async function detectOpenClawHostEnvironment({
@@ -89,14 +45,14 @@ export async function detectOpenClawHostEnvironment({
     statusArgs.push('--password', clean(gatewayPassword))
   }
   const status = await runProbe(command, ['status', '--json'], { cwd, timeoutMs: 10000 })
-  const statusJson = parseJson(status.stdout)
+  const statusJson = parseOpenClawJson(status.stdout)
   const workspaceDir = clean(
     statusJson?.agents?.agents?.find?.((item) => clean(item?.workspaceDir))?.workspaceDir
       ?? statusJson?.agents?.agents?.[0]?.workspaceDir
   )
 
   const gatewayStatus = await runProbe(command, statusArgs, { cwd, timeoutMs: 10000 })
-  const gatewayStatusJson = parseJson(gatewayStatus.stdout)
+  const gatewayStatusJson = parseOpenClawJson(gatewayStatus.stdout)
   if (gatewayStatus.ok && gatewayStatusJson) {
     return {
       id: 'openclaw',
@@ -134,7 +90,7 @@ export async function detectOpenClawHostEnvironment({
     healthArgs.push('--password', clean(gatewayPassword))
   }
   const gatewayHealth = await runProbe(command, healthArgs, { cwd, timeoutMs: 10000 })
-  const gatewayHealthJson = parseJson(gatewayHealth.stdout)
+  const gatewayHealthJson = parseOpenClawJson(gatewayHealth.stdout)
   if (gatewayHealth.ok && gatewayHealthJson) {
     return {
       id: 'openclaw',

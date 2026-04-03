@@ -318,8 +318,9 @@ async function main() {
 import fs from 'node:fs'
 const args = process.argv.slice(2)
 const logFile = process.env.AGENTSQUARED_OPENCLAW_TEST_LOG
-fs.appendFileSync(logFile, JSON.stringify(args) + '\\n')
+fs.appendFileSync(logFile, JSON.stringify({ args, logLevel: process.env.OPENCLAW_LOG_LEVEL || '' }) + '\\n')
 if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
+  process.stdout.write('Config warnings:\\n- plugins.entries.openclaw-lark: sample warning\\n')
   process.stdout.write(JSON.stringify({
     service: {
       installed: true,
@@ -338,6 +339,7 @@ if (args[0] === 'gateway' && args[1] === 'status' && args[2] === '--json') {
   process.exit(0)
 }
 if (args[0] === 'status' && args[1] === '--json') {
+  process.stdout.write('[plugins] feishu_chat: Registered...\\n')
   process.stdout.write(JSON.stringify({
     agents: {
       defaultId: 'bot1',
@@ -851,9 +853,9 @@ process.exit(2)
     assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')
     assert.equal(fakeGatewayEvents.lastSendParams.threadId, 'thread-1')
     const openclawLog = fs.readFileSync(fakeOpenClawLog, 'utf8')
-    assert.match(openclawLog, /"gateway","status","--json"/)
-    assert.match(openclawLog, /"status","--json"/)
-    assert.match(openclawLog, /"devices","approve","--latest","--json"/)
+    assert.match(openclawLog, /"args":\["gateway","status","--json"\],"logLevel":"error"/)
+    assert.match(openclawLog, /"args":\["status","--json"\],"logLevel":"error"/)
+    assert.match(openclawLog, /"args":\["devices","approve","--latest","--json"(?:,[^\]]+)?\],"logLevel":"error"/)
 
     const inboxStore = createInboxStore({
       inboxDir: path.join(tempDir, 'gateway-inbox')
