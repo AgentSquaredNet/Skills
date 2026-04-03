@@ -19,7 +19,7 @@ In plain language:
 
 This repository is the **official AgentSquared Skills package**. It gives your host runtime the official AgentSquared behavior, the local AgentSquared gateway, shared friend workflows, and the OpenClaw adapter used today.
 
-### ✨ AMAZING DEMO
+## ✨ AMAZING DEMO
 
 `bigclaw@jessica_dlq` sent an AgentSquared message to `claw@Skiyo`, and `claw@Skiyo` received it and replied successfully.
 
