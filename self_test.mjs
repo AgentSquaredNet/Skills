@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
+import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,7 +12,7 @@ import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
 import { createNode, dialProtocol, readJsonMessage, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
-import { attachInboundRouter, buildJsonRpcEnvelope, openDirectPeerSession } from './lib/peer_session.mjs'
+import { attachInboundRouter, buildJsonRpcEnvelope, createConnectTicketWithRecovery, openDirectPeerSession } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
@@ -1129,6 +1130,91 @@ process.exit(2)
     assert.equal(reusedDialResult.ticket, null)
     assert.equal(reusedDialResult.peerSessionId, 'peer_cached_reuse')
     assert.equal(reusedDialResult.response.result.message.parts[0].text, 'reused-after-redial')
+
+    const retryTransport = requireListeningTransport(responder, {
+      binding: 'libp2p-a2a-jsonrpc',
+      streamProtocol: '/agentsquared/retry/1.0',
+      a2aProtocolVersion: 'a2a-jsonrpc-custom-binding/2026-03'
+    })
+    let retryConnectAttempts = 0
+    let retryPresencePublishes = 0
+    const relayStub = http.createServer(async (req, res) => {
+      const chunks = []
+      for await (const chunk of req) {
+        chunks.push(Buffer.from(chunk))
+      }
+      const body = chunks.length > 0 ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}
+      if (req.method === 'POST' && req.url === '/api/relay/online') {
+        retryPresencePublishes += 1
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          agentId: body.agentId,
+          presence: {
+            peerId: retryTransport.peerId,
+            listenAddrs: retryTransport.listenAddrs,
+            relayAddrs: retryTransport.relayAddrs,
+            supportedBindings: retryTransport.supportedBindings,
+            streamProtocol: retryTransport.streamProtocol,
+            a2aProtocolVersion: retryTransport.a2aProtocolVersion,
+            lastActiveAt: new Date().toISOString()
+          }
+        }))
+        return
+      }
+      if (req.method === 'POST' && req.url === '/api/relay/connect-tickets') {
+        retryConnectAttempts += 1
+        if (retryConnectAttempts === 1) {
+          res.writeHead(409, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({
+            error: { code: 'TARGET_OFFLINE', message: 'Target agent is not currently online.' }
+          }))
+          return
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          ticket: 'eyJhbGciOiJub25lIn0.eyJ0aWQiOiJyZXRyeS10aWNrZXQifQ.',
+          targetTransport: {
+            peerId: retryTransport.peerId,
+            dialAddrs: retryTransport.listenAddrs,
+            listenAddrs: retryTransport.listenAddrs,
+            relayAddrs: retryTransport.relayAddrs,
+            supportedBindings: retryTransport.supportedBindings,
+            streamProtocol: retryTransport.streamProtocol,
+            a2aProtocolVersion: retryTransport.a2aProtocolVersion
+          }
+        }))
+        return
+      }
+      res.writeHead(404, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: { message: 'not found' } }))
+    })
+    await new Promise((resolve) => relayStub.listen(0, '127.0.0.1', resolve))
+    const relayPort = relayStub.address().port
+    try {
+      const retryResult = await createConnectTicketWithRecovery({
+        apiBase: `http://127.0.0.1:${relayPort}`,
+        agentId: 'agent-a@owner-a',
+        bundle,
+        node: initiator,
+        binding: {
+          streamProtocol: '/agentsquared/retry/1.0',
+        },
+        targetAgentId: 'agent-b@owner-b',
+        skillName: 'friend-im',
+        transport: retryTransport,
+        cachedTransport: null,
+        republishPresence: async () => {
+          retryPresencePublishes += 1
+        },
+        retryDelayMs: 0
+      })
+      assert.equal(retryConnectAttempts, 2)
+      assert.equal(retryPresencePublishes, 1)
+      assert.equal(retryResult.ticket.ticket, 'eyJhbGciOiJub25lIn0.eyJ0aWQiOiJyZXRyeS10aWNrZXQifQ.')
+      assert.equal(retryResult.targetTransport.peerId, retryTransport.peerId)
+    } finally {
+      await new Promise((resolve) => relayStub.close(resolve))
+    }
 
     responder.handle('/agentsquared/reuse-ambiguous/1.0', async (event) => {
       const stream = event?.stream ?? event
