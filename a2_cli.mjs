@@ -19,6 +19,7 @@ import {
   assertNoExistingLocalActivation,
   buildGatewayArgs,
   discoverLocalAgentProfiles,
+  ensureGatewayForUse,
   inspectExistingGateway,
   resolveAgentContext,
   resolvedHostRuntimeFromHealth,
@@ -792,13 +793,13 @@ async function commandSessionReport(args) {
 }
 
 async function commandPeerOpen(args) {
-  const context = resolveAgentContext(args)
-  const gatewayBase = resolveGatewayBase({
-    gatewayBase: args['gateway-base'],
-    keyFile: context.keyFile,
-    agentId: context.agentId,
-    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
-  })
+  const gateway = await ensureGatewayForUse(args)
+  const context = {
+    agentId: gateway.agentId,
+    keyFile: gateway.keyFile,
+    gatewayStateFile: gateway.gatewayStateFile
+  }
+  const gatewayBase = gateway.gatewayBase
   const payload = {
     targetAgentId: requireArg(args['target-agent'], '--target-agent is required'),
     skillHint: clean(args['skill-hint'] || args['skill-name']),
@@ -829,13 +830,13 @@ async function commandPeerOpen(args) {
 }
 
 async function commandMessageSend(args) {
-  const context = resolveAgentContext(args)
-  const gatewayBase = resolveGatewayBase({
-    gatewayBase: args['gateway-base'],
-    keyFile: context.keyFile,
-    agentId: context.agentId,
-    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
-  })
+  const gateway = await ensureGatewayForUse(args)
+  const context = {
+    agentId: gateway.agentId,
+    keyFile: gateway.keyFile,
+    gatewayStateFile: gateway.gatewayStateFile
+  }
+  const gatewayBase = gateway.gatewayBase
   const targetAgentId = requireArg(args['target-agent'], '--target-agent is required')
   const text = requireArg(args.text, '--text is required')
   const ownerLanguage = inferOwnerFacingLanguage(text)
@@ -943,13 +944,8 @@ async function commandLearningStart(args) {
 }
 
 async function commandInboxShow(args) {
-  const context = resolveAgentContext(args)
-  const gatewayBase = resolveGatewayBase({
-    gatewayBase: args['gateway-base'],
-    keyFile: context.keyFile,
-    agentId: context.agentId,
-    gatewayStateFile: clean(args['gateway-state-file']) || context.gatewayStateFile
-  })
+  const gateway = await ensureGatewayForUse(args)
+  const gatewayBase = gateway.gatewayBase
   printJson(await gatewayInboxIndex(gatewayBase))
 }
 

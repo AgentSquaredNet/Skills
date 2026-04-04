@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
@@ -17,6 +17,7 @@ import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { ensureGatewayForUse } from './lib/gateway_lifecycle.mjs'
+import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
@@ -468,6 +469,50 @@ process.exit(2)
         fs.readdirSync(lifecycleDir).some((name) => name.startsWith('demo_owner_gateway.json.restart-required.')),
         'stale gateway state should be archived before auto-start'
       )
+    }
+    {
+      const lifecycleDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-lifecycle-unhealthy-'))
+      const keyFile = path.join(lifecycleDir, 'demo_runtime_key.json')
+      const gatewayStateFile = path.join(lifecycleDir, 'demo_owner_gateway.json')
+      const holder = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 15000)'], { detached: true, stdio: 'ignore' })
+      holder.unref()
+      const runningPid = holder.pid
+      fs.writeFileSync(keyFile, '{}\n')
+      fs.writeFileSync(gatewayStateFile, JSON.stringify({
+        agentId: 'demo@owner',
+        keyFile,
+        gatewayBase: 'http://127.0.0.1:40123',
+        gatewayPid: runningPid,
+        runtimeRevision: currentRuntimeRevision()
+      }, null, 2))
+
+      let spawned = 0
+      let stoppedPid = null
+      const ensured = await ensureGatewayForUse({
+        'agent-id': 'demo@owner',
+        'key-file': keyFile,
+        'gateway-state-file': gatewayStateFile
+      }, {
+        searchRoots: [lifecycleDir],
+        spawnGatewayProcess: async () => {
+          spawned += 1
+          return { pid: 525252 }
+        },
+        stopGatewayProcess: async (pid) => {
+          stoppedPid = pid
+        },
+        waitForReady: async () => ({
+          gatewayBase: 'http://127.0.0.1:40124',
+          health: { peerId: 'peer-ready' }
+        })
+      })
+      assert.equal(stoppedPid, runningPid)
+      assert.equal(spawned, 1)
+      assert.equal(ensured.autoStarted, true)
+      assert.equal(ensured.gatewayBase, 'http://127.0.0.1:40124')
+      try {
+        process.kill(runningPid, 'SIGTERM')
+      } catch {}
     }
     const safetyPrompt = buildOpenClawSafetyPrompt({
       localAgentId: 'agent-b@owner-b',
