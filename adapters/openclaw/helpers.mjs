@@ -164,7 +164,7 @@ function scoreOwnerRouteSession(session, {
   if (!key.startsWith(`agent:${normalizedAgentName}:`)) {
     return Number.NEGATIVE_INFINITY
   }
-  if (key.startsWith(`agent:${normalizedAgentName}:agentsquared:peer:`)) {
+  if (key.startsWith(`agent:${normalizedAgentName}:agentsquared:`)) {
     return Number.NEGATIVE_INFINITY
   }
   if (!isExternalOwnerChannel(route.channel)) {
@@ -203,12 +203,12 @@ export function stableId(prefix = 'a2', ...parts) {
   return `${clean(prefix) || 'a2'}-${hash.digest('hex').slice(0, 24)}`
 }
 
-export function normalizeOpenClawSessionKey(remoteAgentId, prefix = 'agentsquared:peer:') {
-  return `${clean(prefix)}${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
+export function normalizeOpenClawSessionKey(localAgentId, remoteAgentId, prefix = 'agentsquared:') {
+  return `${clean(prefix)}${encodeURIComponent(clean(localAgentId).toLowerCase())}:${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
 }
 
-export function normalizeOpenClawSafetySessionKey(remoteAgentId, prefix = 'agentsquared:safety:') {
-  return `${clean(prefix)}${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
+export function normalizeOpenClawSafetySessionKey(localAgentId, remoteAgentId, prefix = 'agentsquared:safety:') {
+  return `${clean(prefix)}${encodeURIComponent(clean(localAgentId).toLowerCase())}:${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
 }
 
 export function ownerReportText(ownerReport) {

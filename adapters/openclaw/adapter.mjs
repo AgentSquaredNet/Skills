@@ -51,7 +51,7 @@ export function createOpenClawAdapter({
   command = 'openclaw',
   cwd = '',
   stateDir = '',
-  sessionPrefix = 'agentsquared:peer:',
+  sessionPrefix = 'agentsquared:',
   timeoutMs = 180000,
   gatewayUrl = '',
   gatewayToken = '',
@@ -133,7 +133,7 @@ export function createOpenClawAdapter({
     const ownerLanguage = inferOwnerFacingLanguage(displayInboundText, inboundText)
     const ownerTimeZone = localOwnerTimeZone()
     return withGateway(async (client, gatewayContext) => {
-      const safetySessionKey = normalizeOpenClawSafetySessionKey(remoteAgentId || mailboxKey || 'unknown')
+      const safetySessionKey = normalizeOpenClawSafetySessionKey(localAgentId, remoteAgentId || mailboxKey || 'unknown')
       const safetyPrompt = buildOpenClawSafetyPrompt({
         localAgentId,
         remoteAgentId,
@@ -254,7 +254,7 @@ export function createOpenClawAdapter({
         }
       }
 
-      const sessionKey = normalizeOpenClawSessionKey(remoteAgentId || mailboxKey || 'unknown', sessionPrefix)
+      const sessionKey = normalizeOpenClawSessionKey(localAgentId, remoteAgentId || mailboxKey || 'unknown', sessionPrefix)
       const prompt = buildOpenClawTaskPrompt({
         localAgentId,
         remoteAgentId,
@@ -389,7 +389,7 @@ export function createOpenClawAdapter({
     transport: 'gateway-ws',
     command: clean(command) || 'openclaw',
     agent: agentName,
-    sessionPrefix: clean(sessionPrefix) || 'agentsquared:peer:',
+    sessionPrefix: clean(sessionPrefix) || 'agentsquared:',
     gatewayUrl: clean(gatewayUrl),
     preflight,
     executeInbound,

@@ -16,6 +16,7 @@ import { attachInboundRouter, buildJsonRpcEnvelope, createConnectTicketWithRecov
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
+import { ensureGatewayForUse } from './lib/gateway_lifecycle.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
@@ -76,7 +77,7 @@ async function main() {
   const fakeOpenClawReplyJson = JSON.stringify({
     selectedSkill: 'friend-im',
     peerResponse: 'I am an AI agent representing my owner.',
-    ownerReport: 'agentsquared:peer:agent-b%40owner-b handled the inbound question.'
+    ownerReport: 'agentsquared:agent-a%40owner-a:agent-b%40owner-b handled the inbound question.'
   })
   const fakeGatewayEvents = {
     connectAttempts: 0,
@@ -263,7 +264,7 @@ async function main() {
                 }
               },
               {
-                key: 'agent:bot1:agentsquared:peer:agent-b%40owner-b',
+                key: 'agent:bot1:agentsquared:agent-a%40owner-a:agent-b%40owner-b',
                 updatedAt: Date.now() - 1000,
                 deliveryContext: {
                   channel: 'internal',
@@ -429,6 +430,49 @@ process.exit(2)
       reason: 'full gateway shutdown'
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a'), null)
+    {
+      const lifecycleDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-lifecycle-'))
+      const keyFile = path.join(lifecycleDir, 'demo_runtime_key.json')
+      const gatewayStateFile = path.join(lifecycleDir, 'demo_owner_gateway.json')
+      fs.writeFileSync(keyFile, '{}\n')
+      fs.writeFileSync(gatewayStateFile, JSON.stringify({
+        agentId: 'demo@owner',
+        keyFile,
+        gatewayBase: 'http://127.0.0.1:49999',
+        gatewayPid: 999999,
+        runtimeRevision: 'stale-revision'
+      }, null, 2))
+
+      let spawned = 0
+      let waited = 0
+      const ensured = await ensureGatewayForUse({
+        'agent-id': 'demo@owner',
+        'key-file': keyFile,
+        'gateway-state-file': gatewayStateFile
+      }, {
+        searchRoots: [lifecycleDir],
+        spawnGatewayProcess: async () => {
+          spawned += 1
+          return { pid: 424242 }
+        },
+        waitForReady: async () => {
+          waited += 1
+          return {
+            gatewayBase: 'http://127.0.0.1:40111',
+            health: { peerId: 'peer-ready' }
+          }
+        }
+      })
+      assert.equal(spawned, 1)
+      assert.equal(waited, 1)
+      assert.equal(ensured.autoStarted, true)
+      assert.equal(ensured.gatewayBase, 'http://127.0.0.1:40111')
+      assert.equal(ensured.gatewayPid, 424242)
+      assert.ok(
+        fs.readdirSync(lifecycleDir).some((name) => name.startsWith('demo_owner_gateway.json.restart-required.')),
+        'stale gateway state should be archived before auto-start'
+      )
+    }
     const safetyPrompt = buildOpenClawSafetyPrompt({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',
@@ -708,7 +752,7 @@ process.exit(2)
       openclawStateDir: fakeOpenClawStateDir,
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
-      openclawSessionPrefix: 'agentsquared:peer:'
+      openclawSessionPrefix: 'agentsquared:'
     })
     const openclawExecution = await openclawExecutor({
       item: {
@@ -729,7 +773,7 @@ process.exit(2)
     })
     assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
     assert.match(openclawExecution.peerResponse.metadata.openclawRunId, /^run_/)
-    assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:peer:agent-b%40owner-b')
+    assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:agent-a%40owner-a:agent-b%40owner-b')
     assert.equal(openclawExecution.ownerReport.title, '**🅰️✌️ 来自 agent-b@owner-b 的一条 AgentSquared 消息**')
     assert.equal(openclawExecution.ownerReport.summary, 'agent-b@owner-b 通过 AgentSquared 联系了我，我已经完成回复。')
     assert.match(openclawExecution.ownerReport.message, /对方发送的内容/)
@@ -832,7 +876,7 @@ process.exit(2)
       openclawStateDir: fakeOpenClawStateDir,
       openclawCommand: fakeOpenClaw,
       openclawAgent: 'bot1',
-      openclawSessionPrefix: 'agentsquared:peer:'
+      openclawSessionPrefix: 'agentsquared:'
     })
     const openclawNotifyResult = await openclawNotifier({
       item: {
@@ -864,7 +908,7 @@ process.exit(2)
     assert.equal(fakeGatewayEvents.connectAuths[0]?.token, 'test-openclaw-token')
     assert.equal(fakeGatewayEvents.connectAuths.at(-1)?.deviceToken, 'test-device-token')
     assert.equal(fakeGatewayEvents.lastAgentParams.agentId, 'bot1')
-    assert.match(fakeGatewayEvents.lastAgentParams.sessionKey, /^agentsquared:(peer|safety):agent-[bc]%40owner-[bc]$/)
+    assert.match(fakeGatewayEvents.lastAgentParams.sessionKey, /^agentsquared:(?:agent-a%40owner-a:agent-b%40owner-b|safety:agent-a%40owner-a:agent-c%40owner-c)$/)
     assert.equal(fakeGatewayEvents.lastSendParams.channel, 'feishu')
     assert.equal(fakeGatewayEvents.lastSendParams.to, 'user:ou_owner')
     assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')
