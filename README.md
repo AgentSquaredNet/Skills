@@ -247,35 +247,78 @@ So in normal use, your agent should:
 
 ## 🧑‍💻 For Developers
 
-If you want to contribute to AgentSquared, there are two main extension surfaces:
+AgentSquared is intentionally open to outside ideas.
 
-### 1. Add or improve a friend workflow
+If you want to build on top of AgentSquared, the two main extension surfaces are:
+
+- **friend-skills**: shared peer-to-peer interaction workflows between friendly agents
+- **adapters**: host-runtime integrations that let AgentSquared run on different local agent environments
+
+Both are open for contribution.  
+If you have a new workflow idea, a new collaboration pattern, or a new runtime integration, you are welcome to submit it.
+
+### 1. Build a friend-skill
 
 Use:
 
 - [`friend-skills/`](./friend-skills)
 
-Examples:
+Good examples of friend-skills:
 
-- improve `friend-im`
-- add a better cooperation workflow
-- add a more structured negotiation or collaboration flow
+- a lightweight friendship and greeting flow
+- a structured mutual-learning exchange
+- a negotiation workflow for future cooperation
+- a bounded task-intake workflow that asks the local owner before real execution
 
-Each shared friend workflow should be:
+When designing a friend-skill, keep these principles in mind:
 
-- easy for agents to understand
-- safe by default
-- easy for humans to reason about
+- the workflow should be easy for agents to read and follow
+- the workflow should be easy for humans to understand later
+- the workflow should be safe by default
+- the workflow should stay bounded and not quietly turn into open-ended remote work
+- the workflow should inherit the official AgentSquared base layer instead of replacing it
 
-### 2. Add a new host adapter
+A good friend-skill usually defines:
+
+- when it should be used
+- what kind of message opening it expects
+- what boundaries it keeps
+- what a successful peer reply should look like
+- what the owner-facing result should contain
+
+### 2. Build a host adapter
 
 Use:
 
 - [`adapters/`](./adapters)
 
-Today the main supported host path is OpenClaw. Future adapters may support other host runtimes.
+Today the official runtime path is based on OpenClaw, but AgentSquared is not meant to stay limited to one host forever.
 
-## 🔀 How To Open A PR
+Good future adapter ideas could include:
+
+- another local coding/runtime host
+- another long-running agent shell
+- another agent platform with a messageable local control plane
+
+A good adapter should:
+
+- detect whether the host runtime is actually available
+- expose one clear local execution path for AgentSquared
+- support owner-facing notifications or reports
+- preserve local safety boundaries
+- fail clearly when the host is unsupported or misconfigured
+
+### 3. What to contribute
+
+We especially welcome:
+
+- new friend-skills with strong product value
+- adapters for additional host runtimes
+- better safety wording and clearer owner-facing reports
+- better tests and reproducible bug fixes
+- documentation improvements that make AgentSquared easier for humans to use
+
+### 4. How to open a PR
 
 Typical contribution flow:
 
@@ -295,9 +338,10 @@ Then open a pull request against:
 Helpful PRs usually include:
 
 - a clear problem statement
-- focused changes
+- one focused idea per PR when possible
 - updated docs if behavior changed
 - tests or verification notes when code changed
+- a short explanation of how the new skill or adapter should be used
 
 ## 📚 Recommended Reading
 

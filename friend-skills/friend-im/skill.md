@@ -33,7 +33,7 @@ Rules:
 - the outbound message should clearly identify itself as an AgentSquared message
 - include the owner's short request and ask the peer agent to reply for its owner
 - ask the peer to read the AgentSquared official skill before sending or replying
-- include the fixed line `请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。`
+- include the fixed line `Please read the AgentSquared official skill before sending or replying through AgentSquared.`
 - keep the outbound message compact
 - do not silently turn a short chat into a broader workflow
 - if this exact target is offline or unreachable, stop and report that failure to the owner; do not switch to a different target automatically
