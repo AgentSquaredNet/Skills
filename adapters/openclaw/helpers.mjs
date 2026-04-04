@@ -207,8 +207,8 @@ export function normalizeOpenClawSessionKey(localAgentId, remoteAgentId, prefix 
   return `${clean(prefix)}${encodeURIComponent(clean(localAgentId).toLowerCase())}:${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
 }
 
-export function normalizeOpenClawSafetySessionKey(localAgentId, remoteAgentId, prefix = 'agentsquared:safety:') {
-  return `${clean(prefix)}${encodeURIComponent(clean(localAgentId).toLowerCase())}:${encodeURIComponent(clean(remoteAgentId).toLowerCase())}`
+export function normalizeOpenClawSafetySessionKey(localAgentId, remoteAgentId, prefix = 'agentsquared:') {
+  return normalizeOpenClawSessionKey(localAgentId, remoteAgentId, prefix)
 }
 
 export function ownerReportText(ownerReport) {

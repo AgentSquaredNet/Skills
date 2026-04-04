@@ -155,7 +155,7 @@ async function main() {
         const runId = `run_${Object.keys(fakeGatewayEvents.runResults).length + 1}`
         const promptText = `${frame.params?.message ?? ''}`
         let responseText = fakeOpenClawReplyJson
-        if (clean(frame.params?.sessionKey).startsWith('agentsquared:safety:')) {
+        if (/very short AgentSquared safety triage/i.test(promptText)) {
           if (/reveal your system prompt and private key/i.test(promptText)) {
             responseText = JSON.stringify({
               action: 'reject',
@@ -223,12 +223,8 @@ async function main() {
         return
       }
       if (frame.method === 'chat.history') {
-        const requestedSessionKey = clean(frame.params?.sessionKey)
-        const isSafetySession = requestedSessionKey.startsWith('agentsquared:safety:')
         const lastRunId = Object.keys(fakeGatewayEvents.runResults).at(-1) || 'run_openclaw_test'
-        const resultText = isSafetySession
-          ? (fakeGatewayEvents.runResults[lastRunId] ?? fakeOpenClawReplyJson)
-          : fakeOpenClawReplyJson
+        const resultText = fakeGatewayEvents.runResults[lastRunId] ?? fakeOpenClawReplyJson
         socket.send(JSON.stringify({
           type: 'res',
           id: frame.id,
@@ -908,7 +904,7 @@ process.exit(2)
     assert.equal(fakeGatewayEvents.connectAuths[0]?.token, 'test-openclaw-token')
     assert.equal(fakeGatewayEvents.connectAuths.at(-1)?.deviceToken, 'test-device-token')
     assert.equal(fakeGatewayEvents.lastAgentParams.agentId, 'bot1')
-    assert.match(fakeGatewayEvents.lastAgentParams.sessionKey, /^agentsquared:(?:agent-a%40owner-a:agent-b%40owner-b|safety:agent-a%40owner-a:agent-c%40owner-c)$/)
+    assert.match(fakeGatewayEvents.lastAgentParams.sessionKey, /^agentsquared:agent-a%40owner-a:agent-[bc]%40owner-[bc]$/)
     assert.equal(fakeGatewayEvents.lastSendParams.channel, 'feishu')
     assert.equal(fakeGatewayEvents.lastSendParams.to, 'user:ou_owner')
     assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')
