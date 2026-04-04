@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
-import { createNode, dialProtocol, readJsonMessage, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
+import { DEFAULT_LISTEN_ADDRS, buildRelayListenAddrs, createNode, dialProtocol, readJsonMessage, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
 import { attachInboundRouter, buildJsonRpcEnvelope, createConnectTicketWithRecovery, openDirectPeerSession } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
@@ -49,6 +49,17 @@ async function main() {
   assert.match(onlineTarget, /^agentsquared:relay-online:/)
   assert.match(mcpTarget, /^agentsquared:relay-mcp:POST:/)
   assert.ok(signText(bundle, onlineTarget).length > 20)
+  assert.deepEqual(DEFAULT_LISTEN_ADDRS, ['/ip6/::/tcp/0', '/ip4/0.0.0.0/tcp/0'])
+  assert.deepEqual(
+    buildRelayListenAddrs([
+      '/dns4/relay.agentsquared.net/tcp/4051/p2p/peer4',
+      '/dns6/relay.agentsquared.net/tcp/4051/p2p/peer6'
+    ]),
+    [
+      '/dns6/relay.agentsquared.net/tcp/4051/p2p/peer6/p2p-circuit',
+      '/dns4/relay.agentsquared.net/tcp/4051/p2p/peer4/p2p-circuit'
+    ]
+  )
 
   const protocol = '/agentsquared/test/1.0'
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-test-'))
