@@ -35,6 +35,20 @@ function clean(value) {
   return `${value ?? ''}`.trim()
 }
 
+async function acknowledgeJsonRpc(stream, response) {
+  const id = clean(response?.id)
+  if (!id) {
+    return
+  }
+  await writeLine(stream, JSON.stringify({
+    jsonrpc: '2.0',
+    id,
+    result: {
+      ack: true
+    }
+  }))
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -1481,6 +1495,7 @@ process.exit(2)
     })))
     const trustedResponse = await readJsonMessage(routerStream)
     assert.equal(trustedResponse.result.message.parts[0].text, 'trusted-ok')
+    await acknowledgeJsonRpc(routerStream, trustedResponse)
     await routerStream.close()
     await inboundHandled
 
@@ -1522,6 +1537,7 @@ process.exit(2)
     await writeLine(duplicateStream1, duplicatePayload)
     const duplicateResponse1 = await readJsonMessage(duplicateStream1)
     assert.equal(duplicateResponse1.result.message.parts[0].text, 'duplicate-ok')
+    await acknowledgeJsonRpc(duplicateStream1, duplicateResponse1)
     await duplicateStream1.close()
     await duplicateHandled
 
@@ -1534,6 +1550,7 @@ process.exit(2)
     const duplicateResponse2 = await readJsonMessage(duplicateStream2)
     assert.equal(duplicateResponse2.result.message.parts[0].text, 'duplicate-ok')
     assert.equal(duplicateRuns, 1)
+    await acknowledgeJsonRpc(duplicateStream2, duplicateResponse2)
     await duplicateStream2.close()
 
     const rejectedHandled = (async () => {
@@ -1567,6 +1584,7 @@ process.exit(2)
     const rejectedResponse = await readJsonMessage(rejectedStream)
     assert.equal(rejectedResponse.error.code, 451)
     assert.equal(rejectedResponse.error.message, 'owner approval required')
+    await acknowledgeJsonRpc(rejectedStream, rejectedResponse)
     await rejectedStream.close()
     await rejectedHandled
 
@@ -2069,6 +2087,7 @@ process.exit(2)
     })))
     const prettyResponse = await readJsonMessage(prettyStream)
     assert.equal(prettyResponse.result.message.parts[0].text, 'pretty-json-ok')
+    await acknowledgeJsonRpc(prettyStream, prettyResponse)
     await prettyStream.close()
   } finally {
     await initiator.stop()
