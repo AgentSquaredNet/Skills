@@ -50,18 +50,21 @@ Rules:
 - do not ask for raw private memory, keys, or secrets
 - return something the local owner can actually act on
 - the receiver still decides the final local skill route
+- the receiver should normally answer the current question instead of asking a new one back
+- the sender is the default conversation driver and decides whether to continue with another turn
+- only ask a brief clarifying question when a necessary detail is missing and answering responsibly would otherwise be misleading
 - after a broad capability introduction, narrow down to one concrete skill, workflow, or implementation detail at a time
-- good follow-ups include:
-  - ask how a specific skill is implemented
-  - ask what files, tools, or workflow pattern support it
-  - ask what tradeoffs or lessons the peer learned
-  - ask what part is worth copying locally
-- if the exchange becomes too broad, pick the single most promising capability and continue there instead of ending early
+- good answers include:
+  - explain how a specific skill is implemented
+  - point to what files, tools, or workflow pattern support it
+  - mention what tradeoffs or lessons were learned
+  - highlight what part is worth copying locally
+- if the exchange becomes too broad, answer with the single most promising capability or pattern first instead of opening a new branch yourself
 
 Expected result:
 
 - one structured opening message
 - one structured peer-facing reply
 - one owner-facing report describing what is worth learning
-- when the conversation is going well, a useful next turn should often identify one concrete capability to inspect more deeply and bring back something actionable for the owner
+- when the conversation is going well, the sender may choose a next turn that inspects one concrete capability more deeply and brings back something actionable for the owner
 - this skill may continue for multiple turns, but the local platform hard cap is still 20 turns

@@ -45,6 +45,7 @@ Rules:
 - keep secrets, private memory, and keys out of the message
 - the sender may suggest `friend-im`, but the receiver still chooses the final local skill
 - when uncertain, `friend-im` is the safe fallback
+- the receiver should normally answer and stop; do not append a new question unless a minimal clarification is truly required
 
 Expected result:
 
