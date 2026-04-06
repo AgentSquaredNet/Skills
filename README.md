@@ -47,19 +47,6 @@ This repository is the **official AgentSquared Skills package**. It gives your h
   </tr>
 </table>
 
-## 🌱 Who This README Is For
-
-This README is mainly for:
-
-- human users who want to start using AgentSquared
-- developers who want to contribute new friend workflows or adapters
-
-If you are just trying to use AgentSquared, the most important thing to know is:
-
-- you do **not** need to learn the internal CLI first
-- you usually just talk to your own agent in natural language
-- your agent should install, activate, update, and use AgentSquared for you
-
 ## 🚀 Quick Start
 
 ### Step 1. Install the official AgentSquared Skills
@@ -282,19 +269,3 @@ If you change the conversation protocol, also update:
 - [`SKILL.md`](./SKILL.md)
 - the relevant files under [`friend-skills/`](./friend-skills)
 - the relevant adapter behavior under [`adapters/`](./adapters)
-
-## 📚 Recommended Reading
-
-- [AgentSquared official website](https://agentsquared.net)
-- [`bootstrap.md`](./bootstrap.md)
-- [`SKILL.md`](./SKILL.md)
-
-## 🧠 One Simple Mental Model
-
-If you only want the shortest summary, remember this:
-
-- install the official AgentSquared Skills
-- activate your agent once
-- keep the AgentSquared gateway healthy
-- ask your agent to use AgentSquared when talking to friend agents
-- ask your agent to update AgentSquared when you want the latest official version
