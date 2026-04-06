@@ -812,6 +812,7 @@ process.exit(2)
 
     const runtimeUnavailableResponded = []
     const runtimeUnavailableRejected = []
+    const runtimeUnavailableOwnerReports = []
     const runtimeUnavailableRouter = createAgentRouter({
       maxActiveMailboxes: 1,
       routerSkills: ['friend-im', 'agent-mutual-learning'],
@@ -826,6 +827,9 @@ process.exit(2)
       },
       async onRespond(item, result) {
         runtimeUnavailableResponded.push({ item, result })
+      },
+      async notifyOwner(payload) {
+        runtimeUnavailableOwnerReports.push(payload)
       },
       async onReject(item, payload) {
         runtimeUnavailableRejected.push({ item, payload })
@@ -847,6 +851,8 @@ process.exit(2)
     await runtimeUnavailableRouter.whenIdle()
     assert.equal(runtimeUnavailableRejected.length, 0)
     assert.equal(runtimeUnavailableResponded.length, 1)
+    assert.equal(runtimeUnavailableOwnerReports.length, 1)
+    assert.match(runtimeUnavailableOwnerReports[0].ownerReport.title, /\*\*🅰️✌️ AgentSquared local runtime unavailable\*\*/)
     assert.match(runtimeUnavailableResponded[0].result.message.parts[0].text, /temporarily unavailable/i)
     assert.equal(runtimeUnavailableResponded[0].result.metadata.stopReason, 'receiver-runtime-unavailable')
 
@@ -873,11 +879,27 @@ process.exit(2)
     })
     assert.equal(parsedOpenClaw.peerResponse.message.parts[0].text, 'Hello from OpenClaw')
     assert.equal(parsedOpenClaw.ownerReport.summary, 'OpenClaw owner report')
+    assert.match(parsedOpenClaw.ownerReport.title, /\*\*🅰️✌️ New AgentSquared message from peer@Test\*\*/)
     assert.equal(parsedOpenClaw.peerResponse.metadata.selectedSkill, 'friend-im')
     assert.equal(parsedOpenClaw.peerResponse.metadata.modelSelectedSkill, 'agent-mutual-learning')
     assert.equal(parsedOpenClaw.peerResponse.metadata.turnIndex, 2)
     assert.equal(parsedOpenClaw.peerResponse.metadata.decision, 'continue')
     assert.equal(parsedOpenClaw.peerResponse.metadata.finalize, false)
+    const parsedOpenClawDefaults = parseOpenClawTaskResult(JSON.stringify({
+      peerResponse: 'Keep going',
+      ownerReport: 'Continue learning'
+    }), {
+      defaultSkill: 'agent-mutual-learning',
+      remoteAgentId: 'peer@Test',
+      inboundId: 'router-openclaw-defaults',
+      defaultTurnIndex: 3,
+      defaultDecision: 'continue',
+      defaultStopReason: '',
+      defaultFinalize: false
+    })
+    assert.equal(parsedOpenClawDefaults.peerResponse.metadata.turnIndex, 3)
+    assert.equal(parsedOpenClawDefaults.peerResponse.metadata.decision, 'continue')
+    assert.equal(parsedOpenClawDefaults.peerResponse.metadata.finalize, false)
     assert.equal(shouldContinueConversation(parsedOpenClaw.peerResponse.metadata), true)
     assert.equal(resolveSkillMaxTurns('friend-im'), 1)
     assert.equal(resolveSkillMaxTurns('agent-mutual-learning', { name: 'agent-mutual-learning', maxTurns: 99 }), PLATFORM_MAX_TURNS)

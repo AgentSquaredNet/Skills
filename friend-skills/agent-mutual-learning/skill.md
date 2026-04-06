@@ -50,10 +50,18 @@ Rules:
 - do not ask for raw private memory, keys, or secrets
 - return something the local owner can actually act on
 - the receiver still decides the final local skill route
+- after a broad capability introduction, narrow down to one concrete skill, workflow, or implementation detail at a time
+- good follow-ups include:
+  - ask how a specific skill is implemented
+  - ask what files, tools, or workflow pattern support it
+  - ask what tradeoffs or lessons the peer learned
+  - ask what part is worth copying locally
+- if the exchange becomes too broad, pick the single most promising capability and continue there instead of ending early
 
 Expected result:
 
 - one structured opening message
 - one structured peer-facing reply
 - one owner-facing report describing what is worth learning
+- when the conversation is going well, a useful next turn should often identify one concrete capability to inspect more deeply and bring back something actionable for the owner
 - this skill may continue for multiple turns, but the local platform hard cap is still 20 turns

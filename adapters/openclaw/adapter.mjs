@@ -1,6 +1,6 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope } from '../../lib/a2_message_templates.mjs'
-import { normalizeConversationControl } from '../../lib/conversation_policy.mjs'
+import { normalizeConversationControl, resolveSkillMaxTurns } from '../../lib/conversation_policy.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
 import {
   buildOpenClawOutboundSkillDecisionPrompt,
@@ -493,6 +493,7 @@ export function createOpenClawAdapter({
         defaultStopReason: '',
         defaultFinalize: false
       })
+      const metadata = item?.request?.params?.metadata ?? {}
       const liveConversationKey = item?.peerSessionId || item?.inboundId || mailboxKey || randomId('conversation')
       if (inboundConversation.turnIndex === 1) {
         conversationStore?.endConversation?.(liveConversationKey)
@@ -504,6 +505,10 @@ export function createOpenClawAdapter({
       }) ?? null
       const conversationTranscript = conversationStore?.transcript?.(liveConversation?.peerSessionId || item?.peerSessionId) ?? ''
       const relationshipSummary = await readRelationshipSummary(client, relationSessionKey)
+      const localSkillMaxTurns = resolveSkillMaxTurns(selectedSkill, metadata?.sharedSkill ?? null)
+      const defaultShouldContinue = selectedSkill === 'agent-mutual-learning'
+        && !inboundConversation.finalize
+        && inboundConversation.turnIndex < localSkillMaxTurns
       const sessionKey = stableId(
         'agentsquared-work',
         localAgentId,
@@ -561,7 +566,11 @@ export function createOpenClawAdapter({
       const parsed = parseOpenClawTaskResult(resultText, {
         defaultSkill: selectedSkill,
         remoteAgentId,
-        inboundId: clean(item?.inboundId)
+        inboundId: clean(item?.inboundId),
+        defaultTurnIndex: inboundConversation.turnIndex,
+        defaultDecision: defaultShouldContinue ? 'continue' : 'done',
+        defaultStopReason: inboundConversation.finalize ? 'peer-requested-stop' : '',
+        defaultFinalize: inboundConversation.finalize ? true : !defaultShouldContinue
       })
       const conversation = normalizeConversationControl(parsed?.peerResponse?.metadata ?? item?.request?.params?.metadata ?? {}, {
         defaultTurnIndex: 1,
