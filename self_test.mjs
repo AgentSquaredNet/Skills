@@ -24,7 +24,7 @@ import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseRepor
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt } from './adapters/openclaw/adapter.mjs'
-import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
+import { detectOpenClawHostEnvironment, resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -358,9 +358,10 @@ if (args[0] === 'status' && args[1] === '--json') {
   process.stdout.write('[plugins] feishu_chat: Registered...\\n')
   process.stdout.write(JSON.stringify({
     agents: {
-      defaultId: 'bot1',
+      defaultAgentId: 'bot1',
       agents: [{
-        id: 'bot1',
+        agentId: 'bot1',
+        isDefault: true,
         workspaceDir: '/tmp/openclaw-workspace'
       }]
     },
@@ -825,6 +826,17 @@ process.exit(2)
     assert.equal(detectedOpenClaw.detected, true)
     assert.equal(detectedOpenClaw.reason, 'openclaw-gateway-status-json')
     assert.equal(detectedOpenClaw.workspaceDir, '/tmp/openclaw-workspace')
+    assert.equal(resolveOpenClawAgentSelection(detectedOpenClaw).defaultAgentId, 'bot1')
+    assert.equal(
+      resolveOpenClawAgentSelection({
+        configSummary: {
+          exists: true,
+          defaultAgentId: 'main',
+          workspaceDir: '/tmp/openclaw-config-workspace'
+        }
+      }).defaultAgentId,
+      'main'
+    )
     const unsupportedHostDetection = await detectHostRuntimeEnvironment({
       preferred: 'claude-code',
       openclaw: {

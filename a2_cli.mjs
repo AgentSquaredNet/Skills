@@ -12,6 +12,7 @@ import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTick
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
+import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
@@ -150,10 +151,7 @@ async function createCliLocalRuntimeExecutor({
       `local multi-turn execution currently supports only the OpenClaw host runtime. Detected host runtime: ${detected}.${reason ? ` Detection reason: ${reason}.` : ''}`
     )
   }
-  const detectedOpenClawAgent = clean(
-    detectedHostRuntime?.overviewStatus?.agents?.defaultId
-      || detectedHostRuntime?.overviewStatus?.agents?.agents?.[0]?.id
-  )
+  const detectedOpenClawAgent = clean(resolveOpenClawAgentSelection(detectedHostRuntime).defaultAgentId)
   const resolvedOpenClawAgent = clean(args['openclaw-agent']) || detectedOpenClawAgent
   if (!resolvedOpenClawAgent) {
     throw new Error('OpenClaw was detected for local multi-turn execution, but no OpenClaw agent id could be resolved.')

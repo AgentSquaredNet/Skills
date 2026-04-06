@@ -1,7 +1,108 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
 import { parseOpenClawJson, runOpenClawCli } from './cli.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
+}
+
+function readJson(filePath = '') {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
+function normalizeAgentEntries(value) {
+  return asArray(value)
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      ...item,
+      resolvedId: clean(item?.id || item?.agentId || item?.name),
+      resolvedWorkspaceDir: clean(item?.workspaceDir || item?.workspace || item?.agentDir),
+      isDefault: Boolean(item?.isDefault || item?.default)
+    }))
+    .filter((item) => item.resolvedId || item.resolvedWorkspaceDir)
+}
+
+function defaultOpenClawConfigPath() {
+  return path.join(os.homedir(), '.openclaw', 'openclaw.json')
+}
+
+function summarizeConfig(configPath = '') {
+  const resolvedPath = clean(configPath) || defaultOpenClawConfigPath()
+  const config = readJson(resolvedPath)
+  if (!config || typeof config !== 'object') {
+    return {
+      exists: false,
+      path: resolvedPath,
+      defaultAgentId: '',
+      workspaceDir: '',
+      agents: []
+    }
+  }
+  const agents = normalizeAgentEntries(config?.agents?.list)
+  const defaultAgent = agents.find((entry) => entry.isDefault) ?? agents[0] ?? null
+  return {
+    exists: true,
+    path: resolvedPath,
+    defaultAgentId: clean(defaultAgent?.resolvedId) || 'main',
+    workspaceDir: clean(defaultAgent?.resolvedWorkspaceDir || config?.agents?.defaults?.workspace),
+    agents
+  }
+}
+
+function extractOpenClawAgentInfo(payload = null) {
+  const root = payload && typeof payload === 'object' ? payload : {}
+  const container = root?.agents && typeof root.agents === 'object' ? root.agents : root
+  const nestedAgents = normalizeAgentEntries(container?.agents)
+  const directAgents = normalizeAgentEntries(container)
+  const agents = nestedAgents.length > 0 ? nestedAgents : directAgents
+  const defaultId = clean(
+    container?.defaultId
+      || container?.defaultAgentId
+      || root?.defaultId
+      || root?.defaultAgentId
+  )
+  const defaultAgent = agents.find((entry) => entry.resolvedId === defaultId)
+    ?? agents.find((entry) => entry.isDefault)
+    ?? agents[0]
+    ?? null
+  return {
+    defaultAgentId: defaultId || clean(defaultAgent?.resolvedId),
+    workspaceDir: clean(defaultAgent?.resolvedWorkspaceDir),
+    agents
+  }
+}
+
+export function resolveOpenClawAgentSelection(detectedHostRuntime = null) {
+  const overview = extractOpenClawAgentInfo(detectedHostRuntime?.overviewStatus)
+  const gatewayHealth = extractOpenClawAgentInfo(detectedHostRuntime?.gatewayHealth)
+  const configSummary = detectedHostRuntime?.configSummary && typeof detectedHostRuntime.configSummary === 'object'
+    ? detectedHostRuntime.configSummary
+    : summarizeConfig(clean(detectedHostRuntime?.configPath))
+  const defaultAgentId = clean(
+    overview.defaultAgentId
+      || gatewayHealth.defaultAgentId
+      || configSummary.defaultAgentId
+  )
+  const workspaceDir = clean(
+    overview.workspaceDir
+      || gatewayHealth.workspaceDir
+      || configSummary.workspaceDir
+  )
+  return {
+    defaultAgentId,
+    workspaceDir,
+    configSummary
+  }
 }
 
 function runProbe(command, args, {
@@ -46,13 +147,21 @@ export async function detectOpenClawHostEnvironment({
   }
   const status = await runProbe(command, ['status', '--json'], { cwd, timeoutMs: 10000 })
   const statusJson = parseOpenClawJson(status.stdout)
-  const workspaceDir = clean(
-    statusJson?.agents?.agents?.find?.((item) => clean(item?.workspaceDir))?.workspaceDir
-      ?? statusJson?.agents?.agents?.[0]?.workspaceDir
-  )
-
   const gatewayStatus = await runProbe(command, statusArgs, { cwd, timeoutMs: 10000 })
   const gatewayStatusJson = parseOpenClawJson(gatewayStatus.stdout)
+  const configPath = clean(
+    gatewayStatusJson?.config?.daemon?.path
+      || gatewayStatusJson?.config?.cli?.path
+      || defaultOpenClawConfigPath()
+  )
+  const configSummary = summarizeConfig(configPath)
+  const selection = resolveOpenClawAgentSelection({
+    overviewStatus: statusJson,
+    gatewayStatus: gatewayStatusJson,
+    configSummary,
+    configPath
+  })
+  const workspaceDir = clean(selection.workspaceDir)
   if (gatewayStatus.ok && gatewayStatusJson) {
     return {
       id: 'openclaw',
@@ -61,6 +170,8 @@ export async function detectOpenClawHostEnvironment({
       reason: 'openclaw-gateway-status-json',
       gatewayStatus: gatewayStatusJson,
       overviewStatus: statusJson,
+      configSummary,
+      configPath,
       workspaceDir,
       rpcHealthy: Boolean(gatewayStatusJson?.rpc?.ok || gatewayStatusJson?.rpcOk),
       serviceInstalled: gatewayStatusJson?.service?.installed ?? gatewayStatusJson?.installed ?? null,
@@ -75,6 +186,8 @@ export async function detectOpenClawHostEnvironment({
       confidence: 'medium',
       reason: 'openclaw-status-json',
       overviewStatus: statusJson,
+      configSummary,
+      configPath,
       workspaceDir
     }
   }
@@ -99,6 +212,22 @@ export async function detectOpenClawHostEnvironment({
       reason: 'openclaw-gateway-health-json',
       gatewayHealth: gatewayHealthJson,
       overviewStatus: statusJson,
+      configSummary,
+      configPath,
+      workspaceDir
+    }
+  }
+
+  if (configSummary.exists) {
+    return {
+      id: 'openclaw',
+      detected: true,
+      confidence: 'low',
+      reason: 'openclaw-config-present',
+      overviewStatus: statusJson,
+      gatewayStatus: gatewayStatusJson,
+      configSummary,
+      configPath,
       workspaceDir
     }
   }

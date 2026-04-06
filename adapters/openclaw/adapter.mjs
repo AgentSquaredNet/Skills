@@ -46,6 +46,22 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function reframeOpenClawAgentError(error, {
+  openclawAgent = '',
+  localAgentId = ''
+} = {}) {
+  const message = clean(error?.message)
+  if (!message) {
+    return error
+  }
+  if (message.toLowerCase().includes('unknown agent id')) {
+    return new Error(
+      `OpenClaw rejected agent id "${clean(openclawAgent)}". AgentSquared needs a real local OpenClaw agent id here, not the AgentSquared id "${clean(localAgentId)}". Configure --openclaw-agent explicitly or make sure OpenClaw exposes a default agent (usually from agents.list[]; fallback is often "main"). Original error: ${message}`
+    )
+  }
+  return error
+}
+
 export function createOpenClawAdapter({
   localAgentId,
   openclawAgent = '',
@@ -200,12 +216,20 @@ export function createOpenClawAdapter({
         selectedSkill,
         item
       })
-      const safetyAccepted = await client.request('agent', {
-        agentId: agentName,
-        sessionKey: safetySessionKey,
-        message: safetyPrompt,
-        idempotencyKey: `agentsquared-safety-${clean(item?.inboundId) || randomId('inbound')}`
-      }, timeoutMs)
+      let safetyAccepted
+      try {
+        safetyAccepted = await client.request('agent', {
+          agentId: agentName,
+          sessionKey: safetySessionKey,
+          message: safetyPrompt,
+          idempotencyKey: `agentsquared-safety-${clean(item?.inboundId) || randomId('inbound')}`
+        }, timeoutMs)
+      } catch (error) {
+        throw reframeOpenClawAgentError(error, {
+          openclawAgent: agentName,
+          localAgentId
+        })
+      }
       const safetyRunId = readOpenClawRunId(safetyAccepted)
       if (!safetyRunId) {
         throw new Error('OpenClaw safety triage did not return a runId.')
@@ -407,12 +431,20 @@ export function createOpenClawAdapter({
         relationshipSummary
       })
 
-      const accepted = await client.request('agent', {
-        agentId: agentName,
-        sessionKey,
-        message: prompt,
-        idempotencyKey: `agentsquared-agent-${clean(item?.inboundId) || randomId('inbound')}`
-      }, timeoutMs)
+      let accepted
+      try {
+        accepted = await client.request('agent', {
+          agentId: agentName,
+          sessionKey,
+          message: prompt,
+          idempotencyKey: `agentsquared-agent-${clean(item?.inboundId) || randomId('inbound')}`
+        }, timeoutMs)
+      } catch (error) {
+        throw reframeOpenClawAgentError(error, {
+          openclawAgent: agentName,
+          localAgentId
+        })
+      }
       const runId = readOpenClawRunId(accepted)
       if (!runId) {
         throw new Error('OpenClaw agent call did not return a runId.')
