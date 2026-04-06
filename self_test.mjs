@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws'
 
 import { mcpSignTarget, onlineSignTarget, transportRefreshHeaders } from './lib/relay_http.mjs'
 import { DEFAULT_LISTEN_ADDRS, buildRelayListenAddrs, createNode, dialProtocol, readJsonMessage, readSingleLine, requireListeningTransport, writeLine } from './lib/libp2p_a2a.mjs'
-import { attachInboundRouter, buildJsonRpcEnvelope, createConnectTicketWithRecovery, openDirectPeerSession } from './lib/peer_session.mjs'
+import { attachInboundRouter, buildJsonRpcEnvelope, createConnectTicketWithRecovery, exchangeOverTransport, openDirectPeerSession } from './lib/peer_session.mjs'
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
@@ -1750,6 +1750,42 @@ process.exit(2)
     })
     assert.equal(retryOnEmptyAttempts, 1)
     assert.equal(emptyRetryResult.response?.result?.message?.parts?.[0]?.text, 'retried-ok')
+
+    let ambiguousAttempt = 0
+    await assert.rejects(
+      () => exchangeOverTransport({
+        node: {},
+        transport: {
+          peerId: 'peer-ambiguous',
+          streamProtocol: '/agentsquared/reuse-empty-ambiguous/1.0'
+        },
+        request: buildJsonRpcEnvelope({
+          id: 'req_ambiguous_retry',
+          method: 'message/send',
+          message: {
+            kind: 'message',
+            role: 'user',
+            parts: [{ kind: 'text', text: 'ambiguous retry please' }]
+          }
+        }),
+        reuseExistingConnection: true,
+        openStreamFn: async () => {
+          ambiguousAttempt += 1
+          if (ambiguousAttempt === 1) {
+            return {
+              async close() {}
+            }
+          }
+          throw new Error('no existing peer connection is available for peer-ambiguous')
+        },
+        writeLineFn: async () => {},
+        readMessageFn: async () => {
+          throw new Error('empty JSON message')
+        }
+      }),
+      /delivery status is unknown after the request was dispatched/i
+    )
+    assert.equal(ambiguousAttempt, 2)
 
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
