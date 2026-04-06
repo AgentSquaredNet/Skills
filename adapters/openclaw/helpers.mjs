@@ -81,7 +81,68 @@ function extractJsonBlock(text) {
   throw new Error(`OpenClaw response did not contain a JSON object: ${excerpt(trimmed, 400)}`)
 }
 
+function decodeEscapedJsonCandidate(text) {
+  const trimmed = clean(text)
+  if (!trimmed) {
+    return ''
+  }
+  return trimmed
+    .replace(/\\r/g, '\r')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+}
+
+function tryParseJsonCandidate(candidate, seen = new Set()) {
+  const trimmed = clean(candidate)
+  if (!trimmed || seen.has(trimmed)) {
+    return null
+  }
+  seen.add(trimmed)
+
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (typeof parsed === 'string') {
+      return tryParseJsonCandidate(parsed, seen)
+    }
+    return parsed
+  } catch {
+    // continue below
+  }
+
+  const extracted = trimmed === clean(extractSafeJsonBlock(trimmed)) ? '' : extractSafeJsonBlock(trimmed)
+  if (extracted && !seen.has(extracted)) {
+    const parsed = tryParseJsonCandidate(extracted, seen)
+    if (parsed) {
+      return parsed
+    }
+  }
+
+  const decoded = decodeEscapedJsonCandidate(trimmed)
+  if (decoded && decoded !== trimmed && !seen.has(decoded)) {
+    const parsed = tryParseJsonCandidate(decoded, seen)
+    if (parsed) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+function extractSafeJsonBlock(text) {
+  try {
+    return extractJsonBlock(text)
+  } catch {
+    return ''
+  }
+}
+
 function parseJsonOutput(text, label = 'OpenClaw response') {
+  const parsed = tryParseJsonCandidate(text)
+  if (parsed && typeof parsed === 'object') {
+    return parsed
+  }
   try {
     return JSON.parse(extractJsonBlock(text))
   } catch (error) {

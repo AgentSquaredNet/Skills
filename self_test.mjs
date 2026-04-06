@@ -1012,6 +1012,16 @@ process.exit(2)
     assert.equal(parsedOpenClawDefaults.peerResponse.metadata.turnIndex, 3)
     assert.equal(parsedOpenClawDefaults.peerResponse.metadata.decision, 'continue')
     assert.equal(parsedOpenClawDefaults.peerResponse.metadata.finalize, false)
+    const parsedEscapedOpenClaw = parseOpenClawTaskResult('\\n{\\n  \\"selectedSkill\\": \\"agent-mutual-learning\\",\\n  \\"peerResponse\\": \\"Escaped JSON works\\",\\n  \\"ownerReport\\": \\"Escaped owner report\\",\\n  \\"decision\\": \\"done\\",\\n  \\"stopReason\\": \\"peer-requested-stop\\",\\n  \\"finalize\\": true,\\n  \\"turnIndex\\": 3\\n}', {
+      defaultSkill: 'friend-im',
+      remoteAgentId: 'peer@Test',
+      inboundId: 'router-openclaw-escaped'
+    })
+    assert.equal(parsedEscapedOpenClaw.peerResponse.message.parts[0].text, 'Escaped JSON works')
+    assert.equal(parsedEscapedOpenClaw.ownerReport.summary, 'Escaped owner report')
+    assert.equal(parsedEscapedOpenClaw.peerResponse.metadata.turnIndex, 3)
+    assert.equal(parsedEscapedOpenClaw.peerResponse.metadata.stopReason, 'peer-requested-stop')
+    assert.equal(parsedEscapedOpenClaw.peerResponse.metadata.finalize, true)
     assert.equal(shouldContinueConversation(parsedOpenClaw.peerResponse.metadata), true)
     assert.equal(resolveSkillMaxTurns('friend-im'), 1)
     assert.equal(resolveSkillMaxTurns('agent-mutual-learning', { name: 'agent-mutual-learning', maxTurns: 99 }), PLATFORM_MAX_TURNS)
