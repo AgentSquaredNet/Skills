@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { WebSocket } from 'ws'
-import { parseOpenClawJson, runOpenClawCli } from './cli.mjs'
+import { runOpenClawCli } from './cli.mjs'
 
 const PROTOCOL_VERSION = 3
 const DEFAULT_GATEWAY_URL = 'ws://127.0.0.1:18789'
@@ -39,14 +39,6 @@ function randomId() {
     return crypto.randomUUID()
   }
   return `${Date.now()}_${Math.random().toString(16).slice(2)}`
-}
-
-function parseJson(text, label = 'JSON payload') {
-  try {
-    return JSON.parse(text)
-  } catch (error) {
-    throw new Error(`${label} was not valid JSON: ${error.message}`)
-  }
 }
 
 function ensureDir(filePath) {
@@ -221,6 +213,23 @@ function resolveDefaultConfigPath() {
   return path.join(os.homedir(), '.openclaw', 'openclaw.json')
 }
 
+function resolveConfiguredGatewayUrl(config = null) {
+  const gateway = config?.gateway
+  if (!gateway || typeof gateway !== 'object') {
+    return ''
+  }
+  const configuredPort = Number.parseInt(`${gateway.port ?? ''}`, 10)
+  if (!Number.isFinite(configuredPort) || configuredPort <= 0) {
+    return ''
+  }
+  const loopbackUrl = new URL(`ws://127.0.0.1:${configuredPort}`)
+  const configuredPath = clean(gateway.path)
+  if (configuredPath && configuredPath !== '/') {
+    loopbackUrl.pathname = configuredPath.startsWith('/') ? configuredPath : `/${configuredPath}`
+  }
+  return loopbackUrl.toString()
+}
+
 function readGatewayAuthFromConfig(configPath) {
   const config = readJson(configPath)
   const auth = config?.gateway?.auth
@@ -234,12 +243,18 @@ function readGatewayAuthFromConfig(configPath) {
   }
 }
 
-function parseGatewayStatusJson(payload) {
-  const gatewayUrl = clean(payload?.rpc?.url || payload?.gateway?.probeUrl || payload?.gateway?.url)
-  const configPath = clean(payload?.config?.daemon?.path || payload?.config?.cli?.path)
+function readGatewayBootstrapConfig(configPath) {
+  const resolvedConfigPath = clean(configPath) || resolveDefaultConfigPath()
+  const config = readJson(resolvedConfigPath)
+  const auth = config?.gateway?.auth
+  const authMode = auth && typeof auth === 'object' ? clean(auth.mode) : ''
   return {
-    gatewayUrl,
-    configPath
+    configPath: resolvedConfigPath,
+    config,
+    gatewayUrl: resolveConfiguredGatewayUrl(config),
+    authMode,
+    gatewayToken: auth && typeof auth === 'object' && typeof auth.token === 'string' ? auth.token : '',
+    gatewayPassword: auth && typeof auth === 'object' && typeof auth.password === 'string' ? auth.password : ''
   }
 }
 
@@ -315,41 +330,29 @@ function resolveLoopbackGatewayUrl({
 
 const runProcess = runOpenClawCli
 
-async function discoverGatewayBootstrap(command, cwd) {
-  try {
-    const result = await runProcess(command, ['gateway', 'status', '--json'], {
-      cwd,
-      timeoutMs: 15000
-    })
-    return parseGatewayStatusJson(parseOpenClawJson(result.stdout) || parseJson(result.stdout, 'OpenClaw gateway status'))
-  } catch {
-    return {
-      gatewayUrl: '',
-      configPath: ''
-    }
-  }
-}
-
-async function resolveGatewayBootstrap({
-  command = 'openclaw',
-  cwd = '',
+export async function resolveOpenClawGatewayBootstrap({
+  configPath = '',
   gatewayUrl = '',
   gatewayToken = '',
   gatewayPassword = ''
 } = {}) {
-  const discovered = await discoverGatewayBootstrap(command, cwd)
-  const configPath = clean(discovered.configPath) || resolveDefaultConfigPath()
-  const authFromConfig = readGatewayAuthFromConfig(configPath)
+  const configBootstrap = readGatewayBootstrapConfig(clean(configPath) || resolveDefaultConfigPath())
+  const authFromConfig = {
+    mode: clean(configBootstrap.authMode),
+    token: clean(configBootstrap.gatewayToken),
+    password: clean(configBootstrap.gatewayPassword)
+  }
   const resolvedGatewayUrl = resolveLoopbackGatewayUrl({
     explicitGatewayUrl: gatewayUrl,
-    discoveredGatewayUrl: discovered.gatewayUrl
+    discoveredGatewayUrl: configBootstrap.gatewayUrl
   })
   return {
     gatewayUrl: resolvedGatewayUrl,
     gatewayToken: clean(gatewayToken) || clean(process.env.OPENCLAW_GATEWAY_TOKEN) || authFromConfig.token,
     gatewayPassword: clean(gatewayPassword) || clean(process.env.OPENCLAW_GATEWAY_PASSWORD) || authFromConfig.password,
     authMode: authFromConfig.mode,
-    configPath
+    configPath: configBootstrap.configPath,
+    config: configBootstrap.config
   }
 }
 
@@ -690,7 +693,7 @@ class OpenClawGatewayWsSession {
 }
 
 export async function withOpenClawGatewayClient(options, fn) {
-  const bootstrap = await resolveGatewayBootstrap(options)
+  const bootstrap = await resolveOpenClawGatewayBootstrap(options)
   const stateDir = clean(options?.stateDir) || path.join(os.homedir(), '.agentsquared')
   const clientOptions = {
     url: clean(bootstrap.gatewayUrl) || DEFAULT_GATEWAY_URL,
@@ -711,7 +714,8 @@ export async function withOpenClawGatewayClient(options, fn) {
   try {
     client = await tryConnect()
   } catch (error) {
-    if (!isGatewayRequestError(error, 'PAIRING_REQUIRED')) {
+    const pairingStrategy = clean(options?.pairingStrategy || 'auto').toLowerCase() || 'auto'
+    if (pairingStrategy === 'none' || !isGatewayRequestError(error, 'PAIRING_REQUIRED')) {
       throw error
     }
     await approveLatestPairing({

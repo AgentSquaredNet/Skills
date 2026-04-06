@@ -92,10 +92,21 @@ async function main() {
   }
   fs.writeFileSync(fakeOpenClawConfig, `${JSON.stringify({
     gateway: {
+      port: fakeGatewayPort,
+      bind: 'loopback',
       auth: {
         mode: 'token',
         token: 'test-openclaw-token'
       }
+    },
+    agents: {
+      list: [
+        {
+          id: 'bot1',
+          default: true,
+          workspace: '/tmp/openclaw-workspace'
+        }
+      ]
     }
   }, null, 2)}\n`)
   fakeOpenClawGateway.on('connection', (socket) => {
@@ -113,7 +124,10 @@ async function main() {
       if (frame.method === 'connect') {
         fakeGatewayEvents.connectAttempts += 1
         fakeGatewayEvents.connectAuths.push(frame.params?.auth ?? null)
-        if (!fs.existsSync(approvalMarker)) {
+        const suppliedToken = clean(frame.params?.auth?.token)
+        const suppliedDeviceToken = clean(frame.params?.auth?.deviceToken)
+        const hasDirectAccess = suppliedToken === 'test-openclaw-token' || suppliedDeviceToken === 'test-device-token'
+        if (!hasDirectAccess && !fs.existsSync(approvalMarker)) {
           socket.send(JSON.stringify({
             type: 'res',
             id: frame.id,
@@ -316,6 +330,45 @@ async function main() {
           id: frame.id,
           ok: true,
           payload: { ok: true }
+        }))
+        return
+      }
+      if (frame.method === 'agents.list') {
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            defaultId: 'bot1',
+            agents: [
+              {
+                id: 'bot1',
+                workspace: '/tmp/openclaw-workspace'
+              }
+            ]
+          }
+        }))
+        return
+      }
+      if (frame.method === 'status') {
+        socket.send(JSON.stringify({
+          type: 'res',
+          id: frame.id,
+          ok: true,
+          payload: {
+            agents: {
+              defaultAgentId: 'bot1',
+              agents: [{
+                agentId: 'bot1',
+                isDefault: true,
+                workspaceDir: '/tmp/openclaw-workspace'
+              }]
+            },
+            gateway: {
+              installed: true,
+              running: true
+            }
+          }
         }))
         return
       }
@@ -820,11 +873,11 @@ process.exit(2)
     )
     process.env.AGENTSQUARED_OPENCLAW_TEST_LOG = fakeOpenClawLog
     const detectedOpenClaw = await detectOpenClawHostEnvironment({
-      command: fakeOpenClaw
+      configPath: fakeOpenClawConfig
     })
     assert.equal(detectedOpenClaw.id, 'openclaw')
     assert.equal(detectedOpenClaw.detected, true)
-    assert.equal(detectedOpenClaw.reason, 'openclaw-gateway-status-json')
+    assert.equal(detectedOpenClaw.reason, 'openclaw-ws-agents-list')
     assert.equal(detectedOpenClaw.workspaceDir, '/tmp/openclaw-workspace')
     assert.equal(resolveOpenClawAgentSelection(detectedOpenClaw).defaultAgentId, 'bot1')
     assert.equal(
@@ -852,6 +905,7 @@ process.exit(2)
       hostRuntime: 'openclaw',
       openclawStateDir: fakeOpenClawStateDir,
       openclawCommand: fakeOpenClaw,
+      openclawConfigPath: fakeOpenClawConfig,
       openclawAgent: 'bot1',
       openclawSessionPrefix: 'agentsquared:'
     })
@@ -977,6 +1031,7 @@ process.exit(2)
       inbox: openclawInbox,
       openclawStateDir: fakeOpenClawStateDir,
       openclawCommand: fakeOpenClaw,
+      openclawConfigPath: fakeOpenClawConfig,
       openclawAgent: 'bot1',
       openclawSessionPrefix: 'agentsquared:'
     })
@@ -1003,10 +1058,9 @@ process.exit(2)
     assert.equal(openclawNotifyResult.ownerDelivery.ownerRoute.threadId, 'thread-1')
     assert.doesNotMatch(fakeGatewayEvents.lastSendParams.message, /PRIVATE KEY/i)
     assert.match(fakeGatewayEvents.lastSendParams.message, /\[REDACTED\]/)
-    assert.ok(fs.existsSync(approvalMarker))
     assert.ok(fs.existsSync(path.join(fakeOpenClawStateDir, 'openclaw-device.json')))
     assert.ok(fs.existsSync(path.join(fakeOpenClawStateDir, 'openclaw-device-auth.json')))
-    assert.ok(fakeGatewayEvents.connectAttempts >= 2)
+    assert.ok(fakeGatewayEvents.connectAttempts >= 1)
     assert.equal(fakeGatewayEvents.connectAuths[0]?.token, 'test-openclaw-token')
     assert.equal(fakeGatewayEvents.connectAuths.at(-1)?.deviceToken, 'test-device-token')
     assert.equal(fakeGatewayEvents.lastAgentParams.agentId, 'bot1')
@@ -1015,10 +1069,7 @@ process.exit(2)
     assert.equal(fakeGatewayEvents.lastSendParams.to, 'user:ou_owner')
     assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')
     assert.equal(fakeGatewayEvents.lastSendParams.threadId, 'thread-1')
-    const openclawLog = fs.readFileSync(fakeOpenClawLog, 'utf8')
-    assert.match(openclawLog, /"args":\["gateway","status","--json"\],"logLevel":"error"/)
-    assert.match(openclawLog, /"args":\["status","--json"\],"logLevel":"error"/)
-    assert.match(openclawLog, /"args":\["devices","approve","--latest","--json"(?:,[^\]]+)?\],"logLevel":"error"/)
+    assert.equal(fs.existsSync(fakeOpenClawLog), false)
 
     const cliHome = path.join(tempDir, 'cli-home')
     const cliProfileDir = path.join(cliHome, '.agentsquared')

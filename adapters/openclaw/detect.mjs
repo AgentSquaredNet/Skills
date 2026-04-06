@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { parseOpenClawJson, runOpenClawCli } from './cli.mjs'
+import { resolveOpenClawGatewayBootstrap, withOpenClawGatewayClient } from './ws_client.mjs'
 
 function clean(value) {
   return `${value ?? ''}`.trim()
@@ -83,18 +83,21 @@ function extractOpenClawAgentInfo(payload = null) {
 }
 
 export function resolveOpenClawAgentSelection(detectedHostRuntime = null) {
+  const agentsList = extractOpenClawAgentInfo(detectedHostRuntime?.agentsList)
   const overview = extractOpenClawAgentInfo(detectedHostRuntime?.overviewStatus)
   const gatewayHealth = extractOpenClawAgentInfo(detectedHostRuntime?.gatewayHealth)
   const configSummary = detectedHostRuntime?.configSummary && typeof detectedHostRuntime.configSummary === 'object'
     ? detectedHostRuntime.configSummary
     : summarizeConfig(clean(detectedHostRuntime?.configPath))
   const defaultAgentId = clean(
-    overview.defaultAgentId
+    agentsList.defaultAgentId
+      || overview.defaultAgentId
       || gatewayHealth.defaultAgentId
       || configSummary.defaultAgentId
   )
   const workspaceDir = clean(
-    overview.workspaceDir
+    agentsList.workspaceDir
+      || overview.workspaceDir
       || gatewayHealth.workspaceDir
       || configSummary.workspaceDir
   )
@@ -105,115 +108,126 @@ export function resolveOpenClawAgentSelection(detectedHostRuntime = null) {
   }
 }
 
-function runProbe(command, args, {
-  cwd = '',
-  timeoutMs = 3000
-} = {}) {
-  return runOpenClawCli(command, args, { cwd, timeoutMs })
-    .then((result) => ({
+async function requestProbe(client, method, params = {}, timeoutMs = 10000) {
+  try {
+    const payload = await client.request(method, params, timeoutMs)
+    return {
       ok: true,
       reason: 'ok',
-      stdout: result.stdout,
-      stderr: result.stderr
-    }))
-    .catch((error) => {
-      const message = clean(error?.message)
-      if (message.includes('timed out after')) {
-        return { ok: false, reason: 'timeout', stdout: '', stderr: message }
+      payload
+    }
+  } catch (error) {
+    const message = clean(error?.message)
+    return {
+      ok: false,
+      reason: message.includes('timed out after') ? 'timeout' : (message || 'request-error'),
+      error: message
+    }
+  }
+}
+
+async function probeOpenClawGatewayWs(options = {}) {
+  try {
+    return await withOpenClawGatewayClient({
+      ...options,
+      pairingStrategy: 'none',
+      connectTimeoutMs: 10000,
+      requestTimeoutMs: 10000
+    }, async (client, bootstrap) => {
+      const [health, agentsList, status] = await Promise.all([
+        requestProbe(client, 'health'),
+        requestProbe(client, 'agents.list'),
+        requestProbe(client, 'status')
+      ])
+      return {
+        ok: health.ok || agentsList.ok || status.ok,
+        bootstrap,
+        health,
+        agentsList,
+        status
       }
-      return { ok: false, reason: message || 'spawn-error', stdout: '', stderr: message }
     })
+  } catch (error) {
+    return {
+      ok: false,
+      error: clean(error?.message) || 'gateway-connect-error'
+    }
+  }
 }
 
 export async function detectOpenClawHostEnvironment({
-  command = 'openclaw',
-  cwd = '',
+  configPath = '',
   gatewayUrl = '',
   gatewayToken = '',
   gatewayPassword = ''
 } = {}) {
-  // Prefer the official OpenClaw machine-readable status probes:
-  // `openclaw gateway status --json`, `openclaw status --json`,
-  // and `openclaw gateway health --json`.
-  const statusArgs = ['gateway', 'status', '--json']
-  if (clean(gatewayUrl)) {
-    statusArgs.push('--url', clean(gatewayUrl))
-  }
-  if (clean(gatewayToken)) {
-    statusArgs.push('--token', clean(gatewayToken))
-  }
-  if (clean(gatewayPassword)) {
-    statusArgs.push('--password', clean(gatewayPassword))
-  }
-  const status = await runProbe(command, ['status', '--json'], { cwd, timeoutMs: 10000 })
-  const statusJson = parseOpenClawJson(status.stdout)
-  const gatewayStatus = await runProbe(command, statusArgs, { cwd, timeoutMs: 10000 })
-  const gatewayStatusJson = parseOpenClawJson(gatewayStatus.stdout)
-  const configPath = clean(
-    gatewayStatusJson?.config?.daemon?.path
-      || gatewayStatusJson?.config?.cli?.path
-      || defaultOpenClawConfigPath()
-  )
-  const configSummary = summarizeConfig(configPath)
+  const bootstrap = await resolveOpenClawGatewayBootstrap({
+    configPath,
+    gatewayUrl,
+    gatewayToken,
+    gatewayPassword
+  })
+  const resolvedConfigPath = clean(bootstrap.configPath) || defaultOpenClawConfigPath()
+  const configSummary = summarizeConfig(resolvedConfigPath)
+  const wsProbe = await probeOpenClawGatewayWs({
+    gatewayUrl: clean(bootstrap.gatewayUrl),
+    gatewayToken: clean(bootstrap.gatewayToken),
+    gatewayPassword: clean(bootstrap.gatewayPassword)
+  })
+  const agentsListPayload = wsProbe?.agentsList?.ok ? wsProbe.agentsList.payload : null
+  const statusPayload = wsProbe?.status?.ok ? wsProbe.status.payload : null
+  const healthPayload = wsProbe?.health?.ok ? wsProbe.health.payload : null
   const selection = resolveOpenClawAgentSelection({
-    overviewStatus: statusJson,
-    gatewayStatus: gatewayStatusJson,
+    agentsList: agentsListPayload,
+    overviewStatus: statusPayload,
+    gatewayHealth: healthPayload,
     configSummary,
-    configPath
+    configPath: resolvedConfigPath
   })
   const workspaceDir = clean(selection.workspaceDir)
-  if (gatewayStatus.ok && gatewayStatusJson) {
+  if (wsProbe?.agentsList?.ok && agentsListPayload) {
     return {
       id: 'openclaw',
       detected: true,
       confidence: 'high',
-      reason: 'openclaw-gateway-status-json',
-      gatewayStatus: gatewayStatusJson,
-      overviewStatus: statusJson,
+      reason: 'openclaw-ws-agents-list',
+      agentsList: agentsListPayload,
+      overviewStatus: statusPayload,
+      gatewayHealth: healthPayload,
       configSummary,
-      configPath,
+      configPath: resolvedConfigPath,
+      gatewayBootstrap: wsProbe.bootstrap || bootstrap,
       workspaceDir,
-      rpcHealthy: Boolean(gatewayStatusJson?.rpc?.ok || gatewayStatusJson?.rpcOk),
-      serviceInstalled: gatewayStatusJson?.service?.installed ?? gatewayStatusJson?.installed ?? null,
-      serviceRunning: gatewayStatusJson?.service?.running ?? gatewayStatusJson?.running ?? null
+      rpcHealthy: true
     }
   }
 
-  if (status.ok && statusJson) {
+  if (wsProbe?.status?.ok && statusPayload) {
     return {
       id: 'openclaw',
       detected: true,
       confidence: 'medium',
-      reason: 'openclaw-status-json',
-      overviewStatus: statusJson,
+      reason: 'openclaw-ws-status',
+      overviewStatus: statusPayload,
+      gatewayHealth: healthPayload,
       configSummary,
-      configPath,
+      configPath: resolvedConfigPath,
+      gatewayBootstrap: wsProbe.bootstrap || bootstrap,
       workspaceDir
     }
   }
 
-  const healthArgs = ['gateway', 'health', '--json']
-  if (clean(gatewayUrl)) {
-    healthArgs.push('--url', clean(gatewayUrl))
-  }
-  if (clean(gatewayToken)) {
-    healthArgs.push('--token', clean(gatewayToken))
-  }
-  if (clean(gatewayPassword)) {
-    healthArgs.push('--password', clean(gatewayPassword))
-  }
-  const gatewayHealth = await runProbe(command, healthArgs, { cwd, timeoutMs: 10000 })
-  const gatewayHealthJson = parseOpenClawJson(gatewayHealth.stdout)
-  if (gatewayHealth.ok && gatewayHealthJson) {
+  if (wsProbe?.health?.ok && healthPayload) {
     return {
       id: 'openclaw',
       detected: true,
       confidence: 'low',
-      reason: 'openclaw-gateway-health-json',
-      gatewayHealth: gatewayHealthJson,
-      overviewStatus: statusJson,
+      reason: 'openclaw-ws-health',
+      gatewayHealth: healthPayload,
+      overviewStatus: statusPayload,
       configSummary,
-      configPath,
+      configPath: resolvedConfigPath,
+      gatewayBootstrap: wsProbe.bootstrap || bootstrap,
       workspaceDir
     }
   }
@@ -224,10 +238,13 @@ export async function detectOpenClawHostEnvironment({
       detected: true,
       confidence: 'low',
       reason: 'openclaw-config-present',
-      overviewStatus: statusJson,
-      gatewayStatus: gatewayStatusJson,
+      overviewStatus: statusPayload,
+      gatewayHealth: healthPayload,
+      agentsList: agentsListPayload,
       configSummary,
-      configPath,
+      configPath: resolvedConfigPath,
+      gatewayBootstrap: bootstrap,
+      gatewayProbeError: clean(wsProbe?.error || wsProbe?.agentsList?.error || wsProbe?.status?.error || wsProbe?.health?.error),
       workspaceDir
     }
   }

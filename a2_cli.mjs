@@ -129,6 +129,7 @@ async function createCliLocalRuntimeExecutor({
   const preferredHostRuntime = clean(args['host-runtime']) || 'auto'
   const openclawCommand = clean(args['openclaw-command']) || 'openclaw'
   const openclawCwd = clean(args['openclaw-cwd'])
+  const openclawConfigPath = clean(args['openclaw-config-path'] || process.env.OPENCLAW_CONFIG_PATH)
   const openclawGatewayUrl = clean(args['openclaw-gateway-url'])
   const openclawGatewayToken = clean(args['openclaw-gateway-token'])
   const openclawGatewayPassword = clean(args['openclaw-gateway-password'])
@@ -138,6 +139,7 @@ async function createCliLocalRuntimeExecutor({
     openclaw: {
       command: openclawCommand,
       cwd: openclawCwd,
+      configPath: openclawConfigPath,
       gatewayUrl: openclawGatewayUrl,
       gatewayToken: openclawGatewayToken,
       gatewayPassword: openclawGatewayPassword
@@ -164,6 +166,7 @@ async function createCliLocalRuntimeExecutor({
     openclawStateDir: path.dirname(path.resolve(keyFile)),
     openclawCommand,
     openclawCwd,
+    openclawConfigPath,
     openclawAgent: resolvedOpenClawAgent,
     openclawSessionPrefix,
     openclawTimeoutMs: 180000,

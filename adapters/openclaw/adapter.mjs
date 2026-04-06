@@ -68,6 +68,7 @@ export function createOpenClawAdapter({
   conversationStore = null,
   command = 'openclaw',
   cwd = '',
+  configPath = '',
   stateDir = '',
   sessionPrefix = 'agentsquared:',
   timeoutMs = 180000,
@@ -87,6 +88,7 @@ export function createOpenClawAdapter({
     return withOpenClawGatewayClient({
       command,
       cwd,
+      configPath,
       stateDir,
       gatewayUrl,
       gatewayToken,
