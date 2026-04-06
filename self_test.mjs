@@ -752,6 +752,64 @@ process.exit(2)
     assert.equal(ownerReports.length, 1)
     assert.equal(ownerReports[0].ownerReport.summary, 'owner saw router1')
 
+    const fallbackResponded = []
+    const fallbackRejected = []
+    const fallbackRouter = createAgentRouter({
+      maxActiveMailboxes: 1,
+      routerSkills: ['friend-im', 'agent-mutual-learning'],
+      defaultSkill: 'friend-im',
+      async executeInbound({ selectedSkill }) {
+        if (selectedSkill === 'agent-mutual-learning') {
+          return {
+            reject: {
+              code: 503,
+              message: 'mutual-learning runtime unavailable'
+            }
+          }
+        }
+        return {
+          peerResponse: {
+            message: {
+              kind: 'message',
+              role: 'agent',
+              parts: [{ kind: 'text', text: `handled:${selectedSkill}` }]
+            },
+            metadata: {
+              selectedSkill
+            }
+          },
+          ownerReport: {
+            summary: `owner saw ${selectedSkill}`,
+            selectedSkill
+          }
+        }
+      },
+      async onRespond(item, result) {
+        fallbackResponded.push({ item, result })
+      },
+      async onReject(item, payload) {
+        fallbackRejected.push({ item, payload })
+      }
+    })
+    await fallbackRouter.enqueue({
+      inboundId: 'router-fallback',
+      remoteAgentId: 'peer@Test',
+      suggestedSkill: 'agent-mutual-learning',
+      request: {
+        method: 'message/send',
+        params: {
+          message: {
+            parts: [{ kind: 'text', text: 'hello there' }]
+          }
+        }
+      }
+    })
+    await fallbackRouter.whenIdle()
+    assert.equal(fallbackRejected.length, 0)
+    assert.equal(fallbackResponded.length, 1)
+    assert.equal(fallbackResponded[0].result.message.parts[0].text, 'handled:friend-im')
+    assert.equal(fallbackResponded[0].result.metadata.selectedSkill, 'friend-im')
+
     const rejectExecutor = createLocalRuntimeExecutor({ agentId: 'agent-a@owner-a' })
     const rejectExecution = await rejectExecutor({
       item: { inboundId: 'router2' },
