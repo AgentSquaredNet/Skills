@@ -3,6 +3,7 @@ import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOut
 import { normalizeConversationControl } from '../../lib/conversation_policy.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
 import {
+  buildOpenClawOutboundSkillDecisionPrompt,
   buildOpenClawSafetyPrompt,
   buildOpenClawTaskPrompt,
   latestAssistantText,
@@ -10,6 +11,7 @@ import {
   normalizeOpenClawSessionKey,
   normalizeSessionList,
   ownerReportText,
+  parseOpenClawSkillDecisionResult,
   parseOpenClawSafetyResult,
   parseOpenClawTaskResult,
   peerResponseText,
@@ -20,8 +22,10 @@ import {
 } from './helpers.mjs'
 
 export {
+  buildOpenClawOutboundSkillDecisionPrompt,
   buildOpenClawSafetyPrompt,
   buildOpenClawTaskPrompt,
+  parseOpenClawSkillDecisionResult,
   parseOpenClawTaskResult
 }
 
@@ -60,6 +64,89 @@ function reframeOpenClawAgentError(error, {
     )
   }
   return error
+}
+
+export async function resolveOpenClawOutboundSkillHint({
+  localAgentId,
+  targetAgentId,
+  ownerText,
+  openclawAgent = '',
+  command = 'openclaw',
+  cwd = '',
+  configPath = '',
+  stateDir = '',
+  timeoutMs = 60000,
+  gatewayUrl = '',
+  gatewayToken = '',
+  gatewayPassword = '',
+  availableSkills = ['friend-im', 'agent-mutual-learning']
+} = {}) {
+  const agentName = clean(openclawAgent)
+  if (!agentName) {
+    throw new Error(`openclaw agent name is required for ${clean(localAgentId) || 'the local AgentSquared agent'}`)
+  }
+  return withOpenClawGatewayClient({
+    command,
+    cwd,
+    configPath,
+    stateDir,
+    gatewayUrl,
+    gatewayToken,
+    gatewayPassword,
+    requestTimeoutMs: timeoutMs
+  }, async (client, gatewayContext) => {
+    const sessionKey = stableId('agentsquared-outbound-skill-decision', localAgentId, targetAgentId, ownerText)
+    const prompt = buildOpenClawOutboundSkillDecisionPrompt({
+      localAgentId,
+      targetAgentId,
+      ownerText,
+      availableSkills
+    })
+    let accepted
+    try {
+      accepted = await client.request('agent', {
+        agentId: agentName,
+        sessionKey,
+        message: prompt,
+        idempotencyKey: stableId('agentsquared-outbound-skill-decision-run', localAgentId, targetAgentId, ownerText)
+      }, timeoutMs)
+    } catch (error) {
+      throw reframeOpenClawAgentError(error, {
+        openclawAgent: agentName,
+        localAgentId
+      })
+    }
+    const runId = readOpenClawRunId(accepted)
+    if (!runId) {
+      throw new Error('OpenClaw outbound skill decision did not return a runId.')
+    }
+    const waited = await client.request('agent.wait', {
+      runId,
+      timeoutMs
+    }, timeoutMs + 1000)
+    const status = readOpenClawStatus(waited).toLowerCase()
+    if (status && status !== 'ok' && status !== 'completed' && status !== 'done') {
+      throw new Error(`OpenClaw outbound skill decision returned ${status || 'an unknown status'} for run ${runId}.`)
+    }
+    const history = await client.request('chat.history', {
+      sessionKey,
+      limit: 8
+    }, timeoutMs)
+    const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
+    if (!resultText) {
+      throw new Error(`OpenClaw outbound skill decision did not produce a final assistant message for session ${sessionKey}.`)
+    }
+    const parsed = parseOpenClawSkillDecisionResult(resultText, {
+      availableSkills,
+      defaultSkill: 'friend-im'
+    })
+    return {
+      ...parsed,
+      openclawRunId: runId,
+      openclawSessionKey: sessionKey,
+      openclawGatewayUrl: gatewayContext.gatewayUrl
+    }
+  })
 }
 
 export function createOpenClawAdapter({

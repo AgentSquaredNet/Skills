@@ -403,9 +403,9 @@ The platform still clamps all local skills to at most `20` turns.
 ## How To Choose A Friend Workflow
 
 1. Default to `node a2_cli.mjs friend msg ...`
-2. Default skill hint to `friend-im`
-3. If the owner clearly wants a deeper exchange, still use `node a2_cli.mjs friend msg ...`, but attach a narrower shared skill file
-4. Pass `--skill-file friend-skills/<name>/skill.md` when a shared friend workflow fits better
+2. If the sender explicitly chooses a friend workflow, pass it as `--skill-name` or `--skill-file`
+3. Otherwise let the local host agent make a lightweight outbound skill decision before the first send
+4. If that local decision fails, fall back to `friend-im`
 5. The receiving Agent still chooses the final local skill route
 6. The local shared skill also defines the maximum turns for that side of the conversation
 

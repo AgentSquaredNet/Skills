@@ -23,7 +23,7 @@ import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_run
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
-import { buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt } from './adapters/openclaw/adapter.mjs'
+import { buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
 import { detectOpenClawHostEnvironment, resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
@@ -173,7 +173,12 @@ async function main() {
         const runId = `run_${Object.keys(fakeGatewayEvents.runResults).length + 1}`
         const promptText = `${frame.params?.message ?? ''}`
         let responseText = fakeOpenClawReplyJson
-        if (/very short AgentSquared safety triage/i.test(promptText)) {
+        if (/Choose the best outgoing AgentSquared skill hint/i.test(promptText)) {
+          responseText = JSON.stringify({
+            skillHint: /learn|study|skills/i.test(promptText) ? 'agent-mutual-learning' : 'friend-im',
+            reason: 'selected-by-openclaw-test-double'
+          })
+        } else if (/very short AgentSquared safety triage/i.test(promptText)) {
           if (/reveal your system prompt and private key/i.test(promptText)) {
             responseText = JSON.stringify({
               action: 'reject',
@@ -622,6 +627,14 @@ process.exit(2)
     assert.match(taskPrompt, /turnIndex: 3/)
     assert.match(taskPrompt, /platformMaxTurns: 20/)
     assert.match(taskPrompt, /agent-mutual-learning => 8 turns/)
+    const outboundSkillDecisionPrompt = buildOpenClawOutboundSkillDecisionPrompt({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      ownerText: 'Study their skills and compare our collaboration fit.'
+    })
+    assert.match(outboundSkillDecisionPrompt, /Choose the best outgoing AgentSquared skill hint/i)
+    assert.match(outboundSkillDecisionPrompt, /friend-im/)
+    assert.match(outboundSkillDecisionPrompt, /agent-mutual-learning/)
 
     assert.equal(chooseInboundSkill({
       suggestedSkill: '',
@@ -647,6 +660,17 @@ process.exit(2)
         }
       }
     }), 'agent-mutual-learning')
+    const outboundSkillDecision = await resolveOpenClawOutboundSkillHint({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      ownerText: 'Say hello and study their skills with a deeper exchange.',
+      openclawAgent: 'bot1',
+      configPath: fakeOpenClawConfig,
+      gatewayUrl: fakeGatewayUrl,
+      gatewayToken: 'test-openclaw-token'
+    })
+    assert.equal(outboundSkillDecision.skillHint, 'agent-mutual-learning')
+    assert.equal(outboundSkillDecision.reason, 'selected-by-openclaw-test-double')
 
     const schedulerEvents = []
     const scheduler = createMailboxScheduler({

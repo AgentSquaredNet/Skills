@@ -12,6 +12,7 @@ import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTick
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
+import { resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
@@ -121,10 +122,11 @@ function resolveConversationPolicy(skillName = '', sharedSkill = null) {
   }
 }
 
-async function createCliLocalRuntimeExecutor({
+async function resolveCliOpenClawHostContext({
   agentId,
   keyFile,
-  args
+  args,
+  purpose = 'AgentSquared local runtime execution'
 }) {
   const preferredHostRuntime = clean(args['host-runtime']) || 'auto'
   const openclawCommand = clean(args['openclaw-command']) || 'openclaw'
@@ -150,30 +152,116 @@ async function createCliLocalRuntimeExecutor({
     const detected = detectedHostRuntime.resolved || detectedHostRuntime.id || 'none'
     const reason = clean(detectedHostRuntime.reason)
     throw new Error(
-      `local multi-turn execution currently supports only the OpenClaw host runtime. Detected host runtime: ${detected}.${reason ? ` Detection reason: ${reason}.` : ''}`
+      `${clean(purpose) || 'AgentSquared local runtime execution'} currently supports only the OpenClaw host runtime. Detected host runtime: ${detected}.${reason ? ` Detection reason: ${reason}.` : ''}`
     )
   }
   const detectedOpenClawAgent = clean(resolveOpenClawAgentSelection(detectedHostRuntime).defaultAgentId)
   const resolvedOpenClawAgent = clean(args['openclaw-agent']) || detectedOpenClawAgent
   if (!resolvedOpenClawAgent) {
-    throw new Error('OpenClaw was detected for local multi-turn execution, but no OpenClaw agent id could be resolved.')
+    throw new Error(`OpenClaw was detected for ${clean(purpose).toLowerCase() || 'local runtime execution'}, but no OpenClaw agent id could be resolved.`)
   }
+  return {
+    detectedHostRuntime,
+    resolvedOpenClawAgent,
+    openclawCommand,
+    openclawCwd,
+    openclawConfigPath,
+    openclawGatewayUrl,
+    openclawGatewayToken,
+    openclawGatewayPassword,
+    openclawSessionPrefix,
+    openclawStateDir: path.dirname(path.resolve(keyFile)),
+    agentId
+  }
+}
+
+async function createCliLocalRuntimeExecutor({
+  agentId,
+  keyFile,
+  args
+}) {
+  const hostContext = await resolveCliOpenClawHostContext({
+    agentId,
+    keyFile,
+    args,
+    purpose: 'local multi-turn execution'
+  })
   return createLocalRuntimeExecutor({
     agentId,
     mode: 'host',
     hostRuntime: 'openclaw',
     conversationStore: createLiveConversationStore(),
-    openclawStateDir: path.dirname(path.resolve(keyFile)),
-    openclawCommand,
-    openclawCwd,
-    openclawConfigPath,
-    openclawAgent: resolvedOpenClawAgent,
-    openclawSessionPrefix,
+    openclawStateDir: hostContext.openclawStateDir,
+    openclawCommand: hostContext.openclawCommand,
+    openclawCwd: hostContext.openclawCwd,
+    openclawConfigPath: hostContext.openclawConfigPath,
+    openclawAgent: hostContext.resolvedOpenClawAgent,
+    openclawSessionPrefix: hostContext.openclawSessionPrefix,
     openclawTimeoutMs: 180000,
-    openclawGatewayUrl,
-    openclawGatewayToken,
-    openclawGatewayPassword
+    openclawGatewayUrl: hostContext.openclawGatewayUrl,
+    openclawGatewayToken: hostContext.openclawGatewayToken,
+    openclawGatewayPassword: hostContext.openclawGatewayPassword
   })
+}
+
+async function resolveOutboundSkillHint({
+  agentId,
+  keyFile,
+  args,
+  targetAgentId,
+  text,
+  explicitSkillName = '',
+  sharedSkill = null
+}) {
+  const explicit = clean(explicitSkillName)
+  if (explicit) {
+    return {
+      skillHint: explicit,
+      source: 'explicit',
+      reason: 'explicit-skill-arg'
+    }
+  }
+  const sharedSkillName = clean(sharedSkill?.name)
+  if (sharedSkillName) {
+    return {
+      skillHint: sharedSkillName,
+      source: 'shared-skill',
+      reason: 'shared-skill-file'
+    }
+  }
+  try {
+    const hostContext = await resolveCliOpenClawHostContext({
+      agentId,
+      keyFile,
+      args,
+      purpose: 'outbound skill selection'
+    })
+    const decision = await resolveOpenClawOutboundSkillHint({
+      localAgentId: agentId,
+      targetAgentId,
+      ownerText: text,
+      openclawAgent: hostContext.resolvedOpenClawAgent,
+      command: hostContext.openclawCommand,
+      cwd: hostContext.openclawCwd,
+      configPath: hostContext.openclawConfigPath,
+      stateDir: hostContext.openclawStateDir,
+      gatewayUrl: hostContext.openclawGatewayUrl,
+      gatewayToken: hostContext.openclawGatewayToken,
+      gatewayPassword: hostContext.openclawGatewayPassword,
+      availableSkills: ['friend-im', 'agent-mutual-learning']
+    })
+    return {
+      skillHint: clean(decision.skillHint) || 'friend-im',
+      source: 'agent-decision',
+      reason: clean(decision.reason) || 'agent-selected-skill'
+    }
+  } catch (error) {
+    return {
+      skillHint: 'friend-im',
+      source: 'fallback',
+      reason: clean(error?.message) || 'agent-decision-failed'
+    }
+  }
 }
 
 async function executeLocalConversationTurn({
@@ -960,7 +1048,16 @@ async function commandMessageSend(args) {
   const skillFile = clean(args['skill-file'])
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
-  const skillHint = explicitSkillName || clean(sharedSkill?.name) || 'friend-im'
+  const skillDecision = await resolveOutboundSkillHint({
+    agentId: context.agentId,
+    keyFile: context.keyFile,
+    args,
+    targetAgentId,
+    text,
+    explicitSkillName,
+    sharedSkill
+  })
+  const skillHint = clean(skillDecision.skillHint) || 'friend-im'
   const conversationPolicy = resolveConversationPolicy(skillHint, sharedSkill)
   const sentAt = new Date().toISOString()
   const outboundText = buildSkillOutboundText({
@@ -1098,6 +1195,9 @@ async function commandMessageSend(args) {
     printJson({
       ok: false,
       targetAgentId,
+      skillHint,
+      skillHintSource: skillDecision.source,
+      skillHintReason: skillDecision.reason,
       error: {
         code: failure.code,
         message: failure.reason,
@@ -1135,6 +1235,9 @@ async function commandMessageSend(args) {
   printJson({
     ok: true,
     targetAgentId,
+    skillHint,
+    skillHintSource: skillDecision.source,
+    skillHintReason: skillDecision.reason,
     ticketExpiresAt: result.ticket?.expiresAt ?? '',
     peerSessionId: result.peerSessionId ?? '',
     reusedSession: Boolean(result.reusedSession),

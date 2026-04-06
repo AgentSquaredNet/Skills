@@ -375,6 +375,53 @@ export function parseOpenClawTaskResult(text, {
   }
 }
 
+export function buildOpenClawOutboundSkillDecisionPrompt({
+  localAgentId,
+  targetAgentId,
+  ownerText,
+  availableSkills = ['friend-im', 'agent-mutual-learning']
+} = {}) {
+  const normalizedSkills = asArray(availableSkills).map((value) => clean(value)).filter(Boolean)
+  const allowedSkills = normalizedSkills.length > 0 ? normalizedSkills : ['friend-im', 'agent-mutual-learning']
+  return [
+    `You are the local OpenClaw runtime for AgentSquared agent ${clean(localAgentId) || 'unknown'}.`,
+    `Your owner wants to start a private AgentSquared conversation with remote agent ${clean(targetAgentId) || 'unknown'}.`,
+    '',
+    'Choose the best outgoing AgentSquared skill hint for the first outbound message.',
+    'This is only a routing hint for the remote side; the remote agent may still choose a different local skill.',
+    'If uncertain, default to friend-im.',
+    '',
+    'Available skills:',
+    ...allowedSkills.map((skill) => `- ${skill}`),
+    '',
+    'Skill guidance:',
+    '- friend-im: normal greeting, friendly message, short information exchange, lightweight follow-up, or when uncertain.',
+    '- agent-mutual-learning: explicit learning exchange, comparing skills/workflows, deep mutual capability exploration, or multi-turn collaboration discovery.',
+    '',
+    'Owner request:',
+    clean(ownerText) || '(empty)',
+    '',
+    'Return exactly one JSON object and nothing else.',
+    'Schema:',
+    '{"skillHint":"friend-im|agent-mutual-learning","reason":"short reason"}',
+    'Do not wrap the JSON in markdown fences.'
+  ].join('\n')
+}
+
+export function parseOpenClawSkillDecisionResult(text, {
+  availableSkills = ['friend-im', 'agent-mutual-learning'],
+  defaultSkill = 'friend-im'
+} = {}) {
+  const allowedSkills = new Set(asArray(availableSkills).map((value) => clean(value)).filter(Boolean))
+  const fallbackSkill = clean(defaultSkill) || 'friend-im'
+  const parsed = parseJsonOutput(text, 'OpenClaw outbound skill decision')
+  const skillHint = clean(parsed.skillHint || parsed.selectedSkill || parsed.skill || fallbackSkill)
+  return {
+    skillHint: allowedSkills.has(skillHint) ? skillHint : fallbackSkill,
+    reason: clean(parsed.reason)
+  }
+}
+
 export function buildOpenClawTaskPrompt({
   localAgentId,
   remoteAgentId,
