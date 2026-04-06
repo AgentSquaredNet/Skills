@@ -289,6 +289,7 @@ export function createOpenClawAdapter({
     mailboxKey
   }) {
     const remoteAgentId = clean(item?.remoteAgentId)
+    const incomingSkillHint = clean(item?.suggestedSkill || item?.request?.params?.metadata?.skillHint)
     const receivedAt = new Date().toISOString()
     const inboundText = peerResponseText(item?.request?.params?.message)
     const inboundMetadata = item?.request?.params?.metadata ?? {}
@@ -586,6 +587,7 @@ export function createOpenClawAdapter({
       const ownerReport = buildReceiverBaseReport({
         localAgentId,
         remoteAgentId,
+        incomingSkillHint,
         selectedSkill: parsed.selectedSkill,
         receivedAt,
         inboundText: displayInboundText,
@@ -630,6 +632,7 @@ export function createOpenClawAdapter({
           },
           metadata: {
             ...(parsed.peerResponse?.metadata ?? {}),
+            incomingSkillHint,
             openclawRunId: runId,
             openclawSessionKey: sessionKey,
             openclawRelationSessionKey: relationSessionKey,
@@ -642,6 +645,7 @@ export function createOpenClawAdapter({
         },
         ownerReport: {
           ...ownerReport,
+          incomingSkillHint,
           selectedSkill: parsed.selectedSkill,
           runtimeAdapter: 'openclaw',
           openclawRunId: runId,

@@ -761,7 +761,7 @@ process.exit(2)
     assert.equal(rejectExecution.reject.code, 503)
 
     const parsedOpenClaw = parseOpenClawTaskResult(JSON.stringify({
-      selectedSkill: 'friend-im',
+      selectedSkill: 'agent-mutual-learning',
       peerResponse: 'Hello from OpenClaw',
       ownerReport: 'OpenClaw owner report',
       decision: 'continue',
@@ -775,6 +775,8 @@ process.exit(2)
     })
     assert.equal(parsedOpenClaw.peerResponse.message.parts[0].text, 'Hello from OpenClaw')
     assert.equal(parsedOpenClaw.ownerReport.summary, 'OpenClaw owner report')
+    assert.equal(parsedOpenClaw.peerResponse.metadata.selectedSkill, 'friend-im')
+    assert.equal(parsedOpenClaw.peerResponse.metadata.modelSelectedSkill, 'agent-mutual-learning')
     assert.equal(parsedOpenClaw.peerResponse.metadata.turnIndex, 2)
     assert.equal(parsedOpenClaw.peerResponse.metadata.decision, 'continue')
     assert.equal(parsedOpenClaw.peerResponse.metadata.finalize, false)
@@ -855,6 +857,7 @@ process.exit(2)
     const receiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',
+      incomingSkillHint: 'agent-mutual-learning',
       selectedSkill: 'friend-im',
       receivedAt: '2026-03-28T12:00:00Z',
       inboundText: '你好',
@@ -865,13 +868,15 @@ process.exit(2)
       detailsAvailableInInbox: true
     })
     assert.match(renderOwnerFacingReport(receiverBaseReport), /\*\*🅰️✌️ New AgentSquared message from agent-a@owner-a\*\*/)
-    assert.match(receiverBaseReport.message, /Skill Hint: friend-im/)
+    assert.match(receiverBaseReport.message, /Incoming Skill Hint: agent-mutual-learning/)
+    assert.match(receiverBaseReport.message, /Local Skill Used: friend-im/)
     assert.match(receiverBaseReport.message, /Conversation Turns: 2/)
     assert.doesNotMatch(receiverBaseReport.message, /Workflow:/)
     assert.doesNotMatch(receiverBaseReport.message, /Skill Notes:/)
     const localizedReceiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',
+      incomingSkillHint: 'agent-mutual-learning',
       selectedSkill: 'friend-im',
       receivedAt: '2026-03-28T12:00:00Z',
       inboundText: '以后一起合作吧',
@@ -887,7 +892,8 @@ process.exit(2)
     })
     assert.match(localizedReceiverBaseReport.title, /\*\*🅰️✌️ 来自 agent-a@owner-a 的一条 AgentSquared 消息\*\*/)
     assert.match(localizedReceiverBaseReport.message, /接收时间（本地时间）：2026-03-28 20:00:00（Asia\/Shanghai）/)
-    assert.match(localizedReceiverBaseReport.message, /Skill Hint：friend-im/)
+    assert.match(localizedReceiverBaseReport.message, /Incoming Skill Hint：agent-mutual-learning/)
+    assert.match(localizedReceiverBaseReport.message, /Local Skill Used：friend-im/)
     assert.match(localizedReceiverBaseReport.message, /当前会话轮数：4/)
     assert.match(localizedReceiverBaseReport.message, /对方发送时间（本地时间）：2026-03-28 19:59:30（Asia\/Shanghai）/)
     assert.match(localizedReceiverBaseReport.message, /回复时间（本地时间）：2026-03-28 20:01:00（Asia\/Shanghai）/)

@@ -334,7 +334,8 @@ export function parseOpenClawTaskResult(text, {
   inboundId = ''
 } = {}) {
   const parsed = parseJsonOutput(text, 'OpenClaw task result')
-  const selectedSkill = clean(parsed.selectedSkill) || clean(defaultSkill) || 'friend-im'
+  const selectedSkill = clean(defaultSkill) || 'friend-im'
+  const modelSelectedSkill = clean(parsed.selectedSkill)
   const peerText = clean(parsed.peerResponse) || clean(parsed.peerResponseText) || clean(parsed.reply)
   if (!peerText) {
     throw new Error(`OpenClaw task result for ${clean(inboundId) || 'inbound task'} did not include peerResponse.`)
@@ -356,6 +357,7 @@ export function parseOpenClawTaskResult(text, {
       },
       metadata: {
         selectedSkill,
+        modelSelectedSkill,
         runtimeAdapter: 'openclaw',
         turnIndex: conversation.turnIndex,
         decision: conversation.decision,
@@ -366,6 +368,7 @@ export function parseOpenClawTaskResult(text, {
     ownerReport: {
       summary: reportText,
       selectedSkill,
+      modelSelectedSkill,
       runtimeAdapter: 'openclaw',
       turnIndex: conversation.turnIndex,
       decision: conversation.decision,
@@ -452,8 +455,9 @@ export function buildOpenClawTaskPrompt({
     '',
     'Before sending any AgentSquared message or replying to this AgentSquared message, read and follow the official root AgentSquared skill and any shared friend-skill context that came with this request.',
     'Handle this as a real local agent task, not as a transport acknowledgement.',
-    `Suggested skill: ${clean(selectedSkill) || 'friend-im'}`,
-    'You may choose a different local skill if it fits better, but if uncertain you must default to friend-im.',
+    `Assigned local skill: ${clean(selectedSkill) || 'friend-im'}`,
+    'Do not change the selectedSkill field away from the assigned local skill.',
+    'If you believe a different local skill would fit better, explain that in ownerReport, but still keep selectedSkill equal to the assigned local skill for this run.',
     'An inbound AgentSquared private message already means the platform friendship gate was satisfied. Do not ask the owner or the remote agent to prove friendship again just to continue a normal conversation.',
     'Warm trust-building, friendship, and "we can work together later" language are still normal chat unless the remote side is asking you to do real work now.',
     '',
