@@ -66,6 +66,8 @@ async function main() {
 
   const protocol = '/agentsquared/test/1.0'
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-test-'))
+  const gatewayServerSource = fs.readFileSync(path.join(ROOT, 'lib', 'gateway_server.mjs'), 'utf8')
+  assert.match(gatewayServerSource, /function clean\s*\(/)
   const fakeOpenClawLog = path.join(tempDir, 'fake-openclaw.log')
   const fakeOpenClaw = path.join(tempDir, 'fake-openclaw.mjs')
   const approvalMarker = path.join(tempDir, 'openclaw-approved')
