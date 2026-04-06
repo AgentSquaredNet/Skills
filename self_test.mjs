@@ -19,6 +19,7 @@ import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { ensureGatewayForUse } from './lib/gateway_lifecycle.mjs'
 import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
+import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
@@ -464,6 +465,14 @@ process.exit(2)
       remotePeerId: '12D3KooWDemoPeer'
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a').peerSessionId, 'peer_demo')
+    gatewayState.rememberTrustedSession({
+      peerSessionId: 'peer_demo_older',
+      remoteAgentId: 'agent-a@owner-a',
+      remotePeerId: '12D3KooWOlderPeer'
+    })
+    gatewayState.touchTrustedSession('peer_demo')
+    assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a').peerSessionId, 'peer_demo')
+    assert.equal(gatewayState.trustedSessionById('peer_demo_older').remotePeerId, '12D3KooWOlderPeer')
     const inboundPromise = gatewayState.nextInbound({ waitMs: 100 })
     const queued = await gatewayState.enqueueInbound({
       request: { jsonrpc: '2.0', id: 'q1', method: 'message/send', params: { metadata: {} } },
@@ -489,6 +498,95 @@ process.exit(2)
       reason: 'full gateway shutdown'
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a'), null)
+    {
+      const liveStore = createLiveConversationStore()
+      const first = liveStore.appendTurn({
+        conversationKey: 'conv-demo-1',
+        peerSessionId: 'peer-demo',
+        requestId: 'req-1',
+        remoteAgentId: 'agent-a@owner-a',
+        selectedSkill: 'agent-mutual-learning',
+        turnIndex: 1,
+        inboundText: 'hello',
+        replyText: 'hi',
+        decision: 'continue'
+      })
+      assert.equal(first.turns.length, 1)
+      const duplicate = liveStore.appendTurn({
+        conversationKey: 'conv-demo-1',
+        peerSessionId: 'peer-demo',
+        requestId: 'req-1',
+        remoteAgentId: 'agent-a@owner-a',
+        selectedSkill: 'agent-mutual-learning',
+        turnIndex: 1,
+        inboundText: 'hello',
+        replyText: 'hi',
+        decision: 'continue'
+      })
+      assert.equal(duplicate.turns.length, 1)
+      const secondConversation = liveStore.appendTurn({
+        conversationKey: 'conv-demo-2',
+        peerSessionId: 'peer-demo',
+        requestId: 'req-2',
+        remoteAgentId: 'agent-a@owner-a',
+        selectedSkill: 'friend-im',
+        turnIndex: 1,
+        inboundText: 'separate conversation',
+        replyText: 'separate reply',
+        decision: 'done',
+        finalize: true
+      })
+      assert.equal(secondConversation.turns.length, 1)
+      assert.equal(liveStore.getConversation('conv-demo-1').turns.length, 1)
+      assert.equal(liveStore.getConversation('conv-demo-2').turns.length, 1)
+    }
+    {
+      let ownerNotification = null
+      let peerResponse = null
+      const router = createAgentRouter({
+        executeInbound: async () => ({
+          reject: {
+            code: 503,
+            message: 'simulated runtime failure'
+          }
+        }),
+        notifyOwner: async (payload) => {
+          ownerNotification = payload
+          return { delivered: true }
+        },
+        onRespond: async (_item, response) => {
+          peerResponse = response
+        },
+        onReject: async () => {}
+      })
+      await router.enqueue({
+        inboundId: 'inbound-router-fallback',
+        remoteAgentId: 'agent-b@owner-b',
+        peerSessionId: 'peer-router',
+        suggestedSkill: 'agent-mutual-learning',
+        request: {
+          id: 'req-router-fallback',
+          params: {
+            metadata: {
+              conversationKey: 'conv-router',
+              turnIndex: 4,
+              decision: 'continue',
+              stopReason: '',
+              finalize: false
+            },
+            message: {
+              kind: 'message',
+              role: 'user',
+              parts: [{ kind: 'text', text: 'continue please' }]
+            }
+          }
+        }
+      })
+      assert.equal(peerResponse?.metadata?.conversationKey, 'conv-router')
+      assert.equal(peerResponse?.metadata?.turnIndex, 4)
+      assert.equal(ownerNotification?.conversation?.turnIndex, 4)
+      assert.equal(ownerNotification?.conversation?.stopReason, 'receiver-runtime-unavailable')
+    }
     {
       const lifecycleDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentsquared-gateway-lifecycle-'))
       const keyFile = path.join(lifecycleDir, 'demo_runtime_key.json')

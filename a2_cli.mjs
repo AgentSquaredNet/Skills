@@ -269,11 +269,19 @@ async function executeLocalConversationTurn({
   localAgentId,
   targetAgentId,
   peerSessionId,
+  conversationKey,
   skillHint,
   sharedSkill,
   inboundText,
-  turnIndex
+  turnIndex,
+  remoteControl = null
 }) {
+  const normalizedRemoteControl = normalizeConversationControl(remoteControl ?? {}, {
+    defaultTurnIndex: Math.max(1, Number.parseInt(`${turnIndex ?? 1}`, 10) - 1),
+    defaultDecision: 'done',
+    defaultStopReason: '',
+    defaultFinalize: false
+  })
   const item = {
     inboundId: `local-turn-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     remoteAgentId: targetAgentId,
@@ -294,7 +302,11 @@ async function executeLocalConversationTurn({
           from: targetAgentId,
           to: localAgentId,
           originalOwnerText: clean(inboundText),
-          turnIndex
+          conversationKey: clean(conversationKey),
+          turnIndex,
+          decision: normalizedRemoteControl.decision,
+          stopReason: normalizedRemoteControl.stopReason,
+          finalize: normalizedRemoteControl.finalize
         }
       }
     }
@@ -1059,6 +1071,7 @@ async function commandMessageSend(args) {
   })
   const skillHint = clean(skillDecision.skillHint) || 'friend-im'
   const conversationPolicy = resolveConversationPolicy(skillHint, sharedSkill)
+  const conversationKey = randomRequestId('conversation')
   const sentAt = new Date().toISOString()
   const outboundText = buildSkillOutboundText({
     localAgentId: context.agentId,
@@ -1094,6 +1107,7 @@ async function commandMessageSend(args) {
         metadata: {
           ...(sharedSkill ? { sharedSkill } : {}),
           originalOwnerText: turnIndex === 1 ? text : currentOutboundText,
+          conversationKey,
           sentAt,
           turnIndex: currentOutboundControl.turnIndex,
           decision: currentOutboundControl.decision,
@@ -1154,10 +1168,12 @@ async function commandMessageSend(args) {
           localAgentId: context.agentId,
           targetAgentId,
           peerSessionId: result.peerSessionId,
+          conversationKey,
           skillHint,
           sharedSkill,
           inboundText: replyText,
-          turnIndex: nextTurnIndex
+          turnIndex: nextTurnIndex,
+          remoteControl
         })
       } catch (error) {
         continuationError = clean(error?.message) || 'local runtime execution failed'
@@ -1234,6 +1250,7 @@ async function commandMessageSend(args) {
     replyText,
     replyAt: new Date().toISOString(),
     peerSessionId: result.peerSessionId,
+    conversationKey,
     turnCount: turnLog.length || 1,
     stopReason: finalRemoteControl.stopReason || localStopReason,
     detailsHint: continuationError
@@ -1251,6 +1268,7 @@ async function commandMessageSend(args) {
     skillHintReason: skillDecision.reason,
     ticketExpiresAt: result.ticket?.expiresAt ?? '',
     peerSessionId: result.peerSessionId ?? '',
+    conversationKey,
     reusedSession: Boolean(result.reusedSession),
     turnCount: turnLog.length || 1,
     stopReason: finalRemoteControl.stopReason || localStopReason,
