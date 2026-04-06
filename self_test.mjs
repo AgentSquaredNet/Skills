@@ -1787,6 +1787,102 @@ process.exit(2)
     )
     assert.equal(ambiguousAttempt, 2)
 
+    const relayRetryCalls = []
+    const relayRetryTicket = `eyJhbGciOiJub25lIn0.${Buffer.from(JSON.stringify({ tid: 'peer_relay_retry' })).toString('base64url')}.`
+    const relayRetryState = {
+      trustedSessionByAgent(remoteAgentId) {
+        if (remoteAgentId !== 'agent-b@owner-b') {
+          return null
+        }
+        return {
+          peerSessionId: 'peer_cached_relay_retry',
+          remoteAgentId,
+          remotePeerId: 'peer-remote',
+          remoteTransport: {
+            peerId: 'peer-remote',
+            streamProtocol: '/agentsquared/reuse-fallback/1.0'
+          },
+          skillHint: 'friend-im'
+        }
+      },
+      touchTrustedSession() {},
+      rememberTrustedSession() {}
+    }
+    const relayRetryResult = await openDirectPeerSession({
+      apiBase: 'https://api.agentsquared.net',
+      agentId: 'agent-a@owner-a',
+      bundle,
+      node: {},
+      binding: {
+        streamProtocol: '/agentsquared/reuse-fallback/1.0'
+      },
+      targetAgentId: 'agent-b@owner-b',
+      skillName: 'friend-im',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'reuse fallback please' }]
+      },
+      metadata: null,
+      activitySummary: 'Trusted reuse relay fallback test',
+      report: null,
+      sessionStore: relayRetryState,
+      _deps: {
+        currentPeerConnectionFn: () => ({}),
+        exchangeOverTransportFn: async ({ request, reuseExistingConnection = false }) => {
+          relayRetryCalls.push({
+            reuseExistingConnection,
+            requestId: request?.id,
+            peerSessionId: request?.params?.metadata?.peerSessionId,
+            relayConnectTicket: request?.params?.metadata?.relayConnectTicket ?? ''
+          })
+          if (reuseExistingConnection) {
+            const error = new Error('delivery status is unknown after the request was dispatched: empty JSON message')
+            error.a2DispatchStage = 'post-dispatch'
+            error.a2DeliveryStatusKnown = false
+            throw error
+          }
+          return {
+            jsonrpc: '2.0',
+            id: request.id,
+            result: {
+              message: {
+                kind: 'message',
+                role: 'agent',
+                parts: [{ kind: 'text', text: 'relay-retry-ok' }]
+              }
+            }
+          }
+        },
+        currentTransportFn: async () => ({
+          peerId: 'peer-local',
+          streamProtocol: '/agentsquared/reuse-fallback/1.0',
+          listenAddrs: [],
+          relayAddrs: ['/dns4/relay.agentsquared.net/tcp/4051/p2p/peer-remote/p2p-circuit'],
+          supportedBindings: ['libp2p-a2a-jsonrpc'],
+          a2aProtocolVersion: 'a2a-jsonrpc-custom-binding/2026-03'
+        }),
+        createConnectTicketWithRecoveryFn: async () => ({
+          ticket: { ticket: relayRetryTicket },
+          targetTransport: {
+            peerId: 'peer-remote',
+            streamProtocol: '/agentsquared/reuse-fallback/1.0',
+            listenAddrs: ['/ip4/127.0.0.1/tcp/40123']
+          }
+        })
+      }
+    })
+    assert.equal(relayRetryCalls.length, 2)
+    assert.equal(relayRetryCalls[0].reuseExistingConnection, true)
+    assert.equal(relayRetryCalls[1].reuseExistingConnection, false)
+    assert.equal(relayRetryCalls[0].requestId, relayRetryCalls[1].requestId)
+    assert.equal(relayRetryCalls[0].peerSessionId, 'peer_cached_relay_retry')
+    assert.equal(relayRetryCalls[1].peerSessionId, 'peer_cached_relay_retry')
+    assert.equal(relayRetryCalls[0].relayConnectTicket, '')
+    assert.equal(relayRetryCalls[1].relayConnectTicket, relayRetryTicket)
+    assert.equal(relayRetryResult.response?.result?.message?.parts?.[0]?.text, 'relay-retry-ok')
+
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
       streamProtocol: protocol,
