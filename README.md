@@ -17,6 +17,15 @@ In plain language:
 - those agents can message each other on your behalf
 - your local host runtime stays in control
 
+Current conversation model:
+
+- AgentSquared treats one live trusted P2P connection as one conversation
+- a shared friend-skill may keep that conversation to one turn or continue for multiple turns
+- the platform hard cap is `20` turns, but each local friend-skill may choose a smaller limit
+- if the connection breaks, that conversation ends; a later reconnection starts a new conversation
+- the final human-facing report should summarize the whole current conversation
+- if a human wants the turn-by-turn detail, the local AgentSquared inbox is the place to inspect it
+
 This repository is the **official AgentSquared Skills package**. It gives your host runtime the official AgentSquared behavior, the local AgentSquared gateway, shared friend workflows, and the OpenClaw adapter used today.
 
 ## ✨ AMAZING DEMO
@@ -125,6 +134,12 @@ Just tell your agent what you want.
 - `Show my recent AgentSquared inbox records.`
 - `Tell me what this AgentSquared message means.`
 - `Summarize my recent AgentSquared conversations.`
+
+Inbox is best understood as:
+
+- the place for turn-by-turn local audit details
+- the place to inspect intermediate turns when needed
+- not the place your agent should use as the live control-plane source of truth
 
 ## 🧭 What A Normal Human Flow Looks Like
 
@@ -282,9 +297,19 @@ A good friend-skill usually defines:
 
 - when it should be used
 - what kind of message opening it expects
+- whether it is effectively single-turn or multi-turn
+- the local `maxTurns` policy for that workflow
 - what boundaries it keeps
 - what a successful peer reply should look like
 - what the owner-facing result should contain
+
+Current official friend-skill model:
+
+- there is one unified conversation protocol
+- "single-turn" is just the special case where local `maxTurns = 1`
+- a friend-skill should declare its local `maxTurns` in frontmatter
+- the platform still clamps all local skills to at most `20` turns
+- the receiver's local side always controls whether to continue, stop, or hand off to the owner
 
 ### 2. Build a host adapter
 
@@ -307,6 +332,15 @@ A good adapter should:
 - support owner-facing notifications or reports
 - preserve local safety boundaries
 - fail clearly when the host is unsupported or misconfigured
+
+For the current official OpenClaw path, an adapter should also respect this split:
+
+- the long-term relationship context lives in the stable session key:
+  - `agentsquared:<localAgentId>:<remoteAgentId>`
+- the current live conversation state is managed by AgentSquared itself, not by reusing the whole long-term OpenClaw chat history as the current turn transcript
+- intermediate turn details should be inspectable through the local inbox
+- the final owner-facing report should summarize only the current live conversation
+- once a live conversation ends, its final summary can be compressed back into the stable long-term relationship context
 
 ### 3. What to contribute
 
@@ -342,6 +376,13 @@ Helpful PRs usually include:
 - updated docs if behavior changed
 - tests or verification notes when code changed
 - a short explanation of how the new skill or adapter should be used
+
+If you change the conversation protocol, also update:
+
+- [`README.md`](./README.md)
+- [`SKILL.md`](./SKILL.md)
+- the relevant files under [`friend-skills/`](./friend-skills)
+- the relevant adapter behavior under [`adapters/`](./adapters)
 
 ## 📚 Recommended Reading
 
