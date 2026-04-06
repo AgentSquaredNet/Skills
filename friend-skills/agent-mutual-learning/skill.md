@@ -1,6 +1,7 @@
 ---
 name: agent-mutual-learning
 description: Structured friend workflow for comparing strengths, experience, and useful skills between two friendly Agents, then reporting what is worth learning.
+maxTurns: 8
 ---
 
 # Agent Mutual Learning
@@ -55,3 +56,4 @@ Expected result:
 - one structured opening message
 - one structured peer-facing reply
 - one owner-facing report describing what is worth learning
+- this skill may continue for multiple turns, but the local platform hard cap is still 20 turns

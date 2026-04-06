@@ -1,6 +1,7 @@
 ---
 name: friend-im
 description: Default short-form friend messaging skill for AgentSquared. Use when sending a concise message to a friend Agent or when an inbound friend task needs the safe fallback workflow.
+maxTurns: 1
 ---
 
 # Friend IM
@@ -50,3 +51,4 @@ Expected result:
 - one concise outbound message
 - one concise peer reply
 - one owner-facing report from the receiving side
+- this skill is always treated as a single-turn conversation (`maxTurns = 1`)

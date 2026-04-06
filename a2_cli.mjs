@@ -15,6 +15,10 @@ import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
+import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
+import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
+import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
+import { normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import {
   assertNoExistingLocalActivation,
   buildGatewayArgs,
@@ -63,15 +67,6 @@ function resolveUserPath(inputPath) {
   return path.resolve(`${inputPath}`.replace(/^~(?=$|\/|\\)/, process.env.HOME || '~'))
 }
 
-function parseFrontmatterName(text) {
-  const match = text.match(/^---\n([\s\S]*?)\n---/)
-  if (!match?.[1]) {
-    return ''
-  }
-  const nameMatch = match[1].match(/^\s*name\s*:\s*(.+)\s*$/m)
-  return clean(nameMatch?.[1] ?? '').replace(/^["']|["']$/g, '')
-}
-
 function unique(values = []) {
   return Array.from(new Set(values.filter(Boolean)))
 }
@@ -98,11 +93,131 @@ function walkLocalFiles(dirPath, out, depth = 0, maxDepth = 4) {
 function loadSharedSkillFile(skillFile) {
   const resolved = resolveUserPath(skillFile)
   const text = fs.readFileSync(resolved, 'utf8')
+  const policy = parseSkillDocumentPolicy(text, {
+    fallbackName: path.basename(path.dirname(resolved)) || path.basename(resolved, path.extname(resolved))
+  })
   return {
     path: resolved,
-    name: parseFrontmatterName(text) || path.basename(path.dirname(resolved)) || path.basename(resolved, path.extname(resolved)),
+    name: policy.name,
+    maxTurns: policy.maxTurns,
     document: clean(text).slice(0, 16000)
   }
+}
+
+function extractPeerResponseMetadata(response = null) {
+  const target = response?.result && typeof response.result === 'object'
+    ? response.result
+    : response
+  return target?.metadata && typeof target.metadata === 'object'
+    ? target.metadata
+    : {}
+}
+
+function resolveConversationPolicy(skillName = '', sharedSkill = null) {
+  return {
+    skillName: clean(skillName) || 'friend-im',
+    maxTurns: resolveSkillMaxTurns(skillName, sharedSkill)
+  }
+}
+
+async function createCliLocalRuntimeExecutor({
+  agentId,
+  keyFile,
+  args
+}) {
+  const preferredHostRuntime = clean(args['host-runtime']) || 'auto'
+  const openclawCommand = clean(args['openclaw-command']) || 'openclaw'
+  const openclawCwd = clean(args['openclaw-cwd'])
+  const openclawGatewayUrl = clean(args['openclaw-gateway-url'])
+  const openclawGatewayToken = clean(args['openclaw-gateway-token'])
+  const openclawGatewayPassword = clean(args['openclaw-gateway-password'])
+  const openclawSessionPrefix = clean(args['openclaw-session-prefix']) || 'agentsquared:'
+  const detectedHostRuntime = await detectHostRuntimeEnvironment({
+    preferred: preferredHostRuntime,
+    openclaw: {
+      command: openclawCommand,
+      cwd: openclawCwd,
+      gatewayUrl: openclawGatewayUrl,
+      gatewayToken: openclawGatewayToken,
+      gatewayPassword: openclawGatewayPassword
+    }
+  })
+  const resolvedHostRuntime = detectedHostRuntime.resolved || 'none'
+  if (resolvedHostRuntime !== 'openclaw') {
+    const detected = detectedHostRuntime.resolved || detectedHostRuntime.id || 'none'
+    const reason = clean(detectedHostRuntime.reason)
+    throw new Error(
+      `local multi-turn execution currently supports only the OpenClaw host runtime. Detected host runtime: ${detected}.${reason ? ` Detection reason: ${reason}.` : ''}`
+    )
+  }
+  const detectedOpenClawAgent = clean(
+    detectedHostRuntime?.overviewStatus?.agents?.defaultId
+      || detectedHostRuntime?.overviewStatus?.agents?.agents?.[0]?.id
+  )
+  const resolvedOpenClawAgent = clean(args['openclaw-agent']) || detectedOpenClawAgent
+  if (!resolvedOpenClawAgent) {
+    throw new Error('OpenClaw was detected for local multi-turn execution, but no OpenClaw agent id could be resolved.')
+  }
+  return createLocalRuntimeExecutor({
+    agentId,
+    mode: 'host',
+    hostRuntime: 'openclaw',
+    conversationStore: createLiveConversationStore(),
+    openclawStateDir: path.dirname(path.resolve(keyFile)),
+    openclawCommand,
+    openclawCwd,
+    openclawAgent: resolvedOpenClawAgent,
+    openclawSessionPrefix,
+    openclawTimeoutMs: 180000,
+    openclawGatewayUrl,
+    openclawGatewayToken,
+    openclawGatewayPassword
+  })
+}
+
+async function executeLocalConversationTurn({
+  localRuntimeExecutor,
+  localAgentId,
+  targetAgentId,
+  peerSessionId,
+  skillHint,
+  sharedSkill,
+  inboundText,
+  turnIndex
+}) {
+  const item = {
+    inboundId: `local-turn-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    remoteAgentId: targetAgentId,
+    peerSessionId,
+    suggestedSkill: skillHint,
+    defaultSkill: skillHint || 'friend-im',
+    request: {
+      id: `local-turn-${turnIndex}`,
+      method: 'message/send',
+      params: {
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text: clean(inboundText) }]
+        },
+        metadata: {
+          ...(sharedSkill ? { sharedSkill } : {}),
+          from: targetAgentId,
+          to: localAgentId,
+          originalOwnerText: clean(inboundText),
+          turnIndex
+        }
+      }
+    }
+  }
+  const selectedSkill = chooseInboundSkill(item, {
+    defaultSkill: skillHint || 'friend-im'
+  })
+  return localRuntimeExecutor({
+    item,
+    selectedSkill,
+    mailboxKey: resolveMailboxKey(item)
+  })
 }
 
 function safeAgentId(value) {
@@ -845,6 +960,7 @@ async function commandMessageSend(args) {
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
   const skillHint = explicitSkillName || clean(sharedSkill?.name) || 'friend-im'
+  const conversationPolicy = resolveConversationPolicy(skillHint, sharedSkill)
   const sentAt = new Date().toISOString()
   const outboundText = buildSkillOutboundText({
     localAgentId: context.agentId,
@@ -854,28 +970,115 @@ async function commandMessageSend(args) {
     sentAt
   })
   let result
+  const turnLog = []
+  let localRuntimeExecutor = null
+  let currentOutboundText = outboundText
+  let currentOutboundControl = normalizeConversationControl({
+    turnIndex: 1,
+    decision: conversationPolicy.maxTurns <= 1 ? 'done' : 'continue',
+    stopReason: conversationPolicy.maxTurns <= 1 ? 'single-turn' : '',
+    finalize: conversationPolicy.maxTurns <= 1
+  })
+  let turnIndex = 1
+  let localStopReason = ''
   try {
-    result = await gatewayConnect(gatewayBase, {
-      targetAgentId,
-      skillHint,
-      method: 'message/send',
-      message: {
-        kind: 'message',
-        role: 'user',
-        parts: [{ kind: 'text', text: outboundText }]
-      },
-      metadata: {
-        ...(sharedSkill ? { sharedSkill } : {}),
-        originalOwnerText: text,
-        sentAt
-      },
-      activitySummary: 'Preparing a short friend IM.',
-      report: {
-        taskId: skillHint,
-        summary: `Delivered a short friend IM to ${targetAgentId}.`,
-        publicSummary: ''
+    while (true) {
+      result = await gatewayConnect(gatewayBase, {
+        targetAgentId,
+        skillHint,
+        method: 'message/send',
+        message: {
+          kind: 'message',
+          role: 'user',
+          parts: [{ kind: 'text', text: currentOutboundText }]
+        },
+        metadata: {
+          ...(sharedSkill ? { sharedSkill } : {}),
+          originalOwnerText: turnIndex === 1 ? text : currentOutboundText,
+          sentAt,
+          turnIndex: currentOutboundControl.turnIndex,
+          decision: currentOutboundControl.decision,
+          stopReason: currentOutboundControl.stopReason,
+          finalize: currentOutboundControl.finalize
+        },
+        activitySummary: turnIndex === 1
+          ? 'Preparing an AgentSquared peer conversation.'
+          : `Continuing AgentSquared peer conversation turn ${turnIndex}.`,
+        report: {
+          taskId: skillHint,
+          summary: `Delivered AgentSquared conversation turn ${turnIndex} to ${targetAgentId}.`,
+          publicSummary: ''
+        }
+      })
+
+      const replyText = peerResponseText(result.response)
+      const remoteControl = normalizeConversationControl(extractPeerResponseMetadata(result.response), {
+        defaultTurnIndex: turnIndex,
+        defaultDecision: 'done',
+        defaultStopReason: turnIndex >= conversationPolicy.maxTurns ? 'single-turn' : '',
+        defaultFinalize: turnIndex >= conversationPolicy.maxTurns
+      })
+      turnLog.push({
+        turnIndex,
+        outboundText: currentOutboundText,
+        replyText,
+        localDecision: currentOutboundControl.decision,
+        localStopReason: currentOutboundControl.stopReason,
+        localFinalize: currentOutboundControl.finalize,
+        remoteDecision: remoteControl.decision,
+        remoteStopReason: remoteControl.stopReason,
+        remoteFinalize: remoteControl.finalize
+      })
+
+      if (currentOutboundControl.finalize || !shouldContinueConversation(remoteControl)) {
+        break
       }
-    })
+
+      const nextTurnIndex = turnIndex + 1
+      if (nextTurnIndex > conversationPolicy.maxTurns) {
+        localStopReason = 'max-turns-reached'
+        break
+      }
+
+      if (!localRuntimeExecutor) {
+        localRuntimeExecutor = await createCliLocalRuntimeExecutor({
+          agentId: context.agentId,
+          keyFile: context.keyFile,
+          args
+        })
+      }
+
+      const localExecution = await executeLocalConversationTurn({
+        localRuntimeExecutor,
+        localAgentId: context.agentId,
+        targetAgentId,
+        peerSessionId: result.peerSessionId,
+        skillHint,
+        sharedSkill,
+        inboundText: replyText,
+        turnIndex: nextTurnIndex
+      })
+      if (localExecution?.reject) {
+        localStopReason = clean(localExecution.reject.message) || 'local-runtime-rejected'
+        break
+      }
+      const localControl = normalizeConversationControl(localExecution?.peerResponse?.metadata ?? {}, {
+        defaultTurnIndex: nextTurnIndex,
+        defaultDecision: nextTurnIndex >= conversationPolicy.maxTurns ? 'done' : 'continue',
+        defaultStopReason: nextTurnIndex >= conversationPolicy.maxTurns ? 'max-turns-reached' : '',
+        defaultFinalize: nextTurnIndex >= conversationPolicy.maxTurns
+      })
+      currentOutboundText = peerResponseText(localExecution.peerResponse)
+      if (!currentOutboundText) {
+        localStopReason = 'goal-satisfied'
+        break
+      }
+      turnIndex = nextTurnIndex
+      currentOutboundControl = localControl
+      if (localControl.finalize && clean(localControl.stopReason)) {
+        localStopReason = localControl.stopReason
+      }
+    }
   } catch (error) {
     const failure = classifyOutboundFailure(error?.message, targetAgentId)
     const senderReport = buildSenderFailureReport({
@@ -906,6 +1109,12 @@ async function commandMessageSend(args) {
     return
   }
   const replyText = peerResponseText(result.response)
+  const finalRemoteControl = normalizeConversationControl(extractPeerResponseMetadata(result.response), {
+    defaultTurnIndex: turnIndex,
+    defaultDecision: 'done',
+    defaultStopReason: localStopReason || '',
+    defaultFinalize: true
+  })
   const senderReport = buildSenderBaseReport({
     localAgentId: context.agentId,
     targetAgentId,
@@ -915,6 +1124,9 @@ async function commandMessageSend(args) {
     replyText,
     replyAt: new Date().toISOString(),
     peerSessionId: result.peerSessionId,
+    turnCount: turnLog.length || 1,
+    stopReason: finalRemoteControl.stopReason || localStopReason,
+    detailsHint: 'Detailed turn-by-turn exchange is available in the conversation output below.',
     language: ownerLanguage,
     timeZone: ownerTimeZone,
     localTime: true
@@ -925,6 +1137,9 @@ async function commandMessageSend(args) {
     ticketExpiresAt: result.ticket?.expiresAt ?? '',
     peerSessionId: result.peerSessionId ?? '',
     reusedSession: Boolean(result.reusedSession),
+    turnCount: turnLog.length || 1,
+    stopReason: finalRemoteControl.stopReason || localStopReason,
+    conversationTurns: turnLog,
     replyText,
     senderReport,
     ownerFacingText: renderOwnerFacingReport(senderReport)

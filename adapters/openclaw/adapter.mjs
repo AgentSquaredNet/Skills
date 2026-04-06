@@ -1,5 +1,6 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope } from '../../lib/a2_message_templates.mjs'
+import { normalizeConversationControl } from '../../lib/conversation_policy.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
 import {
   buildOpenClawSafetyPrompt,
@@ -48,6 +49,7 @@ function toNumber(value) {
 export function createOpenClawAdapter({
   localAgentId,
   openclawAgent = '',
+  conversationStore = null,
   command = 'openclaw',
   cwd = '',
   stateDir = '',
@@ -97,6 +99,64 @@ export function createOpenClawAdapter({
     return resolveOwnerRouteFromSessions(await listSessions(client), {
       agentName
     })
+  }
+
+  async function readRelationshipSummary(client, sessionKey) {
+    if (!clean(sessionKey)) {
+      return ''
+    }
+    try {
+      const history = await client.request('chat.history', {
+        sessionKey,
+        limit: 12
+      }, timeoutMs)
+      return latestAssistantText(history)
+    } catch {
+      return ''
+    }
+  }
+
+  async function persistRelationshipSummary(client, {
+    relationSessionKey,
+    remoteAgentId,
+    selectedSkill,
+    transcript,
+    ownerSummary
+  } = {}) {
+    if (!clean(relationSessionKey) || !clean(ownerSummary)) {
+      return null
+    }
+    const prompt = [
+      `You are maintaining long-term AgentSquared relationship memory for local agent ${clean(localAgentId)} about remote agent ${clean(remoteAgentId)}.`,
+      `Skill context: ${clean(selectedSkill) || 'friend-im'}`,
+      '',
+      'Store only a concise long-term summary for future conversations.',
+      'Do not preserve raw turn-by-turn detail unless it matters long-term.',
+      'Prefer stable facts, collaboration preferences, trust signals, and useful future follow-up notes.',
+      '',
+      'Latest completed live conversation summary:',
+      clean(ownerSummary),
+      '',
+      'Transcript excerpt from the just-finished live conversation:',
+      clean(transcript) || '(none)',
+      '',
+      'Return one short memory summary.'
+    ].join('\n')
+    const accepted = await client.request('agent', {
+      agentId: agentName,
+      sessionKey: relationSessionKey,
+      message: prompt,
+      idempotencyKey: stableId('agentsquared-relationship-memory', localAgentId, remoteAgentId, ownerSummary)
+    }, timeoutMs)
+    const runId = readOpenClawRunId(accepted)
+    if (!runId) {
+      return null
+    }
+    await client.request('agent.wait', {
+      runId,
+      timeoutMs
+    }, timeoutMs + 1000)
+    return runId
   }
 
   function consumePeerBudget({
@@ -173,6 +233,24 @@ export function createOpenClawAdapter({
       })
       if (budget.overBudget) {
         const peerReplyText = 'I am pausing this AgentSquared request because the recent request budget from this peer is too high. My owner can decide whether to continue later.'
+        const conversation = normalizeConversationControl(item?.request?.params?.metadata ?? {}, {
+          defaultTurnIndex: 1,
+          defaultDecision: 'handoff',
+          defaultStopReason: 'receiver-budget-limit',
+          defaultFinalize: true
+        })
+        const updatedConversation = conversationStore?.appendTurn?.({
+          peerSessionId: item?.peerSessionId || item?.inboundId || mailboxKey,
+          remoteAgentId,
+          selectedSkill,
+          turnIndex: conversation.turnIndex,
+          inboundText: displayInboundText,
+          replyText: peerReplyText,
+          decision: 'handoff',
+          stopReason: 'receiver-budget-limit',
+          finalize: true,
+          ownerSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`
+        }) ?? null
         const ownerReport = buildReceiverBaseReport({
           localAgentId,
           remoteAgentId,
@@ -182,6 +260,9 @@ export function createOpenClawAdapter({
           peerReplyText,
           repliedAt: new Date().toISOString(),
           skillSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`,
+          conversationTurns: updatedConversation?.turns?.length || conversation.turnIndex,
+          stopReason: 'receiver-budget-limit',
+          detailsAvailableInInbox: true,
           remoteSentAt,
           language: ownerLanguage,
           timeZone: ownerTimeZone,
@@ -200,7 +281,11 @@ export function createOpenClawAdapter({
               runtimeAdapter: 'openclaw',
               safetyDecision: 'owner-approval',
               safetyReason: 'peer-budget-exceeded',
-              windowCost: budget.windowCost
+              windowCost: budget.windowCost,
+              turnIndex: conversation.turnIndex,
+              decision: 'handoff',
+              stopReason: 'receiver-budget-limit',
+              finalize: true
             }
           },
           ownerReport: {
@@ -209,12 +294,34 @@ export function createOpenClawAdapter({
             runtimeAdapter: 'openclaw',
             safetyDecision: 'owner-approval',
             safetyReason: 'peer-budget-exceeded',
-            windowCost: budget.windowCost
+            windowCost: budget.windowCost,
+            turnIndex: conversation.turnIndex,
+            decision: 'handoff',
+            stopReason: 'receiver-budget-limit',
+            finalize: true
           }
         }
       }
       if (safety.action !== 'allow') {
         const peerReplyText = scrubOutboundText(clean(safety.peerResponse))
+        const conversation = normalizeConversationControl(item?.request?.params?.metadata ?? {}, {
+          defaultTurnIndex: 1,
+          defaultDecision: safety.action === 'owner-approval' ? 'handoff' : 'done',
+          defaultStopReason: clean(safety.reason) || 'unsafe-or-sensitive',
+          defaultFinalize: true
+        })
+        const updatedConversation = conversationStore?.appendTurn?.({
+          peerSessionId: item?.peerSessionId || item?.inboundId || mailboxKey,
+          remoteAgentId,
+          selectedSkill,
+          turnIndex: conversation.turnIndex,
+          inboundText: displayInboundText,
+          replyText: peerReplyText,
+          decision: conversation.decision,
+          stopReason: conversation.stopReason,
+          finalize: true,
+          ownerSummary: clean(safety.ownerSummary)
+        }) ?? null
         const ownerReport = buildReceiverBaseReport({
           localAgentId,
           remoteAgentId,
@@ -224,6 +331,9 @@ export function createOpenClawAdapter({
           peerReplyText,
           repliedAt: new Date().toISOString(),
           skillSummary: clean(safety.ownerSummary),
+          conversationTurns: updatedConversation?.turns?.length || conversation.turnIndex,
+          stopReason: clean(safety.reason),
+          detailsAvailableInInbox: true,
           remoteSentAt,
           language: ownerLanguage,
           timeZone: ownerTimeZone,
@@ -241,7 +351,11 @@ export function createOpenClawAdapter({
               selectedSkill,
               runtimeAdapter: 'openclaw',
               safetyDecision: safety.action,
-              safetyReason: clean(safety.reason)
+              safetyReason: clean(safety.reason),
+              turnIndex: conversation.turnIndex,
+              decision: conversation.decision,
+              stopReason: conversation.stopReason,
+              finalize: true
             }
           },
           ownerReport: {
@@ -249,17 +363,48 @@ export function createOpenClawAdapter({
             selectedSkill,
             runtimeAdapter: 'openclaw',
             safetyDecision: safety.action,
-            safetyReason: clean(safety.reason)
+            safetyReason: clean(safety.reason),
+            turnIndex: conversation.turnIndex,
+            decision: conversation.decision,
+            stopReason: conversation.stopReason,
+            finalize: true
           }
         }
       }
 
-      const sessionKey = normalizeOpenClawSessionKey(localAgentId, remoteAgentId || mailboxKey || 'unknown', sessionPrefix)
+      const relationSessionKey = normalizeOpenClawSessionKey(localAgentId, remoteAgentId || mailboxKey || 'unknown', sessionPrefix)
+      const inboundConversation = normalizeConversationControl(item?.request?.params?.metadata ?? {}, {
+        defaultTurnIndex: 1,
+        defaultDecision: 'done',
+        defaultStopReason: '',
+        defaultFinalize: false
+      })
+      const liveConversationKey = item?.peerSessionId || item?.inboundId || mailboxKey || randomId('conversation')
+      if (inboundConversation.turnIndex === 1) {
+        conversationStore?.endConversation?.(liveConversationKey)
+      }
+      const liveConversation = conversationStore?.ensureConversation?.({
+        peerSessionId: liveConversationKey,
+        remoteAgentId,
+        selectedSkill
+      }) ?? null
+      const conversationTranscript = conversationStore?.transcript?.(liveConversation?.peerSessionId || item?.peerSessionId) ?? ''
+      const relationshipSummary = await readRelationshipSummary(client, relationSessionKey)
+      const sessionKey = stableId(
+        'agentsquared-work',
+        localAgentId,
+        remoteAgentId,
+        item?.peerSessionId || mailboxKey || item?.inboundId || randomId('work'),
+        item?.request?.params?.metadata?.turnIndex || '1',
+        item?.inboundId
+      )
       const prompt = buildOpenClawTaskPrompt({
         localAgentId,
         remoteAgentId,
         selectedSkill,
-        item
+        item,
+        conversationTranscript,
+        relationshipSummary
       })
 
       const accepted = await client.request('agent', {
@@ -296,8 +441,27 @@ export function createOpenClawAdapter({
         remoteAgentId,
         inboundId: clean(item?.inboundId)
       })
+      const conversation = normalizeConversationControl(parsed?.peerResponse?.metadata ?? item?.request?.params?.metadata ?? {}, {
+        defaultTurnIndex: 1,
+        defaultDecision: 'done',
+        defaultStopReason: '',
+        defaultFinalize: true
+      })
       const safePeerReplyText = scrubOutboundText(peerResponseText(parsed.peerResponse))
       const safeOwnerSummary = scrubOutboundText(clean(parsed.ownerReport?.summary))
+      const updatedConversation = conversationStore?.appendTurn?.({
+        peerSessionId: liveConversation?.peerSessionId || item?.peerSessionId || item?.inboundId || mailboxKey,
+        remoteAgentId,
+        selectedSkill: parsed.selectedSkill,
+        turnIndex: conversation.turnIndex,
+        inboundText: displayInboundText,
+        replyText: safePeerReplyText,
+        decision: conversation.decision,
+        stopReason: conversation.stopReason,
+        finalize: conversation.finalize,
+        ownerSummary: safeOwnerSummary
+      }) ?? null
+      const effectiveConversationTurns = updatedConversation?.turns?.length || conversation.turnIndex
       const ownerReport = buildReceiverBaseReport({
         localAgentId,
         remoteAgentId,
@@ -307,11 +471,33 @@ export function createOpenClawAdapter({
         peerReplyText: safePeerReplyText,
         repliedAt: new Date().toISOString(),
         skillSummary: safeOwnerSummary,
+        conversationTurns: effectiveConversationTurns,
+        stopReason: conversation.stopReason,
+        detailsAvailableInInbox: true,
         remoteSentAt,
         language: inferOwnerFacingLanguage(displayInboundText, safePeerReplyText, safeOwnerSummary),
         timeZone: ownerTimeZone,
         localTime: true
       })
+      let relationshipMemoryRunId = ''
+      if (conversation.finalize) {
+        await persistRelationshipSummary(client, {
+          relationSessionKey,
+          remoteAgentId,
+          selectedSkill: parsed.selectedSkill,
+          transcript: updatedConversation?.turns?.map((turn) => [
+            `Turn ${turn.turnIndex}:`,
+            `Remote: ${turn.inboundText || '(empty)'}`,
+            `Reply: ${turn.replyText || '(empty)'}`,
+            `Decision: ${turn.decision || 'done'}`,
+            turn.stopReason ? `Stop Reason: ${turn.stopReason}` : ''
+          ].filter(Boolean).join('\n')).join('\n\n') || conversationTranscript,
+          ownerSummary: safeOwnerSummary
+        }).then((runId) => {
+          relationshipMemoryRunId = clean(runId)
+        })
+        conversationStore?.finalizeConversation?.(updatedConversation?.peerSessionId || liveConversation?.peerSessionId || item?.peerSessionId, safeOwnerSummary)
+      }
       return {
         ...parsed,
         peerResponse: {
@@ -325,7 +511,12 @@ export function createOpenClawAdapter({
             ...(parsed.peerResponse?.metadata ?? {}),
             openclawRunId: runId,
             openclawSessionKey: sessionKey,
-            openclawGatewayUrl: gatewayContext.gatewayUrl
+            openclawRelationSessionKey: relationSessionKey,
+            openclawGatewayUrl: gatewayContext.gatewayUrl,
+            turnIndex: conversation.turnIndex,
+            decision: conversation.decision,
+            stopReason: conversation.stopReason,
+            finalize: conversation.finalize
           }
         },
         ownerReport: {
@@ -334,7 +525,13 @@ export function createOpenClawAdapter({
           runtimeAdapter: 'openclaw',
           openclawRunId: runId,
           openclawSessionKey: sessionKey,
-          openclawGatewayUrl: gatewayContext.gatewayUrl
+          openclawRelationSessionKey: relationSessionKey,
+          relationshipMemoryRunId,
+          openclawGatewayUrl: gatewayContext.gatewayUrl,
+          turnIndex: conversation.turnIndex,
+          decision: conversation.decision,
+          stopReason: conversation.stopReason,
+          finalize: conversation.finalize
         }
       }
     })

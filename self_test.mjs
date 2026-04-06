@@ -21,6 +21,7 @@ import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt } from './adapters/openclaw/adapter.mjs'
 import { detectOpenClawHostEnvironment } from './adapters/openclaw/detect.mjs'
@@ -546,12 +547,25 @@ process.exit(2)
               kind: 'message',
               role: 'user',
               parts: [{ kind: 'text', text: '以后我们是朋友，我们会经常一起完成主人给的任务' }]
+            },
+            metadata: {
+              turnIndex: 3,
+              decision: 'continue',
+              finalize: false,
+              sharedSkill: {
+                name: 'agent-mutual-learning',
+                maxTurns: 8,
+                document: 'demo'
+              }
             }
           }
         }
       }
     })
     assert.match(taskPrompt, /do not ask the owner or the remote agent to prove friendship again/i)
+    assert.match(taskPrompt, /turnIndex: 3/)
+    assert.match(taskPrompt, /platformMaxTurns: 20/)
+    assert.match(taskPrompt, /agent-mutual-learning => 8 turns/)
 
     assert.equal(chooseInboundSkill({
       suggestedSkill: '',
@@ -669,7 +683,11 @@ process.exit(2)
     const parsedOpenClaw = parseOpenClawTaskResult(JSON.stringify({
       selectedSkill: 'friend-im',
       peerResponse: 'Hello from OpenClaw',
-      ownerReport: 'OpenClaw owner report'
+      ownerReport: 'OpenClaw owner report',
+      decision: 'continue',
+      stopReason: '',
+      finalize: false,
+      turnIndex: 2
     }), {
       defaultSkill: 'friend-im',
       remoteAgentId: 'peer@Test',
@@ -677,6 +695,25 @@ process.exit(2)
     })
     assert.equal(parsedOpenClaw.peerResponse.message.parts[0].text, 'Hello from OpenClaw')
     assert.equal(parsedOpenClaw.ownerReport.summary, 'OpenClaw owner report')
+    assert.equal(parsedOpenClaw.peerResponse.metadata.turnIndex, 2)
+    assert.equal(parsedOpenClaw.peerResponse.metadata.decision, 'continue')
+    assert.equal(parsedOpenClaw.peerResponse.metadata.finalize, false)
+    assert.equal(shouldContinueConversation(parsedOpenClaw.peerResponse.metadata), true)
+    assert.equal(resolveSkillMaxTurns('friend-im'), 1)
+    assert.equal(resolveSkillMaxTurns('agent-mutual-learning', { name: 'agent-mutual-learning', maxTurns: 99 }), PLATFORM_MAX_TURNS)
+    assert.deepEqual(
+      parseSkillDocumentPolicy('---\nname: agent-mutual-learning\nmaxTurns: 8\n---\nbody'),
+      { name: 'agent-mutual-learning', maxTurns: 8 }
+    )
+    assert.deepEqual(
+      normalizeConversationControl({}, {
+        defaultTurnIndex: 1,
+        defaultDecision: 'done',
+        defaultStopReason: 'single-turn',
+        defaultFinalize: true
+      }),
+      { turnIndex: 1, decision: 'done', stopReason: 'single-turn', finalize: true }
+    )
     const outboundTemplate = buildSkillOutboundText({
       localAgentId: 'agent-a@owner-a',
       targetAgentId: 'agent-b@owner-b',
@@ -724,12 +761,15 @@ process.exit(2)
       replyText: 'hi',
       replyAt: '2026-03-28T12:01:00Z',
       peerSessionId: 'peer-123',
+      turnCount: 3,
+      stopReason: 'goal-satisfied',
       language: 'zh-CN',
       timeZone: 'Asia/Shanghai',
       localTime: true
     })
     assert.match(renderOwnerFacingReport(senderBaseReport), /\*\*🅰️✌️ AgentSquared 消息发送成功\*\*/)
     assert.match(senderBaseReport.message, /\*\*回复内容\*\*\n> hi/)
+    assert.match(senderBaseReport.message, /会话轮数：3/)
     assert.doesNotMatch(senderBaseReport.message, /Workflow:/)
     const receiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
@@ -738,9 +778,13 @@ process.exit(2)
       receivedAt: '2026-03-28T12:00:00Z',
       inboundText: '你好',
       peerReplyText: 'hi',
-      repliedAt: '2026-03-28T12:01:00Z'
+      repliedAt: '2026-03-28T12:01:00Z',
+      conversationTurns: 2,
+      stopReason: 'goal-satisfied',
+      detailsAvailableInInbox: true
     })
     assert.match(renderOwnerFacingReport(receiverBaseReport), /\*\*🅰️✌️ New AgentSquared message from agent-a@owner-a\*\*/)
+    assert.match(receiverBaseReport.message, /Conversation Turns: 2/)
     assert.doesNotMatch(receiverBaseReport.message, /Workflow:/)
     assert.doesNotMatch(receiverBaseReport.message, /Skill Notes:/)
     const localizedReceiverBaseReport = buildReceiverBaseReport({
@@ -752,12 +796,16 @@ process.exit(2)
       peerReplyText: '好啊，我们先从简单交流开始。',
       repliedAt: '2026-03-28T12:01:00Z',
       remoteSentAt: '2026-03-28T11:59:30Z',
+      conversationTurns: 4,
+      stopReason: 'goal-satisfied',
+      detailsAvailableInInbox: true,
       language: 'zh-CN',
       timeZone: 'Asia/Shanghai',
       localTime: true
     })
     assert.match(localizedReceiverBaseReport.title, /\*\*🅰️✌️ 来自 agent-a@owner-a 的一条 AgentSquared 消息\*\*/)
     assert.match(localizedReceiverBaseReport.message, /接收时间（本地时间）：2026-03-28 20:00:00（Asia\/Shanghai）/)
+    assert.match(localizedReceiverBaseReport.message, /当前会话轮数：4/)
     assert.match(localizedReceiverBaseReport.message, /对方发送时间（本地时间）：2026-03-28 19:59:30（Asia\/Shanghai）/)
     assert.match(localizedReceiverBaseReport.message, /回复时间（本地时间）：2026-03-28 20:01:00（Asia\/Shanghai）/)
     assert.doesNotMatch(localizedReceiverBaseReport.message, /Skill Notes:/)
@@ -814,7 +862,8 @@ process.exit(2)
     })
     assert.equal(openclawExecution.peerResponse.message.parts[0].text, 'I am an AI agent representing my owner.')
     assert.match(openclawExecution.peerResponse.metadata.openclawRunId, /^run_/)
-    assert.equal(openclawExecution.peerResponse.metadata.openclawSessionKey, 'agentsquared:agent-a%40owner-a:agent-b%40owner-b')
+    assert.match(openclawExecution.peerResponse.metadata.openclawSessionKey, /^agentsquared-work-/)
+    assert.equal(openclawExecution.peerResponse.metadata.openclawRelationSessionKey, 'agentsquared:agent-a%40owner-a:agent-b%40owner-b')
     assert.equal(openclawExecution.ownerReport.title, '**🅰️✌️ 来自 agent-b@owner-b 的一条 AgentSquared 消息**')
     assert.equal(openclawExecution.ownerReport.summary, 'agent-b@owner-b 通过 AgentSquared 联系了我，我已经完成回复。')
     assert.match(openclawExecution.ownerReport.message, /对方发送的内容/)
