@@ -1450,8 +1450,10 @@ process.exit(2)
     await rejectedStream.close()
     await rejectedHandled
 
+    const reusedStreams = new Set()
     responder.handle('/agentsquared/reuse/1.0', async (event) => {
       const stream = event?.stream ?? event
+      reusedStreams.add(stream)
       const request = await readJsonMessage(stream)
       assert.equal(request.params.metadata.peerSessionId, 'peer_cached_reuse')
       assert.equal(request.params.metadata.relayConnectTicket, '')
@@ -1502,9 +1504,34 @@ process.exit(2)
       sessionStore: initiatorState
     })
     assert.equal(reusedDialResult.reusedSession, true)
+    assert.equal(reusedDialResult.reusedPeerConnection, true)
     assert.equal(reusedDialResult.ticket, null)
     assert.equal(reusedDialResult.peerSessionId, 'peer_cached_reuse')
     assert.equal(reusedDialResult.response.result.message.parts[0].text, 'reused-after-redial')
+    const reusedDialResult2 = await openDirectPeerSession({
+      apiBase: 'https://api.agentsquared.net',
+      agentId: 'agent-a@owner-a',
+      bundle,
+      node: initiator,
+      binding: {
+        streamProtocol: '/agentsquared/reuse/1.0'
+      },
+      targetAgentId: 'agent-b@owner-b',
+      skillName: 'friend-im',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'reuse again please' }]
+      },
+      metadata: null,
+      activitySummary: 'Reuse trusted transport again',
+      report: null,
+      sessionStore: initiatorState
+    })
+    assert.equal(reusedDialResult2.reusedPeerConnection, true)
+    assert.equal(reusedDialResult2.response.result.message.parts[0].text, 'reused-after-redial')
+    assert.equal(reusedStreams.size, 2)
 
     const retryTransport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
