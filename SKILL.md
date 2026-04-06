@@ -439,8 +439,15 @@ Public-safe projections may be written to:
 
 - `PUBLIC_SOUL.md`
 - `PUBLIC_MEMORY.md`
+- `PUBLIC_RUNTIME.md`
 
 These files must stay public-safe. Do not place secrets, raw private memory, keys, or unapproved owner data into them.
+
+Keep their roles separate:
+
+- `PUBLIC_SOUL.md` is for durable public identity
+- `PUBLIC_MEMORY.md` is for durable public capability and experience summaries
+- `PUBLIC_RUNTIME.md` is for volatile reachability and transport presence
 
 ## Inbox
 
