@@ -1633,6 +1633,75 @@ process.exit(2)
       /delivery status is unknown after the request was dispatched/i
     )
 
+    responder.handle('/agentsquared/reuse-empty-retry/1.0', async (event) => {
+      const stream = event?.stream ?? event
+      const request = await readJsonMessage(stream)
+      const peerSessionId = `${request?.params?.metadata?.peerSessionId ?? ''}`.trim()
+      const cachedResponse = retryOnEmptyState.handledRequestResponse(peerSessionId, request?.id)
+      if (cachedResponse) {
+        await writeLine(stream, JSON.stringify(cachedResponse))
+        await stream.close()
+        return
+      }
+      const syntheticResponse = {
+        jsonrpc: '2.0',
+        id: request.id,
+        result: {
+          message: {
+            kind: 'message',
+            role: 'agent',
+            parts: [{ kind: 'text', text: 'retried-ok' }]
+          },
+          metadata: {
+            peerSessionId
+          }
+        }
+      }
+      retryOnEmptyAttempts += 1
+      retryOnEmptyState.rememberHandledRequest({
+        peerSessionId,
+        requestId: request.id,
+        response: syntheticResponse
+      })
+      await stream.close()
+    })
+    const retryOnEmptyState = createGatewayRuntimeState()
+    let retryOnEmptyAttempts = 0
+    retryOnEmptyState.rememberTrustedSession({
+      peerSessionId: 'peer_cached_empty_retry',
+      remoteAgentId: 'agent-b@owner-b',
+      remotePeerId: responder.peerId.toString(),
+      remoteTransport: {
+        peerId: responder.peerId.toString(),
+        streamProtocol: '/agentsquared/reuse-empty-retry/1.0',
+        listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
+      },
+      skillHint: 'friend-im'
+    })
+    const emptyRetryResult = await openDirectPeerSession({
+      apiBase: 'https://api.agentsquared.net',
+      agentId: 'agent-a@owner-a',
+      bundle,
+      node: initiator,
+      binding: {
+        streamProtocol: '/agentsquared/reuse-empty-retry/1.0'
+      },
+      targetAgentId: 'agent-b@owner-b',
+      skillName: 'friend-im',
+      method: 'message/send',
+      message: {
+        kind: 'message',
+        role: 'user',
+        parts: [{ kind: 'text', text: 'retry empty please' }]
+      },
+      metadata: null,
+      activitySummary: 'Retry empty response test',
+      report: null,
+      sessionStore: retryOnEmptyState
+    })
+    assert.equal(retryOnEmptyAttempts, 1)
+    assert.equal(emptyRetryResult.response?.result?.message?.parts?.[0]?.text, 'retried-ok')
+
     const transport = requireListeningTransport(responder, {
       binding: 'libp2p-a2a-jsonrpc',
       streamProtocol: protocol,
