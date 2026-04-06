@@ -1079,6 +1079,7 @@ async function commandMessageSend(args) {
   })
   let turnIndex = 1
   let localStopReason = ''
+  let continuationError = ''
   try {
     while (true) {
       result = await gatewayConnect(gatewayBase, {
@@ -1146,18 +1147,26 @@ async function commandMessageSend(args) {
         })
       }
 
-      const localExecution = await executeLocalConversationTurn({
-        localRuntimeExecutor,
-        localAgentId: context.agentId,
-        targetAgentId,
-        peerSessionId: result.peerSessionId,
-        skillHint,
-        sharedSkill,
-        inboundText: replyText,
-        turnIndex: nextTurnIndex
-      })
+      let localExecution
+      try {
+        localExecution = await executeLocalConversationTurn({
+          localRuntimeExecutor,
+          localAgentId: context.agentId,
+          targetAgentId,
+          peerSessionId: result.peerSessionId,
+          skillHint,
+          sharedSkill,
+          inboundText: replyText,
+          turnIndex: nextTurnIndex
+        })
+      } catch (error) {
+        continuationError = clean(error?.message) || 'local runtime execution failed'
+        localStopReason = 'receiver-runtime-unavailable'
+        break
+      }
       if (localExecution?.reject) {
-        localStopReason = clean(localExecution.reject.message) || 'local-runtime-rejected'
+        continuationError = clean(localExecution.reject.message) || 'local runtime rejected the inbound request'
+        localStopReason = 'receiver-runtime-unavailable'
         break
       }
       const localControl = normalizeConversationControl(localExecution?.peerResponse?.metadata ?? {}, {
@@ -1227,7 +1236,9 @@ async function commandMessageSend(args) {
     peerSessionId: result.peerSessionId,
     turnCount: turnLog.length || 1,
     stopReason: finalRemoteControl.stopReason || localStopReason,
-    detailsHint: 'Detailed turn-by-turn exchange is available in the conversation output below.',
+    detailsHint: continuationError
+      ? `Detailed turn-by-turn exchange is available in the conversation output below. The local AI runtime then failed while preparing the next turn: ${continuationError}`
+      : 'Detailed turn-by-turn exchange is available in the conversation output below.',
     language: ownerLanguage,
     timeZone: ownerTimeZone,
     localTime: true
@@ -1243,6 +1254,7 @@ async function commandMessageSend(args) {
     reusedSession: Boolean(result.reusedSession),
     turnCount: turnLog.length || 1,
     stopReason: finalRemoteControl.stopReason || localStopReason,
+    continuationError,
     conversationTurns: turnLog,
     replyText,
     senderReport,

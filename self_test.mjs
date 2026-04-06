@@ -810,6 +810,46 @@ process.exit(2)
     assert.equal(fallbackResponded[0].result.message.parts[0].text, 'handled:friend-im')
     assert.equal(fallbackResponded[0].result.metadata.selectedSkill, 'friend-im')
 
+    const runtimeUnavailableResponded = []
+    const runtimeUnavailableRejected = []
+    const runtimeUnavailableRouter = createAgentRouter({
+      maxActiveMailboxes: 1,
+      routerSkills: ['friend-im', 'agent-mutual-learning'],
+      defaultSkill: 'friend-im',
+      async executeInbound() {
+        return {
+          reject: {
+            code: 503,
+            message: 'local model quota exhausted'
+          }
+        }
+      },
+      async onRespond(item, result) {
+        runtimeUnavailableResponded.push({ item, result })
+      },
+      async onReject(item, payload) {
+        runtimeUnavailableRejected.push({ item, payload })
+      }
+    })
+    await runtimeUnavailableRouter.enqueue({
+      inboundId: 'router-runtime-unavailable',
+      remoteAgentId: 'peer@Test',
+      suggestedSkill: 'agent-mutual-learning',
+      request: {
+        method: 'message/send',
+        params: {
+          message: {
+            parts: [{ kind: 'text', text: 'hello there' }]
+          }
+        }
+      }
+    })
+    await runtimeUnavailableRouter.whenIdle()
+    assert.equal(runtimeUnavailableRejected.length, 0)
+    assert.equal(runtimeUnavailableResponded.length, 1)
+    assert.match(runtimeUnavailableResponded[0].result.message.parts[0].text, /temporarily unavailable/i)
+    assert.equal(runtimeUnavailableResponded[0].result.metadata.stopReason, 'receiver-runtime-unavailable')
+
     const rejectExecutor = createLocalRuntimeExecutor({ agentId: 'agent-a@owner-a' })
     const rejectExecution = await rejectExecutor({
       item: { inboundId: 'router2' },
