@@ -16,7 +16,7 @@ import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
-import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
+import { chooseInboundSkill, inferSkillFromText, resolveMailboxKey } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
 import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
 import { normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
@@ -960,7 +960,8 @@ async function commandMessageSend(args) {
   const skillFile = clean(args['skill-file'])
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
-  const skillHint = explicitSkillName || clean(sharedSkill?.name) || 'friend-im'
+  const inferredSkillName = inferSkillFromText(text)
+  const skillHint = explicitSkillName || clean(sharedSkill?.name) || inferredSkillName || 'friend-im'
   const conversationPolicy = resolveConversationPolicy(skillHint, sharedSkill)
   const sentAt = new Date().toISOString()
   const outboundText = buildSkillOutboundText({

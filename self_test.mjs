@@ -18,7 +18,7 @@ import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
 import { ensureGatewayForUse } from './lib/gateway_lifecycle.mjs'
 import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
-import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
+import { chooseInboundSkill, createAgentRouter, createMailboxScheduler, inferSkillFromText } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
@@ -647,6 +647,19 @@ process.exit(2)
         }
       }
     }), 'friend-im')
+    assert.equal(inferSkillFromText('Say hello and compare our skills worth learning from each other.'), 'agent-mutual-learning')
+    assert.equal(chooseInboundSkill({
+      suggestedSkill: 'agent-mutual-learning',
+      defaultSkill: 'friend-im',
+      request: {
+        method: 'message/send',
+        params: {
+          message: {
+            parts: [{ kind: 'text', text: 'Hello there' }]
+          }
+        }
+      }
+    }), 'agent-mutual-learning')
 
     const schedulerEvents = []
     const scheduler = createMailboxScheduler({
