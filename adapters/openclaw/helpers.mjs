@@ -483,7 +483,8 @@ export function buildOpenClawConversationSummaryPrompt({
   remoteAgentId,
   selectedSkill = 'friend-im',
   originalOwnerText = '',
-  turnLog = []
+  turnLog = [],
+  localSkillInventory = ''
 } = {}) {
   const turns = Array.isArray(turnLog) ? turnLog : []
   return [
@@ -493,6 +494,13 @@ export function buildOpenClawConversationSummaryPrompt({
     '',
     'Produce a concise structured owner-facing summary.',
     'The owner does not need the raw full transcript here; the inbox already keeps the detailed record.',
+    ...(clean(localSkillInventory)
+      ? [
+          'Verified local installed skill inventory:',
+          clean(localSkillInventory),
+          'Use this actual local inventory when judging whether the remote side has a skill or workflow that the local side lacks. Do not claim high similarity unless this inventory supports it.'
+        ]
+      : []),
     'If this is agent-mutual-learning, judge whether the remote agent has:',
     '- a concrete skill or workflow the local agent does not already have',
     '- or a clearly better implementation worth copying',
@@ -565,7 +573,8 @@ export function buildOpenClawTaskPrompt({
   selectedSkill,
   item,
   conversationTranscript = '',
-  relationshipSummary = ''
+  relationshipSummary = '',
+  localSkillInventory = ''
 }) {
   const inboundText = peerResponseText(item?.request?.params?.message)
   const messageMethod = clean(item?.request?.method) || 'message/send'
@@ -625,6 +634,12 @@ export function buildOpenClawTaskPrompt({
           '- currentConversationTranscript:',
           '(none yet for this live conversation)'
         ]),
+    ...(clean(localSkillInventory)
+      ? [
+          '- verifiedLocalInstalledSkills:',
+          clean(localSkillInventory)
+        ]
+      : []),
     `- messageText: ${inboundText || '(empty)'}`,
     ...(sharedSkillName || sharedSkillPath || sharedSkillDocument
       ? [
@@ -653,12 +668,12 @@ export function buildOpenClawTaskPrompt({
       ? [
           '14. For agent-mutual-learning, use this order of operations:',
           '    a. First identify the remote agent\'s most-used skills, recently installed skills, or clearly differentiated workflows.',
-          '    b. Then judge similarity and novelty: what does the remote agent have that the local agent likely does not have?',
+          '    b. Then judge similarity and novelty against the verified local installed skills above: what does the remote agent have that the local agent likely does not have?',
           '    c. If both sides already have the same capability, only continue when the remote side has a clearly better implementation, tradeoff, workflow pattern, or copyable detail.',
           '    d. Once one promising skill or workflow is found, stay focused on that single topic until the sender has enough information to decide whether it is worth copying locally.',
           '15. Prefer remote-only skills or recently installed skills before discussing overlapping capabilities.',
           '16. When a concrete skill is worth learning, explain what problem it solves, how it is used in practice, where it is installed or sourced from if known, and what tradeoffs or lessons matter.',
-          '17. If the overlap is already high and there is little actionable delta, say that plainly, answer briefly, and stop instead of forcing more turns.',
+          '17. If the overlap is already high and there is little actionable delta, say that plainly, but only after comparing against the verified local inventory rather than relying on conversational impression alone.',
           '18. ownerReport for agent-mutual-learning must stay compact and practical. Use this shape:',
           '    Overall summary: short overall takeaway only.',
           '    Detailed conversation: Turn 1, Turn 2, Turn 3 style short lines.',

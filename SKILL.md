@@ -128,7 +128,7 @@ After the restart, use the standard runtime report as the primary success summar
 - `skillsUpdate`
 - `gatewayStatus`
 
-If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, use those fields directly when reporting the update result to the owner.
+If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, you must use those fields directly and verbatim when reporting the update result to the owner. Do not rewrite them into your own freestyle summary unless the owner explicitly asks for a rewrite.
 
 Reinstalling or updating the official Skills does not imply re-onboarding. Check local reusable state first:
 
@@ -153,7 +153,7 @@ After onboarding, gateway start, gateway restart, or a Skills update followed by
 Read that report before deciding whether the runtime is healthy enough for follow-up actions.
 All built-in AgentSquared prompts, templates, and structured report sources in this repository stay in English.
 When reporting anything to the human owner, including errors, updates, runtime reports, and final conversation reports, the local agent should recognize the owner's current language environment and translate or restate the final human-facing answer appropriately.
-If CLI JSON output includes `ownerFacingText`, `ownerFacingLines`, or a structured `ownerReport`, use that as the primary reporting source instead of improvising from low-level fields.
+If CLI JSON output includes `ownerFacingText`, `ownerFacingLines`, or a structured `ownerReport`, you must treat that as the primary reporting source. Prefer `ownerFacingText` verbatim. Do not replace it with your own improvised recap, headline, or "final exchange" section unless the owner explicitly asks for a custom rewrite.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 

@@ -21,6 +21,7 @@ import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
 import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
 import { normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
+import { discoverLocalSkillInventory, summarizeLocalSkillInventory } from './lib/skill_inventory.mjs'
 import {
   assertNoExistingLocalActivation,
   buildGatewayArgs,
@@ -135,6 +136,12 @@ function resolveConversationPolicy(skillName = '', sharedSkill = null) {
     skillName: clean(skillName) || 'friend-im',
     maxTurns: resolveSkillMaxTurns(skillName, sharedSkill)
   }
+}
+
+function localSkillInventorySummary() {
+  return summarizeLocalSkillInventory({
+    inventory: discoverLocalSkillInventory()
+  })
 }
 
 async function resolveCliOpenClawHostContext({
@@ -1263,6 +1270,8 @@ async function commandMessageSend(args) {
       },
       ownerReport: senderReport,
       senderReport,
+      ownerFacingMode: 'verbatim',
+      ownerFacingInstruction: 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
       ownerFacingText,
       ownerFacingLines: toOwnerFacingLines(ownerFacingText)
     })
@@ -1296,6 +1305,7 @@ async function commandMessageSend(args) {
         selectedSkill: skillHint,
         originalOwnerText: text,
         turnLog,
+        localSkillInventory: localSkillInventorySummary(),
         openclawAgent: hostContext.resolvedOpenClawAgent,
         command: hostContext.openclawCommand,
         cwd: hostContext.openclawCwd,
@@ -1389,6 +1399,8 @@ async function commandMessageSend(args) {
     replyText,
     ownerReport: senderReport,
     senderReport,
+    ownerFacingMode: 'verbatim',
+    ownerFacingInstruction: 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
     ownerFacingText,
     ownerFacingLines: toOwnerFacingLines(ownerFacingText)
   })

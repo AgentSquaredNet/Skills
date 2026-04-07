@@ -2,6 +2,7 @@ import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope } from '../../lib/a2_message_templates.mjs'
 import { normalizeConversationControl, resolveInboundConversationIdentity, resolveSkillMaxTurns } from '../../lib/conversation_policy.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
+import { discoverLocalSkillInventory, summarizeLocalSkillInventory } from '../../lib/skill_inventory.mjs'
 import {
   buildOpenClawConversationSummaryPrompt,
   buildOpenClawOutboundSkillDecisionPrompt,
@@ -167,6 +168,7 @@ export async function summarizeOpenClawConversation({
   selectedSkill = 'friend-im',
   originalOwnerText = '',
   turnLog = [],
+  localSkillInventory = '',
   openclawAgent = '',
   command = 'openclaw',
   cwd = '',
@@ -204,7 +206,8 @@ export async function summarizeOpenClawConversation({
       remoteAgentId,
       selectedSkill,
       originalOwnerText,
-      turnLog
+      turnLog,
+      localSkillInventory
     })
     let accepted
     try {
@@ -278,6 +281,16 @@ export function createOpenClawAdapter({
   const peerBudget = new Map()
   const budgetWindowMs = 10 * 60 * 1000
   const maxWindowCost = 18
+  let cachedLocalSkillInventorySummary = ''
+
+  function localSkillInventorySummary() {
+    if (!cachedLocalSkillInventorySummary) {
+      cachedLocalSkillInventorySummary = summarizeLocalSkillInventory({
+        inventory: discoverLocalSkillInventory()
+      })
+    }
+    return cachedLocalSkillInventorySummary
+  }
 
   async function withGateway(fn) {
     return withOpenClawGatewayClient({
@@ -643,7 +656,8 @@ export function createOpenClawAdapter({
         selectedSkill,
         item,
         conversationTranscript,
-        relationshipSummary
+        relationshipSummary,
+        localSkillInventory: localSkillInventorySummary()
       })
 
       let accepted
