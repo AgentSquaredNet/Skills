@@ -35,6 +35,36 @@ function clean(value) {
   return `${value ?? ''}`.trim()
 }
 
+function isJsonRpcReceipt(message, expectedId = '') {
+  return Boolean(
+    message
+    && typeof message === 'object'
+    && clean(message.jsonrpc) === '2.0'
+    && clean(message.id) === clean(expectedId)
+    && message.result
+    && typeof message.result === 'object'
+    && message.result.received === true
+  )
+}
+
+async function sendRequestReceipt(stream, id) {
+  await writeLine(stream, JSON.stringify({
+    jsonrpc: '2.0',
+    id: clean(id),
+    result: {
+      received: true
+    }
+  }))
+}
+
+async function readResponseAfterReceipt(stream, expectedId) {
+  const first = await readJsonMessage(stream)
+  if (isJsonRpcReceipt(first, expectedId)) {
+    return readJsonMessage(stream)
+  }
+  return first
+}
+
 async function acknowledgeJsonRpc(stream, response) {
   const id = clean(response?.id)
   if (!id) {
@@ -1584,7 +1614,7 @@ process.exit(2)
         to: 'agent-a@owner-a'
       }
     })))
-    const trustedResponse = await readJsonMessage(routerStream)
+    const trustedResponse = await readResponseAfterReceipt(routerStream, 'req_router')
     assert.equal(trustedResponse.result.message.parts[0].text, 'trusted-ok')
     await acknowledgeJsonRpc(routerStream, trustedResponse)
     await routerStream.close()
@@ -1627,7 +1657,7 @@ process.exit(2)
       listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
     })
     await writeLine(duplicateStream1, duplicatePayload)
-    const duplicateResponse1 = await readJsonMessage(duplicateStream1)
+    const duplicateResponse1 = await readResponseAfterReceipt(duplicateStream1, 'req_router_duplicate')
     assert.equal(duplicateResponse1.result.message.parts[0].text, 'duplicate-ok')
     await acknowledgeJsonRpc(duplicateStream1, duplicateResponse1)
     await duplicateStream1.close()
@@ -1639,7 +1669,7 @@ process.exit(2)
       listenAddrs: responder.getMultiaddrs().map((addr) => addr.toString())
     })
     await writeLine(duplicateStream2, duplicatePayload)
-    const duplicateResponse2 = await readJsonMessage(duplicateStream2)
+    const duplicateResponse2 = await readResponseAfterReceipt(duplicateStream2, 'req_router_duplicate')
     assert.equal(duplicateResponse2.result.message.parts[0].text, 'duplicate-ok')
     assert.equal(duplicateRuns, 1)
     await acknowledgeJsonRpc(duplicateStream2, duplicateResponse2)
@@ -1674,7 +1704,7 @@ process.exit(2)
         to: 'agent-a@owner-a'
       }
     })))
-    const rejectedResponse = await readJsonMessage(rejectedStream)
+    const rejectedResponse = await readResponseAfterReceipt(rejectedStream, 'req_router_rejected')
     assert.equal(rejectedResponse.error.code, 451)
     assert.equal(rejectedResponse.error.message, 'owner approval required')
     await acknowledgeJsonRpc(rejectedStream, rejectedResponse)
@@ -1688,6 +1718,7 @@ process.exit(2)
       const request = await readJsonMessage(stream)
       assert.equal(request.params.metadata.peerSessionId, 'peer_cached_reuse')
       assert.equal(request.params.metadata.relayConnectTicket, '')
+      await sendRequestReceipt(stream, request.id)
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',
         id: request.id,
@@ -1852,7 +1883,8 @@ process.exit(2)
 
     responder.handle('/agentsquared/reuse-ambiguous/1.0', async (event) => {
       const stream = event?.stream ?? event
-      await readJsonMessage(stream)
+      const request = await readJsonMessage(stream)
+      await sendRequestReceipt(stream, request.id)
       await stream.close()
     })
     const ambiguousState = createGatewayRuntimeState()
@@ -1875,7 +1907,10 @@ process.exit(2)
         bundle,
         node: initiator,
         binding: {
-          streamProtocol: '/agentsquared/reuse-ambiguous/1.0'
+          binding: 'libp2p-a2a-jsonrpc',
+          streamProtocol: '/agentsquared/reuse-ambiguous/1.0',
+          supportedBindings: ['libp2p-a2a-jsonrpc'],
+          a2aProtocolVersion: 'a2a-jsonrpc-custom-binding/2026-03'
         },
         targetAgentId: 'agent-b@owner-b',
         skillName: 'friend-im',
@@ -1899,6 +1934,7 @@ process.exit(2)
       const peerSessionId = `${request?.params?.metadata?.peerSessionId ?? ''}`.trim()
       const cachedResponse = retryOnEmptyState.handledRequestResponse(peerSessionId, request?.id)
       if (cachedResponse) {
+        await sendRequestReceipt(stream, request.id)
         await writeLine(stream, JSON.stringify(cachedResponse))
         await stream.close()
         return
@@ -1923,6 +1959,7 @@ process.exit(2)
         requestId: request.id,
         response: syntheticResponse
       })
+      await sendRequestReceipt(stream, request.id)
       await stream.close()
     })
     const retryOnEmptyState = createGatewayRuntimeState()
@@ -1964,6 +2001,7 @@ process.exit(2)
     assert.equal(emptyRetryResult.response?.result?.message?.parts?.[0]?.text, 'retried-ok')
 
     let ambiguousAttempt = 0
+    let ambiguousReadCount = 0
     await assert.rejects(
       () => exchangeOverTransport({
         node: {},
@@ -1992,6 +2030,16 @@ process.exit(2)
         },
         writeLineFn: async () => {},
         readMessageFn: async () => {
+          ambiguousReadCount += 1
+          if (ambiguousReadCount === 1) {
+            return {
+              jsonrpc: '2.0',
+              id: 'req_ambiguous_retry',
+              result: {
+                received: true
+              }
+            }
+          }
           throw new Error('empty JSON message')
         }
       }),
@@ -2109,6 +2157,7 @@ process.exit(2)
       const stream = event?.stream ?? event
       const request = await readJsonMessage(stream)
       assert.equal(request.params.metadata.relayConnectTicket, 'ticket-demo')
+      await sendRequestReceipt(stream, request.id)
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',
         id: request.id,
@@ -2143,7 +2192,7 @@ process.exit(2)
       }
     })
     await writeLine(stream, JSON.stringify(request))
-    const response = await readJsonMessage(stream)
+    const response = await readResponseAfterReceipt(stream, 'req_test')
     assert.equal(response.result.message.parts[0].text, 'pong')
     await stream.close()
 
@@ -2151,6 +2200,7 @@ process.exit(2)
       const stream = event?.stream ?? event
       const request = await readJsonMessage(stream)
       assert.equal(request.params.metadata.from, 'assistant@owner-a')
+      await sendRequestReceipt(stream, request.id)
       await writeLine(stream, JSON.stringify({
         jsonrpc: '2.0',
         id: request.id,
@@ -2182,7 +2232,7 @@ process.exit(2)
         to: 'agent-a@owner-a'
       }
     })))
-    const prettyResponse = await readJsonMessage(prettyStream)
+    const prettyResponse = await readResponseAfterReceipt(prettyStream, 'req_pretty')
     assert.equal(prettyResponse.result.message.parts[0].text, 'pretty-json-ok')
     await acknowledgeJsonRpc(prettyStream, prettyResponse)
     await prettyStream.close()
