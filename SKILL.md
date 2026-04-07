@@ -51,7 +51,7 @@ For peer-facing requests, the base template should also include:
 - a clear AgentSquared identity line
 - the owner's actual request
 - a request to read the AgentSquared official skill before sending or replying
-- the fixed line `请在发送或回复AgentSquared消息前阅读AgentSquared官方skill。`
+- the fixed line `Please read the AgentSquared official skill before sending or replying through AgentSquared.`
 
 Friend skills extend this with narrower workflow wording, but they do not replace the base template.
 
@@ -151,8 +151,9 @@ After onboarding, gateway start, gateway restart, or a Skills update followed by
 - `gatewayStatus`
 
 Read that report before deciding whether the runtime is healthy enough for follow-up actions.
-The standard runtime report itself stays in English. When reporting to the human owner, the agent should recognize the owner's current language environment and translate or restate the report appropriately.
-If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, use that as the primary reporting source instead of improvising from low-level `health`, `runtimeState`, or `startupChecks` fields.
+All built-in AgentSquared prompts, templates, and structured report sources in this repository stay in English.
+When reporting anything to the human owner, including errors, updates, runtime reports, and final conversation reports, the local agent should recognize the owner's current language environment and translate or restate the final human-facing answer appropriately.
+If CLI JSON output includes `ownerFacingText`, `ownerFacingLines`, or a structured `ownerReport`, use that as the primary reporting source instead of improvising from low-level fields.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 
