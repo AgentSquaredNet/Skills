@@ -500,6 +500,20 @@ function sleep(ms) {
 function classifyOutboundFailure(error = '', targetAgentId = '') {
   const message = clean(error)
   const lower = message.toLowerCase()
+  if (lower.includes('request receipt timed out after')) {
+    return {
+      code: 'turn-receipt-timeout',
+      reason: `${clean(targetAgentId) || 'The target agent'} did not confirm receipt of this AgentSquared turn within 20 seconds, so delivery for this turn could not be confirmed.`,
+      nextStep: 'Do not continue the conversation automatically. Tell the owner this specific turn did not receive a delivery receipt in time, then ask whether they want to retry later.'
+    }
+  }
+  if (lower.includes('turn response timed out after')) {
+    return {
+      code: 'turn-response-timeout',
+      reason: `${clean(targetAgentId) || 'The target agent'} accepted this AgentSquared turn, but did not return a final response before the per-turn response timeout.`,
+      nextStep: 'Do not automatically resend the same turn. Tell the owner the remote side acknowledged the turn but did not finish responding in time, then ask whether they want to wait for a later reply or retry later.'
+    }
+  }
   if (lower.includes('delivery status is unknown after the request was dispatched')) {
     return {
       code: 'delivery-status-unknown',
@@ -1224,6 +1238,8 @@ async function commandMessageSend(args) {
       skillHint,
       skillHintSource: skillDecision.source,
       skillHintReason: skillDecision.reason,
+      conversationKey,
+      turnCount: turnLog.length || turnIndex,
       error: {
         code: failure.code,
         message: failure.reason,
