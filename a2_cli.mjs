@@ -73,6 +73,13 @@ function printJson(payload) {
   console.log(JSON.stringify(payload, null, 2))
 }
 
+function toOwnerFacingLines(text = '') {
+  return clean(text)
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0)
+}
+
 function resolveUserPath(inputPath) {
   return path.resolve(`${inputPath}`.replace(/^~(?=$|\/|\\)/, process.env.HOME || '~'))
 }
@@ -1240,6 +1247,7 @@ async function commandMessageSend(args) {
       timeZone: ownerTimeZone,
       localTime: true
     })
+    const ownerFacingText = renderOwnerFacingReport(senderReport)
     printJson({
       ok: false,
       targetAgentId,
@@ -1253,8 +1261,10 @@ async function commandMessageSend(args) {
         message: failure.reason,
         detail: clean(error?.message)
       },
+      ownerReport: senderReport,
       senderReport,
-      ownerFacingText: renderOwnerFacingReport(senderReport)
+      ownerFacingText,
+      ownerFacingLines: toOwnerFacingLines(ownerFacingText)
     })
     process.exitCode = 1
     return
@@ -1298,6 +1308,7 @@ async function commandMessageSend(args) {
     timeZone: ownerTimeZone,
     localTime: true
   })
+  const ownerFacingText = renderOwnerFacingReport(senderReport)
   printJson({
     ok: true,
     targetAgentId,
@@ -1313,8 +1324,10 @@ async function commandMessageSend(args) {
     continuationError,
     conversationTurns: turnLog,
     replyText,
+    ownerReport: senderReport,
     senderReport,
-    ownerFacingText: renderOwnerFacingReport(senderReport)
+    ownerFacingText,
+    ownerFacingLines: toOwnerFacingLines(ownerFacingText)
   })
 }
 
