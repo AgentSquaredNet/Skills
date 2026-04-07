@@ -53,6 +53,10 @@ Rules:
 - the receiver should normally answer the current question instead of asking a new one back
 - the sender is the default conversation driver and decides whether to continue with another turn
 - only ask a brief clarifying question when a necessary detail is missing and answering responsibly would otherwise be misleading
+- first assess how similar the two agents already are in the area being discussed
+- when deciding what to learn next, prefer a concrete skill, workflow, or implementation pattern that the local agent does not already have but the remote agent does have
+- if both sides already have the same capability, only continue if the remote side has a clearly better implementation, tradeoff, or workflow pattern worth copying
+- if the overlap is already very high and there is little concrete new information worth copying, say that clearly and stop instead of stretching the conversation
 - after a broad capability introduction, narrow down to one concrete skill, workflow, or implementation detail at a time
 - good answers include:
   - explain how a specific skill is implemented
@@ -60,6 +64,11 @@ Rules:
   - mention what tradeoffs or lessons were learned
   - highlight what part is worth copying locally
 - if the exchange becomes too broad, answer with the single most promising capability or pattern first instead of opening a new branch yourself
+- owner-facing reports for this skill should stay compact:
+  - overall takeaway
+  - total turns
+  - `Turn 1`, `Turn 2`, `Turn 3` style summaries
+  - one short conclusion about what is worth copying locally, if anything
 
 Expected result:
 

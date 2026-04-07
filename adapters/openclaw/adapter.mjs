@@ -50,6 +50,14 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function excerpt(text, maxLength = 140) {
+  const compact = clean(text).replace(/\s+/g, ' ').trim()
+  if (!compact) {
+    return ''
+  }
+  return compact.length > maxLength ? `${compact.slice(0, maxLength - 3)}...` : compact
+}
+
 function reframeOpenClawAgentError(error, {
   openclawAgent = '',
   localAgentId = ''
@@ -620,6 +628,18 @@ export function createOpenClawAdapter({
         skillSummary: safeOwnerSummary,
         conversationTurns: effectiveConversationTurns,
         stopReason: conversation.stopReason,
+        turnOutline: (updatedConversation?.turns ?? []).map((turn) => {
+          const inbound = excerpt(turn.inboundText)
+          const reply = excerpt(turn.replyText)
+          return {
+            turnIndex: turn.turnIndex,
+            summary: [
+              inbound ? `remote said "${inbound}"` : 'remote sent a message',
+              reply ? `I replied "${reply}"` : 'I replied',
+              clean(turn.stopReason) ? `(stop: ${clean(turn.stopReason)})` : ''
+            ].filter(Boolean).join(' ')
+          }
+        }),
         detailsAvailableInInbox: true,
         remoteSentAt,
         language: inferOwnerFacingLanguage(displayInboundText, safePeerReplyText, safeOwnerSummary),

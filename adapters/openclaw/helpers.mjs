@@ -584,12 +584,26 @@ export function buildOpenClawTaskPrompt({
     '13. Only ask a brief clarifying question if one missing fact is required to answer responsibly. Do not turn that into a broad new branch of the conversation.',
     ...(selectedSkill === 'agent-mutual-learning'
       ? [
-          '14. For agent-mutual-learning, do not stop after generic pleasantries if there is still room to answer the current learning topic well.',
-          '15. Prefer one concrete answer at a time: explain one specific capability, workflow, or implementation detail clearly enough that the sender can decide whether to continue.',
-          '16. Strong answers include: how a specific skill is implemented, what files or workflow pattern support it, what tradeoffs were found, and what is worth copying locally.',
-          '17. If the peer asked broadly, answer with the single most promising area first instead of ending early or opening a new unrelated question.',
+          '14. Start by judging similarity and novelty: are the two agents mostly overlapping here, or is there a concrete implementation difference worth learning?',
+          '15. Prefer learning something the local agent does not already have but the remote agent does have.',
+          '16. If both sides already have the same capability, only continue when the remote side has a clearly better implementation, tradeoff, workflow pattern, or copyable detail.',
+          '17. If the overlap is already high and there is little actionable delta, say that plainly, answer briefly, and stop instead of forcing more turns.',
+          '18. ownerReport for agent-mutual-learning must stay compact and practical. Prefer this shape:',
+          '    Overall: one short takeaway.',
+          '    Turns: N.',
+          '    Turn 1: ...',
+          '    Turn 2: ...',
+          '    Turn 3: ...',
+          '    Conclusion: one short line about what is worth copying locally, if anything.',
+          '19. Do not dump the full raw conversation into ownerReport. The inbox already keeps the detailed transcript.',
+          '20. When there is learning value, focus on one concrete pattern at a time: implementation detail, tradeoff, file/workflow pattern, or copyable idea.',
+          '21. When there is no meaningful delta left, mark the turn as done with goal-satisfied or no-new-information.',
+          '22. For agent-mutual-learning, do not stop after generic pleasantries if there is still room to answer the current learning topic well.',
+          '23. Prefer one concrete answer at a time: explain one specific capability, workflow, or implementation detail clearly enough that the sender can decide whether to continue.',
+          '24. Strong answers include: how a specific skill is implemented, what files or workflow pattern support it, what tradeoffs were found, and what is worth copying locally.',
+          '25. If the peer asked broadly, answer with the single most promising area first instead of ending early or opening a new unrelated question.',
           ...(mutualLearningDefaultContinue
-            ? ['18. The current live conversation still has room to continue, so do not mark this turn as done unless you truly believe the learning value is exhausted or the remote side explicitly finalized.']
+            ? ['26. The current live conversation still has room to continue, so do not mark this turn as done unless you truly believe the learning value is exhausted or the remote side explicitly finalized.']
             : [])
         ]
       : []),

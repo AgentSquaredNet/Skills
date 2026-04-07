@@ -43,6 +43,14 @@ function clean(value) {
   return `${value ?? ''}`.trim()
 }
 
+function excerpt(text, maxLength = 180) {
+  const compact = clean(text).replace(/\s+/g, ' ').trim()
+  if (!compact) {
+    return ''
+  }
+  return compact.length > maxLength ? `${compact.slice(0, maxLength - 3)}...` : compact
+}
+
 function parseJwtPayloadUnverified(token) {
   const serialized = clean(token)
   if (!serialized) {
@@ -1270,6 +1278,19 @@ async function commandMessageSend(args) {
     conversationKey,
     turnCount: turnLog.length || 1,
     stopReason: finalRemoteControl.stopReason || localStopReason,
+    turnOutline: turnLog.map((turn) => {
+      const outbound = excerpt(turn.outboundText, 120)
+      const reply = excerpt(turn.replyText, 120)
+      const stop = clean(turn.remoteStopReason || turn.localStopReason)
+      return {
+        turnIndex: turn.turnIndex,
+        summary: [
+          outbound ? `I shared/asked "${outbound}"` : 'I sent a message',
+          reply ? `the peer replied "${reply}"` : 'the peer reply had no displayable text',
+          stop ? `(stop: ${stop})` : ''
+        ].filter(Boolean).join(' ')
+      }
+    }),
     detailsHint: continuationError
       ? `Detailed turn-by-turn exchange is available in the conversation output below. The local AI runtime then failed while preparing the next turn: ${continuationError}`
       : 'Detailed turn-by-turn exchange is available in the conversation output below.',
