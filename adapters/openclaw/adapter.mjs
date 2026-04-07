@@ -1,6 +1,6 @@
 import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope } from '../../lib/a2_message_templates.mjs'
-import { normalizeConversationControl, resolveSkillMaxTurns } from '../../lib/conversation_policy.mjs'
+import { normalizeConversationControl, resolveInboundConversationIdentity, resolveSkillMaxTurns } from '../../lib/conversation_policy.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
 import {
   buildOpenClawOutboundSkillDecisionPrompt,
@@ -298,7 +298,8 @@ export function createOpenClawAdapter({
     const remoteSentAt = clean(inboundMetadata.sentAt) || clean(parsedEnvelope?.sentAt)
     const ownerLanguage = inferOwnerFacingLanguage(displayInboundText, inboundText)
     const ownerTimeZone = localOwnerTimeZone()
-    const conversationKey = clean(inboundMetadata.conversationKey) || clean(item?.peerSessionId) || clean(item?.inboundId) || clean(mailboxKey) || randomId('conversation')
+    const conversationIdentity = resolveInboundConversationIdentity(item)
+    const conversationKey = clean(conversationIdentity.conversationKey)
     return withGateway(async (client, gatewayContext) => {
       const safetySessionKey = normalizeOpenClawSafetySessionKey(localAgentId, remoteAgentId || mailboxKey || 'unknown')
       const safetyPrompt = buildOpenClawSafetyPrompt({
@@ -611,6 +612,8 @@ export function createOpenClawAdapter({
         remoteAgentId,
         incomingSkillHint,
         selectedSkill: parsed.selectedSkill,
+        conversationKey,
+        conversationMode: conversationIdentity.mode,
         receivedAt,
         inboundText: displayInboundText,
         peerReplyText: safePeerReplyText,
@@ -656,6 +659,7 @@ export function createOpenClawAdapter({
             ...(parsed.peerResponse?.metadata ?? {}),
             incomingSkillHint,
             conversationKey,
+            conversationMode: conversationIdentity.mode,
             openclawRunId: runId,
             openclawSessionKey: sessionKey,
             openclawRelationSessionKey: relationSessionKey,
@@ -671,6 +675,7 @@ export function createOpenClawAdapter({
           incomingSkillHint,
           selectedSkill: parsed.selectedSkill,
           conversationKey,
+          conversationMode: conversationIdentity.mode,
           runtimeAdapter: 'openclaw',
           openclawRunId: runId,
           openclawSessionKey: sessionKey,

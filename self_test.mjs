@@ -475,10 +475,12 @@ process.exit(2)
     const gatewayState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
     gatewayState.rememberTrustedSession({
       peerSessionId: 'peer_demo',
+      conversationKey: 'conv-demo-transport',
       remoteAgentId: 'agent-a@owner-a',
       remotePeerId: '12D3KooWDemoPeer'
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a').peerSessionId, 'peer_demo')
+    assert.equal(gatewayState.trustedSessionByConversation('conv-demo-transport').peerSessionId, 'peer_demo')
     gatewayState.rememberTrustedSession({
       peerSessionId: 'peer_demo_older',
       remoteAgentId: 'agent-a@owner-a',
@@ -508,10 +510,12 @@ process.exit(2)
       preserveTrustedSessions: true
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a').peerSessionId, 'peer_demo')
+    assert.equal(gatewayState.trustedSessionByConversation('conv-demo-transport').peerSessionId, 'peer_demo')
     gatewayState.reset({
       reason: 'full gateway shutdown'
     })
     assert.equal(gatewayState.trustedSessionByAgent('agent-a@owner-a'), null)
+    assert.equal(gatewayState.trustedSessionByConversation('conv-demo-transport'), null)
     {
       const liveStore = createLiveConversationStore()
       const first = liveStore.appendTurn({
@@ -538,6 +542,18 @@ process.exit(2)
         decision: 'continue'
       })
       assert.equal(duplicate.turns.length, 1)
+      const duplicateByReplay = liveStore.appendTurn({
+        conversationKey: 'conv-demo-1',
+        peerSessionId: 'peer-demo',
+        requestId: 'req-1b',
+        remoteAgentId: 'agent-a@owner-a',
+        selectedSkill: 'agent-mutual-learning',
+        turnIndex: 1,
+        inboundText: 'hello',
+        replyText: 'hi',
+        decision: 'continue'
+      })
+      assert.equal(duplicateByReplay.turns.length, 1)
       const secondConversation = liveStore.appendTurn({
         conversationKey: 'conv-demo-2',
         peerSessionId: 'peer-demo',
@@ -553,6 +569,47 @@ process.exit(2)
       assert.equal(secondConversation.turns.length, 1)
       assert.equal(liveStore.getConversation('conv-demo-1').turns.length, 1)
       assert.equal(liveStore.getConversation('conv-demo-2').turns.length, 1)
+    }
+    {
+      const executionOrder = []
+      let releaseFirstConversation = false
+      const scheduler = createMailboxScheduler({
+        maxActiveMailboxes: 8,
+        conversationLockMs: 10_000,
+        async handleItem(item, { conversationKey }) {
+          executionOrder.push(`start:${conversationKey}:${item.inboundId}`)
+          if (conversationKey === 'conv-a' && !releaseFirstConversation) {
+            return { releaseConversationLock: false }
+          }
+          return { releaseConversationLock: true }
+        }
+      })
+      const first = scheduler.enqueue({
+        inboundId: 'item-a1',
+        request: { params: { metadata: { conversationKey: 'conv-a' } } }
+      })
+      await first
+      let secondResolved = false
+      const second = scheduler.enqueue({
+        inboundId: 'item-b1',
+        request: { params: { metadata: { conversationKey: 'conv-b' } } }
+      }).then(() => {
+        secondResolved = true
+      })
+      await sleep(50)
+      assert.equal(secondResolved, false)
+      releaseFirstConversation = true
+      const third = scheduler.enqueue({
+        inboundId: 'item-a2',
+        request: { params: { metadata: { conversationKey: 'conv-a' } } }
+      })
+      await third
+      await second
+      assert.deepEqual(executionOrder, [
+        'start:conv-a:item-a1',
+        'start:conv-a:item-a2',
+        'start:conv-b:item-b1'
+      ])
     }
     {
       let ownerNotification = null
@@ -798,15 +855,16 @@ process.exit(2)
     const c1 = scheduler.enqueue({ inboundId: 'c1', remoteAgentId: 'C@Test', delayMs: 10 })
     await Promise.all([b1, b2, c1])
     await scheduler.whenIdle()
-    const startB1 = schedulerEvents.indexOf('start:agent:b@test:b1')
-    const finishB1 = schedulerEvents.indexOf('finish:agent:b@test:b1')
-    const startB2 = schedulerEvents.indexOf('start:agent:b@test:b2')
-    const startC1 = schedulerEvents.indexOf('start:agent:c@test:c1')
+    const startB1 = schedulerEvents.indexOf('start:conversation:legacy:B@Test:b1')
+    const finishB1 = schedulerEvents.indexOf('finish:conversation:legacy:B@Test:b1')
+    const startB2 = schedulerEvents.indexOf('start:conversation:legacy:B@Test:b2')
+    const finishB2 = schedulerEvents.indexOf('finish:conversation:legacy:B@Test:b2')
+    const startC1 = schedulerEvents.indexOf('start:conversation:legacy:C@Test:c1')
     assert.ok(startB1 >= 0)
     assert.ok(finishB1 > startB1)
     assert.ok(startB2 > finishB1)
-    assert.ok(startC1 > startB1)
-    assert.ok(startC1 < finishB1)
+    assert.ok(finishB2 > startB2)
+    assert.ok(startC1 > finishB2)
 
     const responded = []
     const rejected = []
@@ -859,7 +917,7 @@ process.exit(2)
     await integratedRouter.whenIdle()
     assert.equal(rejected.length, 0)
     assert.equal(responded.length, 1)
-    assert.equal(responded[0].result.message.parts[0].text, 'handled:friend-im:agent:peer@test')
+    assert.equal(responded[0].result.message.parts[0].text, 'handled:friend-im:conversation:legacy:peer@Test')
     assert.equal(responded[0].result.metadata.selectedSkill, 'friend-im')
     assert.equal(ownerReports.length, 1)
     assert.equal(ownerReports[0].ownerReport.summary, 'owner saw router1')

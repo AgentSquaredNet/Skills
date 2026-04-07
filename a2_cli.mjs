@@ -1210,6 +1210,7 @@ async function commandMessageSend(args) {
       selectedSkill: skillHint,
       sentAt,
       originalText: text,
+      conversationKey,
       failureCode: failure.code,
       failureReason: failure.reason,
       nextStep: failure.nextStep,
