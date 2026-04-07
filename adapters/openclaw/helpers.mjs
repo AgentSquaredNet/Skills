@@ -478,6 +478,56 @@ export function buildOpenClawOutboundSkillDecisionPrompt({
   ].join('\n')
 }
 
+export function buildOpenClawConversationSummaryPrompt({
+  localAgentId,
+  remoteAgentId,
+  selectedSkill = 'friend-im',
+  originalOwnerText = '',
+  turnLog = []
+} = {}) {
+  const turns = Array.isArray(turnLog) ? turnLog : []
+  return [
+    `You are summarizing a completed AgentSquared conversation for local agent ${clean(localAgentId) || 'unknown'}.`,
+    `Remote agent: ${clean(remoteAgentId) || 'unknown'}`,
+    `Selected skill: ${clean(selectedSkill) || 'friend-im'}`,
+    '',
+    'Produce a concise structured owner-facing summary.',
+    'The owner does not need the raw full transcript here; the inbox already keeps the detailed record.',
+    'If this is agent-mutual-learning, judge whether the remote agent has:',
+    '- a concrete skill or workflow the local agent does not already have',
+    '- or a clearly better implementation worth copying',
+    'If neither is true, say so plainly and do not invent learning value.',
+    'If a skill is worth adopting, include where it is installed or sourced from, if the conversation revealed that.',
+    'Never claim installation should happen automatically. Installation always requires owner confirmation.',
+    '',
+    'Required output shape:',
+    '- overallSummary: short overall takeaway only',
+    '- detailedConversation: array of short per-turn summaries',
+    '- recommendedSkill: empty string if none',
+    '- installSource: empty string if unknown or not applicable',
+    '- worthInstalling: yes|no',
+    '- ownerAction: confirm-install|none',
+    '',
+    'Original owner request:',
+    clean(originalOwnerText) || '(empty)',
+    '',
+    'Conversation turns:',
+    ...(turns.length > 0
+      ? turns.map((turn) => [
+          `Turn ${Number.parseInt(`${turn?.turnIndex ?? 1}`, 10) || 1}:`,
+          `- Outbound: ${clean(turn?.outboundText) || '(empty)'}`,
+          `- Peer reply: ${clean(turn?.replyText) || '(empty)'}`,
+          `- Remote stop reason: ${clean(turn?.remoteStopReason || turn?.localStopReason) || '(none)'}`
+        ].join('\n'))
+      : ['(none)']),
+    '',
+    'Return exactly one JSON object and nothing else.',
+    'Schema:',
+    '{"overallSummary":"...","detailedConversation":["Turn 1: ..."],"recommendedSkill":"","installSource":"","worthInstalling":"yes|no","ownerAction":"confirm-install|none"}',
+    'Do not wrap the JSON in markdown fences.'
+  ].join('\n')
+}
+
 export function parseOpenClawSkillDecisionResult(text, {
   availableSkills = ['friend-im', 'agent-mutual-learning'],
   defaultSkill = 'friend-im'
@@ -489,6 +539,23 @@ export function parseOpenClawSkillDecisionResult(text, {
   return {
     skillHint: allowedSkills.has(skillHint) ? skillHint : fallbackSkill,
     reason: clean(parsed.reason)
+  }
+}
+
+export function parseOpenClawConversationSummaryResult(text) {
+  const parsed = parseJsonOutput(text, 'OpenClaw conversation summary')
+  const detailedConversation = asArray(parsed.detailedConversation)
+    .map((item) => clean(item))
+    .filter(Boolean)
+  const worthInstalling = clean(parsed.worthInstalling).toLowerCase()
+  const ownerAction = clean(parsed.ownerAction).toLowerCase()
+  return {
+    overallSummary: clean(parsed.overallSummary),
+    detailedConversation,
+    recommendedSkill: clean(parsed.recommendedSkill),
+    installSource: clean(parsed.installSource),
+    worthInstalling: worthInstalling === 'yes' ? 'yes' : 'no',
+    ownerAction: ownerAction === 'confirm-install' ? 'confirm-install' : 'none'
   }
 }
 
@@ -584,26 +651,28 @@ export function buildOpenClawTaskPrompt({
     '13. Only ask a brief clarifying question if one missing fact is required to answer responsibly. Do not turn that into a broad new branch of the conversation.',
     ...(selectedSkill === 'agent-mutual-learning'
       ? [
-          '14. Start by judging similarity and novelty: are the two agents mostly overlapping here, or is there a concrete implementation difference worth learning?',
-          '15. Prefer learning something the local agent does not already have but the remote agent does have.',
-          '16. If both sides already have the same capability, only continue when the remote side has a clearly better implementation, tradeoff, workflow pattern, or copyable detail.',
+          '14. For agent-mutual-learning, use this order of operations:',
+          '    a. First identify the remote agent\'s most-used skills, recently installed skills, or clearly differentiated workflows.',
+          '    b. Then judge similarity and novelty: what does the remote agent have that the local agent likely does not have?',
+          '    c. If both sides already have the same capability, only continue when the remote side has a clearly better implementation, tradeoff, workflow pattern, or copyable detail.',
+          '    d. Once one promising skill or workflow is found, stay focused on that single topic until the sender has enough information to decide whether it is worth copying locally.',
+          '15. Prefer remote-only skills or recently installed skills before discussing overlapping capabilities.',
+          '16. When a concrete skill is worth learning, explain what problem it solves, how it is used in practice, where it is installed or sourced from if known, and what tradeoffs or lessons matter.',
           '17. If the overlap is already high and there is little actionable delta, say that plainly, answer briefly, and stop instead of forcing more turns.',
-          '18. ownerReport for agent-mutual-learning must stay compact and practical. Prefer this shape:',
-          '    Overall: one short takeaway.',
-          '    Turns: N.',
-          '    Turn 1: ...',
-          '    Turn 2: ...',
-          '    Turn 3: ...',
-          '    Conclusion: one short line about what is worth copying locally, if anything.',
+          '18. ownerReport for agent-mutual-learning must stay compact and practical. Use this shape:',
+          '    Overall summary: short overall takeaway only.',
+          '    Detailed conversation: Turn 1, Turn 2, Turn 3 style short lines.',
+          '    Actions taken: what is worth copying locally, whether a skill is worth installing, and whether owner confirmation is needed.',
           '19. Do not dump the full raw conversation into ownerReport. The inbox already keeps the detailed transcript.',
           '20. When there is learning value, focus on one concrete pattern at a time: implementation detail, tradeoff, file/workflow pattern, or copyable idea.',
-          '21. When there is no meaningful delta left, mark the turn as done with goal-satisfied or no-new-information.',
-          '22. For agent-mutual-learning, do not stop after generic pleasantries if there is still room to answer the current learning topic well.',
-          '23. Prefer one concrete answer at a time: explain one specific capability, workflow, or implementation detail clearly enough that the sender can decide whether to continue.',
-          '24. Strong answers include: how a specific skill is implemented, what files or workflow pattern support it, what tradeoffs were found, and what is worth copying locally.',
-          '25. If the peer asked broadly, answer with the single most promising area first instead of ending early or opening a new unrelated question.',
+          '21. If a candidate skill or workflow is worth adopting, make it easy for the sender to report back: name it clearly, mention installation/source if known, and state that installation still requires owner confirmation.',
+          '22. When there is no meaningful delta left, mark the turn as done with goal-satisfied or no-new-information.',
+          '23. For agent-mutual-learning, do not stop after generic pleasantries if there is still room to answer the current learning topic well.',
+          '24. Prefer one concrete answer at a time: explain one specific capability, workflow, or implementation detail clearly enough that the sender can decide whether to continue.',
+          '25. Strong answers include: how a specific skill is implemented, what files or workflow pattern support it, what tradeoffs were found, what is worth copying locally, and where the skill or workflow comes from.',
+          '26. If the peer asked broadly, answer with the single most promising remote-only or clearly better area first instead of ending early or opening a new unrelated question.',
           ...(mutualLearningDefaultContinue
-            ? ['26. The current live conversation still has room to continue, so do not mark this turn as done unless you truly believe the learning value is exhausted or the remote side explicitly finalized.']
+            ? ['27. The current live conversation still has room to continue, so do not mark this turn as done unless you truly believe the learning value is exhausted or the remote side explicitly finalized.']
             : [])
         ]
       : []),

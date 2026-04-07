@@ -24,7 +24,7 @@ import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_run
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
-import { buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
+import { buildOpenClawConversationSummaryPrompt, buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, parseOpenClawConversationSummaryResult, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
 import { detectOpenClawHostEnvironment, resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
@@ -1145,6 +1145,14 @@ process.exit(2)
     assert.equal(parsedOutboundTemplate.to, 'agent-b@owner-b')
     assert.match(outboundTemplate, /Please read the AgentSquared official skill before sending or replying through AgentSquared\./)
     assert.doesNotMatch(outboundTemplate, /Workflow:/)
+    const mutualLearningOutboundTemplate = buildSkillOutboundText({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      skillName: 'agent-mutual-learning',
+      originalText: 'learn useful skills',
+      sentAt: '2026-03-28T12:00:00Z'
+    })
+    assert.match(mutualLearningOutboundTemplate, /skills or workflows you use most often or installed recently/i)
     assert.equal(peerResponseText({
       result: {
         message: {
@@ -1193,6 +1201,34 @@ process.exit(2)
     assert.match(senderBaseReport.message, /Turn 1:/)
     assert.match(senderBaseReport.message, /Total turns: 3\./)
     assert.doesNotMatch(senderBaseReport.message, /Workflow:/)
+    const mutualLearningSenderReport = buildSenderBaseReport({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      selectedSkill: 'agent-mutual-learning',
+      sentAt: '2026-03-28T12:00:00Z',
+      originalText: 'compare skills',
+      replyText: 'We found one useful delta.',
+      replyAt: '2026-03-28T12:03:00Z',
+      conversationKey: 'conversation_demo',
+      turnCount: 2,
+      stopReason: 'goal-satisfied',
+      overallSummary: 'Found one remote-only skill worth evaluating for local adoption.',
+      turnOutline: [
+        { turnIndex: 1, summary: 'Compared common skills and recent installs.' },
+        { turnIndex: 2, summary: 'Focused on one remote-only skill and captured install/source details.' }
+      ],
+      actionItems: [
+        'Recommended skill or workflow to evaluate: feishu-bitable-sync.',
+        'Install or source detail: ~/.openclaw/extensions/feishu-bitable-sync from a local Git checkout.',
+        'Owner decision needed: confirm installation before I install anything locally.'
+      ],
+      language: 'en',
+      timeZone: 'Asia/Shanghai',
+      localTime: true
+    })
+    assert.match(mutualLearningSenderReport.message, /Overall summary[\s\S]*Found one remote-only skill worth evaluating/)
+    assert.match(mutualLearningSenderReport.message, /Detailed conversation[\s\S]*Turn 2: Focused on one remote-only skill/)
+    assert.match(mutualLearningSenderReport.message, /Actions taken[\s\S]*Owner decision needed: confirm installation/)
     const receiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',
@@ -1241,6 +1277,34 @@ process.exit(2)
     assert.match(localizedReceiverBaseReport.message, /Detailed conversation/)
     assert.match(localizedReceiverBaseReport.message, /Actions taken/)
     assert.match(localizedReceiverBaseReport.message, /Remote Sent At \(Local Time\): 2026-03-28 19:59:30 \(Asia\/Shanghai\)/)
+
+    const conversationSummaryPrompt = buildOpenClawConversationSummaryPrompt({
+      localAgentId: 'agent-a@owner-a',
+      remoteAgentId: 'agent-b@owner-b',
+      selectedSkill: 'agent-mutual-learning',
+      originalOwnerText: 'learn useful remote skills',
+      turnLog: [
+        {
+          turnIndex: 1,
+          outboundText: 'What skills do you use most often or install recently?',
+          replyText: 'I recently installed skill-x and use it daily.',
+          remoteStopReason: ''
+        }
+      ]
+    })
+    assert.match(conversationSummaryPrompt, /a concrete skill or workflow the local agent does not already have/)
+    const parsedConversationSummary = parseOpenClawConversationSummaryResult(`{
+      "overallSummary":"Found one remote-only skill worth evaluating.",
+      "detailedConversation":["Turn 1: Compared frequent and recent skills.","Turn 2: Captured install source and usage notes."],
+      "recommendedSkill":"skill-x",
+      "installSource":"~/.openclaw/extensions/skill-x",
+      "worthInstalling":"yes",
+      "ownerAction":"confirm-install"
+    }`)
+    assert.equal(parsedConversationSummary.recommendedSkill, 'skill-x')
+    assert.equal(parsedConversationSummary.installSource, '~/.openclaw/extensions/skill-x')
+    assert.equal(parsedConversationSummary.worthInstalling, 'yes')
+    assert.equal(parsedConversationSummary.ownerAction, 'confirm-install')
     assert.match(localizedReceiverBaseReport.message, /Turn 1:/)
     assert.match(localizedReceiverBaseReport.message, /Total turns: 4\./)
     assert.doesNotMatch(localizedReceiverBaseReport.message, /Skill Notes:/)

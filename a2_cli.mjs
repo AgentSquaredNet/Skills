@@ -12,7 +12,7 @@ import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTick
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
-import { resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
+import { resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
@@ -1276,6 +1276,74 @@ async function commandMessageSend(args) {
     defaultStopReason: localStopReason || '',
     defaultFinalize: true
   })
+  let summarizedOverall = ''
+  let summarizedDetailedConversation = []
+  let summarizedRecommendedSkill = ''
+  let summarizedInstallSource = ''
+  let summarizedWorthInstalling = 'no'
+  let summarizedOwnerAction = 'none'
+  if (skillHint === 'agent-mutual-learning') {
+    try {
+      const hostContext = await resolveCliOpenClawHostContext({
+        agentId: context.agentId,
+        keyFile: context.keyFile,
+        args,
+        purpose: 'mutual-learning conversation summary'
+      })
+      const summarized = await summarizeOpenClawConversation({
+        localAgentId: context.agentId,
+        remoteAgentId: targetAgentId,
+        selectedSkill: skillHint,
+        originalOwnerText: text,
+        turnLog,
+        openclawAgent: hostContext.resolvedOpenClawAgent,
+        command: hostContext.openclawCommand,
+        cwd: hostContext.openclawCwd,
+        configPath: hostContext.openclawConfigPath,
+        stateDir: hostContext.openclawStateDir,
+        timeoutMs: 60000,
+        gatewayUrl: hostContext.openclawGatewayUrl,
+        gatewayToken: hostContext.openclawGatewayToken,
+        gatewayPassword: hostContext.openclawGatewayPassword
+      })
+      summarizedOverall = clean(summarized.overallSummary)
+      summarizedDetailedConversation = Array.isArray(summarized.detailedConversation)
+        ? summarized.detailedConversation.map((item) => clean(item)).filter(Boolean)
+        : []
+      summarizedRecommendedSkill = clean(summarized.recommendedSkill)
+      summarizedInstallSource = clean(summarized.installSource)
+      summarizedWorthInstalling = clean(summarized.worthInstalling).toLowerCase() === 'yes' ? 'yes' : 'no'
+      summarizedOwnerAction = clean(summarized.ownerAction).toLowerCase() === 'confirm-install' ? 'confirm-install' : 'none'
+    } catch (error) {
+      continuationError = continuationError || `conversation-summary-failed: ${clean(error?.message) || 'unknown error'}`
+    }
+  }
+  const defaultTurnOutline = turnLog.map((turn) => {
+    const outbound = excerpt(turn.outboundText, 120)
+    const reply = excerpt(turn.replyText, 120)
+    const stop = clean(turn.remoteStopReason || turn.localStopReason)
+    return {
+      turnIndex: turn.turnIndex,
+      summary: [
+        outbound ? `I shared or asked "${outbound}"` : 'I sent a message',
+        reply ? `the peer replied "${reply}"` : 'the peer reply had no displayable text',
+        stop ? `(stop: ${stop})` : ''
+      ].filter(Boolean).join(' ')
+    }
+  })
+  const actionItems = []
+  if (summarizedRecommendedSkill) {
+    actionItems.push(`Recommended skill or workflow to evaluate: ${summarizedRecommendedSkill}.`)
+  }
+  if (summarizedInstallSource) {
+    actionItems.push(`Install or source detail: ${summarizedInstallSource}.`)
+  }
+  if (summarizedWorthInstalling === 'yes') {
+    actionItems.push('This looks worth installing or adopting locally if the owner approves.')
+  }
+  if (summarizedOwnerAction === 'confirm-install') {
+    actionItems.push('Owner decision needed: confirm installation before I install anything locally.')
+  }
   const senderReport = buildSenderBaseReport({
     localAgentId: context.agentId,
     targetAgentId,
@@ -1288,19 +1356,14 @@ async function commandMessageSend(args) {
     conversationKey,
     turnCount: turnLog.length || 1,
     stopReason: finalRemoteControl.stopReason || localStopReason,
-    turnOutline: turnLog.map((turn) => {
-      const outbound = excerpt(turn.outboundText, 120)
-      const reply = excerpt(turn.replyText, 120)
-      const stop = clean(turn.remoteStopReason || turn.localStopReason)
-      return {
-        turnIndex: turn.turnIndex,
-        summary: [
-          outbound ? `I shared/asked "${outbound}"` : 'I sent a message',
-          reply ? `the peer replied "${reply}"` : 'the peer reply had no displayable text',
-          stop ? `(stop: ${stop})` : ''
-        ].filter(Boolean).join(' ')
-      }
-    }),
+    overallSummary: summarizedOverall,
+      turnOutline: summarizedDetailedConversation.length > 0
+        ? summarizedDetailedConversation.map((summary, index) => ({
+          turnIndex: index + 1,
+          summary: clean(summary).replace(/^Turn\s+\d+\s*:\s*/i, '')
+        }))
+      : defaultTurnOutline,
+    actionItems,
     detailsHint: continuationError
       ? `Detailed turn-by-turn exchange is available in the conversation output below. The local AI runtime then failed while preparing the next turn: ${continuationError}`
       : 'Detailed turn-by-turn exchange is available in the conversation output below.',
