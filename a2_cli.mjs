@@ -80,7 +80,7 @@ function toOwnerFacingLines(text = '') {
     .filter((line) => line.length > 0)
 }
 
-const LONG_TASK_PROGRESS_INTERVAL_MS = 75 * 1000
+const LONG_TASK_PROGRESS_INTERVAL_MS = 120 * 1000
 
 function formatElapsedMinutes(elapsedMs) {
   const minutes = Math.max(1, Math.round((Number(elapsedMs) || 0) / 60000))
