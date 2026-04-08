@@ -579,6 +579,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (failureKind === 'post-dispatch-empty-response') {
     return {
       code: 'post-dispatch-empty-response',
+      deliveryStatus: 'unknown',
+      failureStage: 'post-dispatch / final-response-empty',
+      confirmationLevel: 'remote may have received and processed the turn',
       reason: `${clean(targetAgentId) || 'The target agent'} may have received this AgentSquared turn, but the final response stream ended with no JSON payload after dispatch.`,
       nextStep: 'Do not automatically retry this same message. Tell the owner the remote side may have processed the turn, but the final response came back empty. Ask whether they want to check for a later reply or retry later.'
     }
@@ -586,6 +589,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (failureKind === 'post-dispatch-stream-closed') {
     return {
       code: 'post-dispatch-stream-closed',
+      deliveryStatus: 'unknown',
+      failureStage: 'post-dispatch / response-stream-closed',
+      confirmationLevel: 'remote may have received and processed the turn',
       reason: `${clean(targetAgentId) || 'The target agent'} may have received this AgentSquared turn, but the response stream closed before the final reply could be confirmed locally.`,
       nextStep: 'Do not automatically retry this same message. Tell the owner the remote side may have processed the turn, but the connection closed during response confirmation. Ask whether they want to check for a later reply or retry later.'
     }
@@ -593,6 +599,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (failureKind === 'post-dispatch-response-timeout') {
     return {
       code: 'post-dispatch-response-timeout',
+      deliveryStatus: 'unknown',
+      failureStage: 'post-dispatch / final-response-timeout',
+      confirmationLevel: 'remote accepted the turn but did not finish in time',
       reason: `${clean(targetAgentId) || 'The target agent'} accepted this AgentSquared turn, but the final response timed out after dispatch.`,
       nextStep: 'Do not automatically resend the same turn. Tell the owner the remote side accepted the turn but did not finish responding in time, then ask whether they want to wait for a later reply or retry later.'
     }
@@ -600,6 +609,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('request receipt timed out after')) {
     return {
       code: 'turn-receipt-timeout',
+      deliveryStatus: 'unconfirmed',
+      failureStage: 'awaiting-request-receipt',
+      confirmationLevel: 'receipt was never confirmed',
       reason: `${clean(targetAgentId) || 'The target agent'} did not confirm receipt of this AgentSquared turn within 20 seconds, so delivery for this turn could not be confirmed.`,
       nextStep: 'Do not continue the conversation automatically. Tell the owner this specific turn did not receive a delivery receipt in time, then ask whether they want to retry later.'
     }
@@ -607,6 +619,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('turn response timed out after')) {
     return {
       code: 'turn-response-timeout',
+      deliveryStatus: 'unknown',
+      failureStage: 'post-receipt / final-response-timeout',
+      confirmationLevel: 'remote acknowledged the turn but final response timed out',
       reason: `${clean(targetAgentId) || 'The target agent'} accepted this AgentSquared turn, but did not return a final response before the per-turn response timeout.`,
       nextStep: 'Do not automatically resend the same turn. Tell the owner the remote side acknowledged the turn but did not finish responding in time, then ask whether they want to wait for a later reply or retry later.'
     }
@@ -614,6 +629,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('delivery status is unknown after the request was dispatched')) {
     return {
       code: 'delivery-status-unknown',
+      deliveryStatus: 'unknown',
+      failureStage: 'post-dispatch / response-unconfirmed',
+      confirmationLevel: 'remote may already have processed the message',
       reason: `${clean(targetAgentId) || 'The target agent'} may already have received and processed this AgentSquared message, but the response could not be confirmed locally.`,
       nextStep: 'Do not automatically retry this same message. First tell the owner that delivery status is unknown and ask whether they want to check for a reply or retry later.'
     }
@@ -621,6 +639,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('no local agent runtime adapter is configured')) {
     return {
       code: 'target-runtime-unavailable',
+      deliveryStatus: 'failed',
+      failureStage: 'remote-runtime-unavailable',
+      confirmationLevel: 'target gateway was reachable but had no usable runtime',
       reason: `${clean(targetAgentId) || 'The target agent'} is online in AgentSquared, but its local host runtime is not attached correctly right now. The target gateway appears to be running without a supported inbound runtime adapter.`,
       nextStep: 'Do not switch to another target automatically. Stop here and tell the owner the target Agent must restart its AgentSquared gateway after fixing or re-detecting the supported host runtime.'
     }
@@ -628,6 +649,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('peer identity') || lower.includes('not visible in friend directory')) {
     return {
       code: 'target-unreachable',
+      deliveryStatus: 'failed',
+      failureStage: 'pre-dispatch / target-unreachable',
+      confirmationLevel: 'relay could not provide a usable live target',
       reason: `${clean(targetAgentId) || 'The target agent'} is not currently reachable through AgentSquared. Relay did not provide a usable live peer identity for this target.`,
       nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this exact target is offline or unavailable. The owner can retry this same target later.'
     }
@@ -635,6 +659,9 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('missing dialaddrs')) {
     return {
       code: 'target-unreachable',
+      deliveryStatus: 'failed',
+      failureStage: 'pre-dispatch / target-address-missing',
+      confirmationLevel: 'target did not expose usable dial addresses',
       reason: `${clean(targetAgentId) || 'The target agent'} does not currently expose any dialable AgentSquared transport addresses. The target may be offline, reconnecting, or missing fresh relay-backed transport publication.`,
       nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this exact target is not currently reachable. The owner can retry the same target later.'
     }
@@ -642,12 +669,18 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   if (lower.includes('gateway transport is unavailable') || lower.includes('recovering') || lower.includes('429') || lower.includes('too many requests') || lower.includes('relay')) {
     return {
       code: 'relay-or-gateway-unavailable',
+      deliveryStatus: 'failed',
+      failureStage: 'pre-dispatch / local-or-relay-path-unavailable',
+      confirmationLevel: 'delivery path was unstable before confirmation',
       reason: message || 'The local AgentSquared gateway or relay path was not healthy enough to deliver this message.',
       nextStep: 'Do not switch to another target automatically. Stop here and tell the owner this delivery failed because the current AgentSquared path is unstable. The owner can retry the same target later.'
     }
   }
   return {
     code: 'delivery-failed',
+    deliveryStatus: 'failed',
+    failureStage: 'unknown',
+    confirmationLevel: 'delivery could not be completed or confirmed',
     reason: message || 'The AgentSquared message could not be delivered.',
     nextStep: 'Do not switch to another target automatically. Stop here and ask the owner whether they want to retry this same target later.'
   }
@@ -1352,6 +1385,9 @@ async function commandMessageSend(args) {
       sentAt,
       originalText: text,
       conversationKey,
+      deliveryStatus: failure.deliveryStatus,
+      failureStage: failure.failureStage,
+      confirmationLevel: failure.confirmationLevel,
       failureCode: failure.code,
       failureReason: failure.reason,
       nextStep: failure.nextStep,
