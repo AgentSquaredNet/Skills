@@ -2138,6 +2138,96 @@ process.exit(2)
     )
     assert.equal(ambiguousAttempt, 2)
 
+    {
+      let postDispatchEmptyReadCount = 0
+      await assert.rejects(
+        () => exchangeOverTransport({
+        node: {},
+        transport: {
+          peerId: 'peer-empty',
+          streamProtocol: '/agentsquared/test/1.0'
+        },
+        request: buildJsonRpcEnvelope({
+          id: 'req_post_dispatch_empty',
+          method: 'message/send',
+          message: {
+            kind: 'message',
+            role: 'user',
+            parts: [{ kind: 'text', text: 'post-dispatch empty' }]
+          },
+          metadata: { conversationKey: 'conv-post-dispatch-empty' }
+        }),
+        openStreamFn: async () => ({
+          async close() {}
+        }),
+        writeLineFn: async () => {},
+        readMessageFn: async () => {
+          postDispatchEmptyReadCount += 1
+          if (postDispatchEmptyReadCount === 1) {
+            return {
+              jsonrpc: '2.0',
+              id: 'req_post_dispatch_empty',
+              result: {
+                received: true
+              }
+            }
+          }
+          throw Object.assign(new Error('empty JSON message'), { a2DispatchStage: 'post-dispatch' })
+        }
+      }),
+        (error) => {
+          assert.equal(error?.a2FailureKind, 'post-dispatch-empty-response')
+          assert.match(`${error?.message ?? ''}`, /delivery status is unknown after the request was dispatched/i)
+          return true
+        }
+      )
+    }
+
+    {
+      let postDispatchClosedReadCount = 0
+      await assert.rejects(
+        () => exchangeOverTransport({
+        node: {},
+        transport: {
+          peerId: 'peer-stream-closed',
+          streamProtocol: '/agentsquared/test/1.0'
+        },
+        request: buildJsonRpcEnvelope({
+          id: 'req_post_dispatch_closed',
+          method: 'message/send',
+          message: {
+            kind: 'message',
+            role: 'user',
+            parts: [{ kind: 'text', text: 'post-dispatch stream closed' }]
+          },
+          metadata: { conversationKey: 'conv-post-dispatch-closed' }
+        }),
+        openStreamFn: async () => ({
+          async close() {}
+        }),
+        writeLineFn: async () => {},
+        readMessageFn: async () => {
+          postDispatchClosedReadCount += 1
+          if (postDispatchClosedReadCount === 1) {
+            return {
+              jsonrpc: '2.0',
+              id: 'req_post_dispatch_closed',
+              result: {
+                received: true
+              }
+            }
+          }
+          throw Object.assign(new Error('Cannot write to a stream that is closed'), { a2DispatchStage: 'post-dispatch' })
+        }
+      }),
+        (error) => {
+          assert.equal(error?.a2FailureKind, 'post-dispatch-stream-closed')
+          assert.match(`${error?.message ?? ''}`, /delivery status is unknown after the request was dispatched/i)
+          return true
+        }
+      )
+    }
+
     const relayRetryCalls = []
     const relayRetryTicket = `eyJhbGciOiJub25lIn0.${Buffer.from(JSON.stringify({ tid: 'peer_relay_retry' })).toString('base64url')}.`
     const relayRetryState = {

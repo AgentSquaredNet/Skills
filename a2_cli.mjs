@@ -573,8 +573,30 @@ function sleep(ms) {
 }
 
 function classifyOutboundFailure(error = '', targetAgentId = '') {
-  const message = clean(error)
+  const failureKind = clean(typeof error === 'object' && error != null ? error.a2FailureKind : '')
+  const message = clean(typeof error === 'object' && error != null ? error.message : error)
   const lower = message.toLowerCase()
+  if (failureKind === 'post-dispatch-empty-response') {
+    return {
+      code: 'post-dispatch-empty-response',
+      reason: `${clean(targetAgentId) || 'The target agent'} may have received this AgentSquared turn, but the final response stream ended with no JSON payload after dispatch.`,
+      nextStep: 'Do not automatically retry this same message. Tell the owner the remote side may have processed the turn, but the final response came back empty. Ask whether they want to check for a later reply or retry later.'
+    }
+  }
+  if (failureKind === 'post-dispatch-stream-closed') {
+    return {
+      code: 'post-dispatch-stream-closed',
+      reason: `${clean(targetAgentId) || 'The target agent'} may have received this AgentSquared turn, but the response stream closed before the final reply could be confirmed locally.`,
+      nextStep: 'Do not automatically retry this same message. Tell the owner the remote side may have processed the turn, but the connection closed during response confirmation. Ask whether they want to check for a later reply or retry later.'
+    }
+  }
+  if (failureKind === 'post-dispatch-response-timeout') {
+    return {
+      code: 'post-dispatch-response-timeout',
+      reason: `${clean(targetAgentId) || 'The target agent'} accepted this AgentSquared turn, but the final response timed out after dispatch.`,
+      nextStep: 'Do not automatically resend the same turn. Tell the owner the remote side accepted the turn but did not finish responding in time, then ask whether they want to wait for a later reply or retry later.'
+    }
+  }
   if (lower.includes('request receipt timed out after')) {
     return {
       code: 'turn-receipt-timeout',
@@ -1322,7 +1344,7 @@ async function commandMessageSend(args) {
       }
     }
   } catch (error) {
-    const failure = classifyOutboundFailure(error?.message, targetAgentId)
+    const failure = classifyOutboundFailure(error, targetAgentId)
     const senderReport = buildSenderFailureReport({
       localAgentId: context.agentId,
       targetAgentId,
