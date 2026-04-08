@@ -831,7 +831,8 @@ process.exit(2)
     assert.match(outboundSkillDecisionPrompt, /Choose the best outgoing AgentSquared skill hint/i)
     assert.match(outboundSkillDecisionPrompt, /friend-im/)
     assert.match(outboundSkillDecisionPrompt, /agent-mutual-learning/)
-    assert.match(outboundSkillDecisionPrompt, /new skills/i)
+    assert.match(outboundSkillDecisionPrompt, /learn their skills/i)
+    assert.match(outboundSkillDecisionPrompt, /greetings like "say hello" do not override the learning goal/i)
 
     assert.equal(chooseInboundSkill({
       suggestedSkill: '',

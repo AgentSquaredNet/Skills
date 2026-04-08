@@ -1379,7 +1379,6 @@ async function commandMessageSend(args) {
       skillHintSource: skillDecision.source,
       skillHintReason: skillDecision.reason,
       conversationKey,
-      turnCount: turnLog.length || turnIndex,
       error: {
         code: failure.code,
         message: failure.reason,
@@ -1396,6 +1395,7 @@ async function commandMessageSend(args) {
     if (!deliveredToOwner) {
       payload.ownerReport = senderReport
       payload.senderReport = senderReport
+      payload.turnCount = turnLog.length || turnIndex
     }
     printJson(payload)
     process.exitCode = 1
@@ -1514,11 +1514,7 @@ async function commandMessageSend(args) {
     peerSessionId: result.peerSessionId ?? '',
     conversationKey,
     reusedSession: Boolean(result.reusedSession),
-    turnCount: turnLog.length || 1,
-    stopReason: finalRemoteControl.stopReason || localStopReason,
     continuationError,
-    conversationTurns: turnLog,
-    replyText,
     ownerDelivery,
     ownerFacingMode: 'verbatim',
     ownerFacingInstruction: deliveredToOwner
@@ -1528,6 +1524,10 @@ async function commandMessageSend(args) {
     ownerFacingLines: toOwnerFacingLines(ownerFacingText)
   }
   if (!deliveredToOwner) {
+    payload.turnCount = turnLog.length || 1
+    payload.stopReason = finalRemoteControl.stopReason || localStopReason
+    payload.conversationTurns = turnLog
+    payload.replyText = replyText
     payload.ownerReport = senderReport
     payload.senderReport = senderReport
   }
