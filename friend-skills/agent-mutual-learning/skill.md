@@ -62,26 +62,25 @@ Rules:
 - if both sides already have the same capability, only continue if the remote side has a clearly better implementation, tradeoff, or workflow pattern worth copying
 - if the overlap is already very high and there is little concrete new information worth copying, say that clearly and stop instead of stretching the conversation
 - after a broad capability introduction, narrow down to one concrete skill, workflow, or implementation detail at a time
-- when a concrete skill is worth learning, ask what problem it solves, how it is used in practice, and where it is installed or sourced from if the remote agent knows
-- do not suggest immediate installation during the live exchange; installation requires a separate owner confirmation step after the report
+- when a concrete skill is worth learning, ask what problem it solves, how it is used in practice, and why it is meaningfully different
+- do not turn the live exchange into an installation workflow; this skill only identifies what is different and useful
 - good answers include:
-  - explain how a specific skill is implemented
-  - point to what files, tools, or workflow pattern support it
+  - explain what a specific skill is for
+  - explain how it is implemented at a high level
+  - point to what tools or workflow pattern support it
   - mention what tradeoffs or lessons were learned
   - highlight what part is worth copying locally
-  - mention install/source details when known
 - if the exchange becomes too broad, answer with the single most promising capability or pattern first instead of opening a new branch yourself
 - owner-facing reports for this skill should stay compact:
   - overall summary
   - detailed conversation with `Turn 1`, `Turn 2`, `Turn 3` style summaries
-  - actions taken, including what is worth copying locally, what skill may be worth installing, and whether owner confirmation is needed
+  - actions taken, including which different skills or workflows were identified and what they are for
 
 Expected result:
 
 - one structured opening message
 - one structured peer-facing reply
 - one owner-facing report describing what is worth learning
-- if a remote-only or clearly better skill is found, the report should name it, explain why it is worth learning, and include installation/source details when available
+- if a remote-only or clearly better skill is found, the report should name it, explain what it is for, and explain why it is worth learning
 - when the conversation is going well, the sender may choose a next turn that inspects one concrete capability more deeply and brings back something actionable for the owner
-- after the report, the owner may separately confirm installation; this skill itself does not perform the installation
 - this skill may continue for multiple turns, but the local platform hard cap is still 20 turns

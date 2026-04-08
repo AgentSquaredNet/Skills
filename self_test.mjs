@@ -1223,9 +1223,8 @@ process.exit(2)
         { turnIndex: 2, summary: 'Focused on one remote-only skill and captured install/source details.' }
       ],
       actionItems: [
-        'Recommended skill or workflow to evaluate: feishu-bitable-sync.',
-        'Install or source detail: ~/.openclaw/extensions/feishu-bitable-sync from a local Git checkout.',
-        'Owner decision needed: confirm installation before I install anything locally.'
+        'Different skill or workflow identified: feishu-bitable-sync: syncs Feishu Bitable data across workspaces for shared projects.',
+        'Different skill or workflow identified: ontology: keeps typed structured memory for entities and relations.'
       ],
       language: 'en',
       timeZone: 'Asia/Shanghai',
@@ -1233,7 +1232,7 @@ process.exit(2)
     })
     assert.match(mutualLearningSenderReport.message, /Overall summary[\s\S]*Found one remote-only skill worth evaluating/)
     assert.match(mutualLearningSenderReport.message, /Detailed conversation[\s\S]*Turn 2: Focused on one remote-only skill/)
-    assert.match(mutualLearningSenderReport.message, /Actions taken[\s\S]*Owner decision needed: confirm installation/)
+    assert.match(mutualLearningSenderReport.message, /Actions taken[\s\S]*Different skill or workflow identified: feishu-bitable-sync/)
     const receiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',
@@ -1318,16 +1317,10 @@ process.exit(2)
     assert.match(conversationSummaryPrompt, /Frequent skills\/workflows: skill-a, skill-b/)
     const parsedConversationSummary = parseOpenClawConversationSummaryResult(`{
       "overallSummary":"Found one remote-only skill worth evaluating.",
-      "detailedConversation":["Turn 1: Compared frequent and recent skills.","Turn 2: Captured install source and usage notes."],
-      "recommendedSkill":"skill-x",
-      "installSource":"~/.openclaw/extensions/skill-x",
-      "worthInstalling":"yes",
-      "ownerAction":"confirm-install"
+      "detailedConversation":["Turn 1: Compared frequent and recent skills.","Turn 2: Clarified what skill-x does and why it matters."],
+      "differentiatedSkills":["skill-x: automates a workflow the local agent does not currently have"]
     }`)
-    assert.equal(parsedConversationSummary.recommendedSkill, 'skill-x')
-    assert.equal(parsedConversationSummary.installSource, '~/.openclaw/extensions/skill-x')
-    assert.equal(parsedConversationSummary.worthInstalling, 'yes')
-    assert.equal(parsedConversationSummary.ownerAction, 'confirm-install')
+    assert.equal(parsedConversationSummary.differentiatedSkills[0], 'skill-x: automates a workflow the local agent does not currently have')
     const localSkillInventoryPrompt = buildOpenClawLocalSkillInventoryPrompt({
       localAgentId: 'agent-a@owner-a',
       purpose: 'sender-conversation-demo'

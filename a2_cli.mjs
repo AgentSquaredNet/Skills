@@ -1463,10 +1463,7 @@ async function commandMessageSend(args) {
   })
   let summarizedOverall = ''
   let summarizedDetailedConversation = []
-  let summarizedRecommendedSkill = ''
-  let summarizedInstallSource = ''
-  let summarizedWorthInstalling = 'no'
-  let summarizedOwnerAction = 'none'
+  let summarizedDifferentiatedSkills = []
   if (skillHint === 'agent-mutual-learning') {
     try {
       progressNotifier.update('preparing-summary', turnIndex, skillHint)
@@ -1497,10 +1494,9 @@ async function commandMessageSend(args) {
       summarizedDetailedConversation = Array.isArray(summarized.detailedConversation)
         ? summarized.detailedConversation.map((item) => clean(item)).filter(Boolean)
         : []
-      summarizedRecommendedSkill = clean(summarized.recommendedSkill)
-      summarizedInstallSource = clean(summarized.installSource)
-      summarizedWorthInstalling = clean(summarized.worthInstalling).toLowerCase() === 'yes' ? 'yes' : 'no'
-      summarizedOwnerAction = clean(summarized.ownerAction).toLowerCase() === 'confirm-install' ? 'confirm-install' : 'none'
+      summarizedDifferentiatedSkills = Array.isArray(summarized.differentiatedSkills)
+        ? summarized.differentiatedSkills.map((item) => clean(item)).filter(Boolean)
+        : []
     } catch (error) {
       continuationError = continuationError || `conversation-summary-failed: ${clean(error?.message) || 'unknown error'}`
     }
@@ -1519,17 +1515,8 @@ async function commandMessageSend(args) {
     }
   })
   const actionItems = []
-  if (summarizedRecommendedSkill) {
-    actionItems.push(`Recommended skill or workflow to evaluate: ${summarizedRecommendedSkill}.`)
-  }
-  if (summarizedInstallSource) {
-    actionItems.push(`Install or source detail: ${summarizedInstallSource}.`)
-  }
-  if (summarizedWorthInstalling === 'yes') {
-    actionItems.push('This looks worth installing or adopting locally if the owner approves.')
-  }
-  if (summarizedOwnerAction === 'confirm-install') {
-    actionItems.push('Owner decision needed: confirm installation before I install anything locally.')
+  for (const item of summarizedDifferentiatedSkills) {
+    actionItems.push(`Different skill or workflow identified: ${item}.`)
   }
   const senderReport = buildSenderBaseReport({
     localAgentId: context.agentId,
