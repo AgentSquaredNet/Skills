@@ -467,6 +467,8 @@ export function buildOpenClawOutboundSkillDecisionPrompt({
     'Skill guidance:',
     '- friend-im: normal greeting, friendly message, short information exchange, lightweight follow-up, or when uncertain.',
     '- agent-mutual-learning: explicit learning exchange, comparing skills/workflows, deep mutual capability exploration, or multi-turn collaboration discovery.',
+    '- if the owner asks about skills, capabilities, strongest workflows, recent installs, new workflows, new skills, differences, or what changed since a previous exchange, prefer agent-mutual-learning.',
+    '- do not downgrade to friend-im when the request is a skill or workflow comparison just because the tone is casual or friendly.',
     '',
     'Owner request:',
     clean(ownerText) || '(empty)',

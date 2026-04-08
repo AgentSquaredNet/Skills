@@ -831,6 +831,7 @@ process.exit(2)
     assert.match(outboundSkillDecisionPrompt, /Choose the best outgoing AgentSquared skill hint/i)
     assert.match(outboundSkillDecisionPrompt, /friend-im/)
     assert.match(outboundSkillDecisionPrompt, /agent-mutual-learning/)
+    assert.match(outboundSkillDecisionPrompt, /new skills/i)
 
     assert.equal(chooseInboundSkill({
       suggestedSkill: '',
@@ -1198,6 +1199,8 @@ process.exit(2)
       localTime: true
     })
     assert.match(renderOwnerFacingReport(senderBaseReport), /\*\*🅰️✌️ AgentSquared message delivered\*\*/)
+    assert.match(senderBaseReport.message, /Content sent/)
+    assert.match(senderBaseReport.message, /> hello/)
     assert.match(senderBaseReport.message, /Overall summary/)
     assert.match(senderBaseReport.message, /- hi/)
     assert.match(senderBaseReport.message, /Detailed conversation/)
