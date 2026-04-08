@@ -12,7 +12,7 @@ import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTick
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
 import { runGateway } from './lib/gateway_server.mjs'
 import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
-import { resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
+import { inspectOpenClawLocalSkills, resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
@@ -21,7 +21,6 @@ import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
 import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
 import { normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
-import { discoverLocalSkillInventory, summarizeLocalSkillInventory } from './lib/skill_inventory.mjs'
 import {
   assertNoExistingLocalActivation,
   buildGatewayArgs,
@@ -136,12 +135,6 @@ function resolveConversationPolicy(skillName = '', sharedSkill = null) {
     skillName: clean(skillName) || 'friend-im',
     maxTurns: resolveSkillMaxTurns(skillName, sharedSkill)
   }
-}
-
-function localSkillInventorySummary() {
-  return summarizeLocalSkillInventory({
-    inventory: discoverLocalSkillInventory()
-  })
 }
 
 async function resolveCliOpenClawHostContext({
@@ -1109,12 +1102,40 @@ async function commandMessageSend(args) {
   const conversationPolicy = resolveConversationPolicy(skillHint, sharedSkill)
   const conversationKey = randomRequestId('conversation')
   const sentAt = new Date().toISOString()
+  let localSkillInventorySnapshot = ''
+  if (skillHint === 'agent-mutual-learning') {
+    try {
+      const hostContext = await resolveCliOpenClawHostContext({
+        agentId: context.agentId,
+        keyFile: context.keyFile,
+        args,
+        purpose: 'mutual-learning local skill inventory'
+      })
+      const inspectedLocalSkills = await inspectOpenClawLocalSkills({
+        localAgentId: context.agentId,
+        openclawAgent: hostContext.resolvedOpenClawAgent,
+        command: hostContext.openclawCommand,
+        cwd: hostContext.openclawCwd,
+        configPath: hostContext.openclawConfigPath,
+        stateDir: hostContext.openclawStateDir,
+        timeoutMs: 60000,
+        gatewayUrl: hostContext.openclawGatewayUrl,
+        gatewayToken: hostContext.openclawGatewayToken,
+        gatewayPassword: hostContext.openclawGatewayPassword,
+        purpose: `sender-${conversationKey}`
+      })
+      localSkillInventorySnapshot = clean(inspectedLocalSkills.inventoryPromptText)
+    } catch {
+      localSkillInventorySnapshot = ''
+    }
+  }
   const outboundText = buildSkillOutboundText({
     localAgentId: context.agentId,
     targetAgentId,
     skillName: skillHint,
     originalText: text,
-    sentAt
+    sentAt,
+    localSkillInventory: localSkillInventorySnapshot
   })
   let result
   const turnLog = []
@@ -1142,7 +1163,8 @@ async function commandMessageSend(args) {
         },
         metadata: {
           ...(sharedSkill ? { sharedSkill } : {}),
-          originalOwnerText: turnIndex === 1 ? text : currentOutboundText,
+        originalOwnerText: turnIndex === 1 ? text : currentOutboundText,
+          ...(turnIndex === 1 && localSkillInventorySnapshot ? { localSkillInventory: localSkillInventorySnapshot } : {}),
           conversationKey,
           sentAt,
           turnIndex: currentOutboundControl.turnIndex,
@@ -1305,7 +1327,7 @@ async function commandMessageSend(args) {
         selectedSkill: skillHint,
         originalOwnerText: text,
         turnLog,
-        localSkillInventory: localSkillInventorySummary(),
+        localSkillInventory: localSkillInventorySnapshot,
         openclawAgent: hostContext.resolvedOpenClawAgent,
         command: hostContext.openclawCommand,
         cwd: hostContext.openclawCwd,

@@ -24,7 +24,7 @@ import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_run
 import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
-import { buildOpenClawConversationSummaryPrompt, buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, parseOpenClawConversationSummaryResult, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
+import { buildOpenClawConversationSummaryPrompt, buildOpenClawLocalSkillInventoryPrompt, buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, parseOpenClawConversationSummaryResult, parseOpenClawLocalSkillInventoryResult, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
 import { detectOpenClawHostEnvironment, resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { withOpenClawGatewayClient } from './adapters/openclaw/ws_client.mjs'
 
@@ -1150,9 +1150,11 @@ process.exit(2)
       targetAgentId: 'agent-b@owner-b',
       skillName: 'agent-mutual-learning',
       originalText: 'learn useful skills',
-      sentAt: '2026-03-28T12:00:00Z'
+      sentAt: '2026-03-28T12:00:00Z',
+      localSkillInventory: 'Frequent skills/workflows: skill-a, skill-b\nRecent skills: skill-c\nTop highlights: skill-a automation'
     })
     assert.match(mutualLearningOutboundTemplate, /skills or workflows you use most often or installed recently/i)
+    assert.match(mutualLearningOutboundTemplate, /Local Skill Snapshot/)
     assert.equal(peerResponseText({
       result: {
         message: {
@@ -1283,6 +1285,7 @@ process.exit(2)
       remoteAgentId: 'agent-b@owner-b',
       selectedSkill: 'agent-mutual-learning',
       originalOwnerText: 'learn useful remote skills',
+      localSkillInventory: 'Frequent skills/workflows: skill-a, skill-b',
       turnLog: [
         {
           turnIndex: 1,
@@ -1293,6 +1296,7 @@ process.exit(2)
       ]
     })
     assert.match(conversationSummaryPrompt, /a concrete skill or workflow the local agent does not already have/)
+    assert.match(conversationSummaryPrompt, /Frequent skills\/workflows: skill-a, skill-b/)
     const parsedConversationSummary = parseOpenClawConversationSummaryResult(`{
       "overallSummary":"Found one remote-only skill worth evaluating.",
       "detailedConversation":["Turn 1: Compared frequent and recent skills.","Turn 2: Captured install source and usage notes."],
@@ -1305,6 +1309,21 @@ process.exit(2)
     assert.equal(parsedConversationSummary.installSource, '~/.openclaw/extensions/skill-x')
     assert.equal(parsedConversationSummary.worthInstalling, 'yes')
     assert.equal(parsedConversationSummary.ownerAction, 'confirm-install')
+    const localSkillInventoryPrompt = buildOpenClawLocalSkillInventoryPrompt({
+      localAgentId: 'agent-a@owner-a',
+      purpose: 'sender-conversation-demo'
+    })
+    assert.match(localSkillInventoryPrompt, /inspect your actual local skill environment/i)
+    const parsedLocalSkillInventory = parseOpenClawLocalSkillInventoryResult(`{
+      "frequentSkills":["skill-a","skill-b"],
+      "recentSkills":["skill-c"],
+      "topHighlights":["skill-a automation","skill-c integration"],
+      "inventorySummary":"Verified local skills from the OpenClaw runtime."
+    }`)
+    assert.deepEqual(parsedLocalSkillInventory.frequentSkills, ['skill-a', 'skill-b'])
+    assert.deepEqual(parsedLocalSkillInventory.recentSkills, ['skill-c'])
+    assert.equal(parsedLocalSkillInventory.topHighlights[0], 'skill-a automation')
+    assert.equal(parsedLocalSkillInventory.inventorySummary, 'Verified local skills from the OpenClaw runtime.')
     assert.match(localizedReceiverBaseReport.message, /Turn 1:/)
     assert.match(localizedReceiverBaseReport.message, /Total turns: 4\./)
     assert.doesNotMatch(localizedReceiverBaseReport.message, /Skill Notes:/)

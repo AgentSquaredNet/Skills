@@ -2,17 +2,19 @@ import { withOpenClawGatewayClient } from './ws_client.mjs'
 import { buildReceiverBaseReport, inferOwnerFacingLanguage, parseAgentSquaredOutboundEnvelope } from '../../lib/a2_message_templates.mjs'
 import { normalizeConversationControl, resolveInboundConversationIdentity, resolveSkillMaxTurns } from '../../lib/conversation_policy.mjs'
 import { scrubOutboundText } from '../../lib/runtime_safety.mjs'
-import { discoverLocalSkillInventory, summarizeLocalSkillInventory } from '../../lib/skill_inventory.mjs'
 import {
   buildOpenClawConversationSummaryPrompt,
+  buildOpenClawLocalSkillInventoryPrompt,
   buildOpenClawOutboundSkillDecisionPrompt,
   buildOpenClawSafetyPrompt,
   buildOpenClawTaskPrompt,
+  formatOpenClawLocalSkillInventoryForPrompt,
   latestAssistantText,
   normalizeOpenClawSafetySessionKey,
   normalizeOpenClawSessionKey,
   normalizeSessionList,
   ownerReportText,
+  parseOpenClawLocalSkillInventoryResult,
   parseOpenClawSkillDecisionResult,
   parseOpenClawSafetyResult,
   parseOpenClawConversationSummaryResult,
@@ -26,9 +28,11 @@ import {
 
 export {
   buildOpenClawConversationSummaryPrompt,
+  buildOpenClawLocalSkillInventoryPrompt,
   buildOpenClawOutboundSkillDecisionPrompt,
   buildOpenClawSafetyPrompt,
   buildOpenClawTaskPrompt,
+  parseOpenClawLocalSkillInventoryResult,
   parseOpenClawConversationSummaryResult,
   parseOpenClawSkillDecisionResult,
   parseOpenClawTaskResult
@@ -260,6 +264,83 @@ export async function summarizeOpenClawConversation({
   })
 }
 
+export async function inspectOpenClawLocalSkills({
+  localAgentId,
+  openclawAgent = '',
+  command = 'openclaw',
+  cwd = '',
+  configPath = '',
+  stateDir = '',
+  timeoutMs = 60000,
+  gatewayUrl = '',
+  gatewayToken = '',
+  gatewayPassword = '',
+  purpose = 'mutual-learning'
+} = {}) {
+  const agentName = clean(openclawAgent)
+  if (!agentName) {
+    throw new Error(`openclaw agent name is required for ${clean(localAgentId) || 'the local AgentSquared agent'}`)
+  }
+  return withOpenClawGatewayClient({
+    command,
+    cwd,
+    configPath,
+    stateDir,
+    gatewayUrl,
+    gatewayToken,
+    gatewayPassword,
+    requestTimeoutMs: timeoutMs
+  }, async (client, gatewayContext) => {
+    const sessionKey = stableId('agentsquared-local-skill-inventory', localAgentId, purpose)
+    const prompt = buildOpenClawLocalSkillInventoryPrompt({
+      localAgentId,
+      purpose
+    })
+    let accepted
+    try {
+      accepted = await client.request('agent', {
+        agentId: agentName,
+        sessionKey,
+        message: prompt,
+        idempotencyKey: stableId('agentsquared-local-skill-inventory-run', localAgentId, purpose)
+      }, timeoutMs)
+    } catch (error) {
+      throw reframeOpenClawAgentError(error, {
+        openclawAgent: agentName,
+        localAgentId
+      })
+    }
+    const runId = readOpenClawRunId(accepted)
+    if (!runId) {
+      throw new Error('OpenClaw local skill inventory did not return a runId.')
+    }
+    const waited = await client.request('agent.wait', {
+      runId,
+      timeoutMs
+    }, timeoutMs + 1000)
+    const status = readOpenClawStatus(waited).toLowerCase()
+    if (status && status !== 'ok' && status !== 'completed' && status !== 'done') {
+      throw new Error(`OpenClaw local skill inventory returned ${status || 'an unknown status'} for run ${runId}.`)
+    }
+    const history = await client.request('chat.history', {
+      sessionKey,
+      limit: 8
+    }, timeoutMs)
+    const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
+    if (!resultText) {
+      throw new Error(`OpenClaw local skill inventory did not produce a final assistant message for session ${sessionKey}.`)
+    }
+    const parsed = parseOpenClawLocalSkillInventoryResult(resultText)
+    return {
+      ...parsed,
+      inventoryPromptText: formatOpenClawLocalSkillInventoryForPrompt(parsed),
+      openclawRunId: runId,
+      openclawSessionKey: sessionKey,
+      openclawGatewayUrl: gatewayContext.gatewayUrl
+    }
+  })
+}
+
 export function createOpenClawAdapter({
   localAgentId,
   openclawAgent = '',
@@ -281,17 +362,6 @@ export function createOpenClawAdapter({
   const peerBudget = new Map()
   const budgetWindowMs = 10 * 60 * 1000
   const maxWindowCost = 18
-  let cachedLocalSkillInventorySummary = ''
-
-  function localSkillInventorySummary() {
-    if (!cachedLocalSkillInventorySummary) {
-      cachedLocalSkillInventorySummary = summarizeLocalSkillInventory({
-        inventory: discoverLocalSkillInventory()
-      })
-    }
-    return cachedLocalSkillInventorySummary
-  }
-
   async function withGateway(fn) {
     return withOpenClawGatewayClient({
       command,
@@ -642,6 +712,27 @@ export function createOpenClawAdapter({
       const defaultShouldContinue = selectedSkill === 'agent-mutual-learning'
         && !inboundConversation.finalize
         && inboundConversation.turnIndex < localSkillMaxTurns
+      let localSkillInventoryPromptText = ''
+      if (selectedSkill === 'agent-mutual-learning') {
+        try {
+          const inspectedLocalSkills = await inspectOpenClawLocalSkills({
+            localAgentId,
+            openclawAgent: agentName,
+            command,
+            cwd,
+            configPath,
+            stateDir,
+            timeoutMs: Math.min(timeoutMs, 60000),
+            gatewayUrl,
+            gatewayToken,
+            gatewayPassword,
+            purpose: `receiver-${conversationKey || clean(item?.inboundId) || 'mutual-learning'}`
+          })
+          localSkillInventoryPromptText = clean(inspectedLocalSkills.inventoryPromptText)
+        } catch {
+          localSkillInventoryPromptText = ''
+        }
+      }
       const sessionKey = stableId(
         'agentsquared-work',
         localAgentId,
@@ -657,7 +748,7 @@ export function createOpenClawAdapter({
         item,
         conversationTranscript,
         relationshipSummary,
-        localSkillInventory: localSkillInventorySummary()
+        localSkillInventory: localSkillInventoryPromptText
       })
 
       let accepted

@@ -478,6 +478,33 @@ export function buildOpenClawOutboundSkillDecisionPrompt({
   ].join('\n')
 }
 
+export function buildOpenClawLocalSkillInventoryPrompt({
+  localAgentId,
+  purpose = 'general'
+} = {}) {
+  return [
+    `You are the local OpenClaw runtime for AgentSquared agent ${clean(localAgentId) || 'unknown'}.`,
+    'Before an AgentSquared mutual-learning exchange, inspect your actual local skill environment.',
+    'Do not guess from memory alone if you can inspect the local runtime, local skill files, or installed extensions.',
+    '',
+    'Return a short structured inventory that is practical for comparing capabilities with a remote agent.',
+    'Prefer concrete locally verified information over vague claims.',
+    'If something is uncertain, say so briefly instead of inventing detail.',
+    '',
+    `Purpose: ${clean(purpose) || 'general'}`,
+    '',
+    'Return exactly one JSON object and nothing else.',
+    'Schema:',
+    '{"frequentSkills":["..."],"recentSkills":["..."],"topHighlights":["..."],"inventorySummary":"short paragraph"}',
+    'Rules:',
+    '- frequentSkills: the most-used local skills or workflows',
+    '- recentSkills: recently installed or recently added skills if you can verify them, otherwise []',
+    '- topHighlights: 1-3 concrete strengths worth introducing to a remote agent',
+    '- inventorySummary: one short paragraph describing the verified local picture',
+    'Do not wrap the JSON in markdown fences.'
+  ].join('\n')
+}
+
 export function buildOpenClawConversationSummaryPrompt({
   localAgentId,
   remoteAgentId,
@@ -567,6 +594,35 @@ export function parseOpenClawConversationSummaryResult(text) {
   }
 }
 
+export function parseOpenClawLocalSkillInventoryResult(text) {
+  const parsed = parseJsonOutput(text, 'OpenClaw local skill inventory')
+  const frequentSkills = asArray(parsed.frequentSkills).map((item) => clean(item)).filter(Boolean)
+  const recentSkills = asArray(parsed.recentSkills).map((item) => clean(item)).filter(Boolean)
+  const topHighlights = asArray(parsed.topHighlights).map((item) => clean(item)).filter(Boolean).slice(0, 3)
+  return {
+    frequentSkills,
+    recentSkills,
+    topHighlights,
+    inventorySummary: clean(parsed.inventorySummary)
+  }
+}
+
+export function formatOpenClawLocalSkillInventoryForPrompt(inventory = null) {
+  if (!inventory || typeof inventory !== 'object') {
+    return ''
+  }
+  const frequent = asArray(inventory.frequentSkills).map((item) => clean(item)).filter(Boolean)
+  const recent = asArray(inventory.recentSkills).map((item) => clean(item)).filter(Boolean)
+  const highlights = asArray(inventory.topHighlights).map((item) => clean(item)).filter(Boolean)
+  const summary = clean(inventory.inventorySummary)
+  return [
+    ...(frequent.length > 0 ? [`Frequent skills/workflows: ${frequent.join(', ')}`] : []),
+    ...(recent.length > 0 ? [`Recent skills: ${recent.join(', ')}`] : []),
+    ...(highlights.length > 0 ? [`Top highlights: ${highlights.join('; ')}`] : []),
+    ...(summary ? [`Summary: ${summary}`] : [])
+  ].join('\n')
+}
+
 export function buildOpenClawTaskPrompt({
   localAgentId,
   remoteAgentId,
@@ -636,7 +692,7 @@ export function buildOpenClawTaskPrompt({
         ]),
     ...(clean(localSkillInventory)
       ? [
-          '- verifiedLocalInstalledSkills:',
+          '- verifiedLocalSkillSnapshot:',
           clean(localSkillInventory)
         ]
       : []),
