@@ -712,27 +712,6 @@ export function createOpenClawAdapter({
       const defaultShouldContinue = selectedSkill === 'agent-mutual-learning'
         && !inboundConversation.finalize
         && inboundConversation.turnIndex < localSkillMaxTurns
-      let localSkillInventoryPromptText = ''
-      if (selectedSkill === 'agent-mutual-learning') {
-        try {
-          const inspectedLocalSkills = await inspectOpenClawLocalSkills({
-            localAgentId,
-            openclawAgent: agentName,
-            command,
-            cwd,
-            configPath,
-            stateDir,
-            timeoutMs: Math.min(timeoutMs, 60000),
-            gatewayUrl,
-            gatewayToken,
-            gatewayPassword,
-            purpose: `receiver-${conversationKey || clean(item?.inboundId) || 'mutual-learning'}`
-          })
-          localSkillInventoryPromptText = clean(inspectedLocalSkills.inventoryPromptText)
-        } catch {
-          localSkillInventoryPromptText = ''
-        }
-      }
       const sessionKey = stableId(
         'agentsquared-work',
         localAgentId,
@@ -748,7 +727,7 @@ export function createOpenClawAdapter({
         item,
         conversationTranscript,
         relationshipSummary,
-        localSkillInventory: localSkillInventoryPromptText
+        localSkillInventory: clean(metadata?.localSkillInventory)
       })
 
       let accepted
