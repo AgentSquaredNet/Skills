@@ -21,7 +21,7 @@ import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildReceiverStartNotice, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { buildOpenClawConversationSummaryPrompt, buildOpenClawLocalSkillInventoryPrompt, buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, parseOpenClawConversationSummaryResult, parseOpenClawLocalSkillInventoryResult, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
@@ -949,8 +949,10 @@ process.exit(2)
     assert.equal(responded.length, 1)
     assert.equal(responded[0].result.message.parts[0].text, 'handled:friend-im:conversation:conv-router1')
     assert.equal(responded[0].result.metadata.selectedSkill, 'friend-im')
-    assert.equal(ownerReports.length, 1)
-    assert.equal(ownerReports[0].ownerReport.summary, 'owner saw router1')
+    assert.equal(ownerReports.length, 2)
+    assert.match(ownerReports[0].ownerReport.title, /\*\*🅰️✌️ New AgentSquared request from peer@Test\*\*/)
+    assert.match(ownerReports[0].ownerReport.message, /Starting the local review and reply process now\./)
+    assert.equal(ownerReports[1].ownerReport.summary, 'owner saw router1')
 
     const fallbackResponded = []
     const fallbackRejected = []
@@ -1057,8 +1059,9 @@ process.exit(2)
     await runtimeUnavailableRouter.whenIdle()
     assert.equal(runtimeUnavailableRejected.length, 0)
     assert.equal(runtimeUnavailableResponded.length, 1)
-    assert.equal(runtimeUnavailableOwnerReports.length, 1)
-    assert.match(runtimeUnavailableOwnerReports[0].ownerReport.title, /\*\*🅰️✌️ AgentSquared local runtime unavailable\*\*/)
+    assert.equal(runtimeUnavailableOwnerReports.length, 2)
+    assert.match(runtimeUnavailableOwnerReports[0].ownerReport.title, /\*\*🅰️✌️ New AgentSquared request from peer@Test\*\*/)
+    assert.match(runtimeUnavailableOwnerReports[1].ownerReport.title, /\*\*🅰️✌️ AgentSquared local runtime unavailable\*\*/)
     assert.match(runtimeUnavailableResponded[0].result.message.parts[0].text, /temporarily unavailable/i)
     assert.equal(runtimeUnavailableResponded[0].result.metadata.stopReason, 'receiver-runtime-unavailable')
 
@@ -1254,6 +1257,22 @@ process.exit(2)
     assert.match(receiverBaseReport.message, /Total turns: 2\./)
     assert.doesNotMatch(receiverBaseReport.message, /Workflow:/)
     assert.doesNotMatch(receiverBaseReport.message, /Skill Notes:/)
+    const receiverStartNotice = buildReceiverStartNotice({
+      localAgentId: 'agent-b@owner-b',
+      remoteAgentId: 'agent-a@owner-a',
+      incomingSkillHint: 'agent-mutual-learning',
+      conversationKey: 'conversation_test',
+      receivedAt: '2026-03-28T12:00:00Z',
+      inboundText: 'Tell me which skills you use most often.',
+      language: 'en',
+      timeZone: 'Asia/Shanghai',
+      localTime: true
+    })
+    assert.match(receiverStartNotice.title, /\*\*🅰️✌️ New AgentSquared request from agent-a@owner-a\*\*/)
+    assert.match(receiverStartNotice.message, /Incoming request/)
+    assert.match(receiverStartNotice.message, /Overall summary/)
+    assert.match(receiverStartNotice.message, /Actions taken/)
+    assert.match(receiverStartNotice.message, /I will send a full follow-up report after the conversation finishes\./)
     const localizedReceiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',
