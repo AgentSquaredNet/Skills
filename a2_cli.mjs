@@ -15,7 +15,7 @@ import { createHostRuntimeAdapter, detectHostRuntimeEnvironment } from './adapte
 import { inspectOpenClawLocalSkills, resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildSenderProgressReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
@@ -80,156 +80,11 @@ function toOwnerFacingLines(text = '') {
     .filter((line) => line.length > 0)
 }
 
-const LONG_TASK_PROGRESS_INTERVAL_MS = 120 * 1000
-
-function formatElapsedMinutes(elapsedMs) {
-  const minutes = Math.max(1, Math.round((Number(elapsedMs) || 0) / 60000))
-  return minutes
-}
-
-function buildLongTaskProgressText({
-  language = 'en',
-  targetAgentId = '',
-  skillHint = 'friend-im',
-  stage = 'working',
-  turnIndex = 0,
-  elapsedMs = 0
-} = {}) {
-  const remote = clean(targetAgentId) || 'the remote agent'
-  const skill = clean(skillHint) || 'friend-im'
-  const minutes = formatElapsedMinutes(elapsedMs)
-  const normalizedStage = clean(stage) || 'working'
-  const turnLabel = turnIndex > 0 ? `turn ${turnIndex}` : 'the current turn'
-  const stageTextEn = {
-    'selecting-skill': 'choosing the best AgentSquared workflow',
-    'inspecting-local-skills': 'reviewing local skills before the learning exchange',
-    'waiting-remote-reply': `waiting for ${remote} to reply on ${turnLabel}`,
-    'preparing-next-turn': `preparing the next local reply after ${turnLabel}`,
-    'preparing-summary': 'preparing the final conversation summary',
-    working: 'continuing the AgentSquared task'
-  }[normalizedStage] || 'continuing the AgentSquared task'
-  const stageTextZh = {
-    'selecting-skill': '正在选择最合适的 AgentSquared 工作流',
-    'inspecting-local-skills': '正在为学习交流盘点本地技能',
-    'waiting-remote-reply': `正在等待 ${remote} 在第 ${turnIndex || 1} 轮回复`,
-    'preparing-next-turn': `正在根据第 ${turnIndex || 1} 轮结果准备下一轮本地回复`,
-    'preparing-summary': '正在整理最终对话总结',
-    working: '正在继续执行 AgentSquared 任务'
-  }[normalizedStage] || '正在继续执行 AgentSquared 任务'
-  if (`${language}`.toLowerCase().startsWith('zh')) {
-    return `🅰️✌️ AgentSquared 仍在处理中。\n对象：${remote}\n技能：${skill}\n进度：${stageTextZh}\n已耗时：约 ${minutes} 分钟。`
-  }
-  return `🅰️✌️ AgentSquared is still working.\nRemote: ${remote}\nSkill: ${skill}\nProgress: ${stageTextEn}\nElapsed: about ${minutes} minute(s).`
-}
-
 function buildOwnerReportDeliveredText(language = 'en') {
   if (`${language}`.toLowerCase().startsWith('zh')) {
     return '🅰️✌️ 完整的 AgentSquared 报告已经通过当前主人频道发送。'
   }
   return '🅰️✌️ The full AgentSquared report has already been sent through the current owner channel.'
-}
-
-async function createCliLongTaskProgressNotifier({
-  agentId,
-  keyFile,
-  args,
-  targetAgentId,
-  skillHint,
-  conversationKey,
-  ownerLanguage
-} = {}) {
-  try {
-    const hostContext = await resolveCliOpenClawHostContext({
-      agentId,
-      keyFile,
-      args,
-      purpose: 'long task progress feedback'
-    })
-    const hostAdapter = createHostRuntimeAdapter({
-      hostRuntime: 'openclaw',
-      localAgentId: agentId,
-      openclaw: {
-        stateDir: hostContext.openclawStateDir,
-        openclawAgent: hostContext.resolvedOpenClawAgent,
-        command: hostContext.openclawCommand,
-        cwd: hostContext.openclawCwd,
-        configPath: hostContext.openclawConfigPath,
-        sessionPrefix: hostContext.openclawSessionPrefix,
-        timeoutMs: 30000,
-        gatewayUrl: hostContext.openclawGatewayUrl,
-        gatewayToken: hostContext.openclawGatewayToken,
-        gatewayPassword: hostContext.openclawGatewayPassword
-      }
-    })
-    if (!hostAdapter?.pushOwnerReport) {
-      throw new Error('host adapter does not expose pushOwnerReport')
-    }
-
-    let stage = 'working'
-    let turnIndex = 0
-    let currentSkillHint = clean(skillHint) || 'friend-im'
-    let stopped = false
-    let heartbeatCount = 0
-    const startedAt = Date.now()
-    const sendProgress = async () => {
-      if (stopped) {
-        return
-      }
-      heartbeatCount += 1
-      const summary = buildLongTaskProgressText({
-        language: ownerLanguage,
-        targetAgentId,
-        skillHint: currentSkillHint,
-        stage,
-        turnIndex,
-        elapsedMs: Date.now() - startedAt
-      })
-      const report = buildSenderProgressReport({
-        localAgentId: agentId,
-        targetAgentId,
-        selectedSkill: currentSkillHint,
-        conversationKey,
-        turnIndex,
-        elapsedMinutes: formatElapsedMinutes(Date.now() - startedAt),
-        stageSummary: excerpt(summary, 400),
-        language: ownerLanguage
-      })
-      try {
-        await hostAdapter.pushOwnerReport({
-          item: {
-            inboundId: `sender-progress-${conversationKey}-${heartbeatCount}`,
-            remoteAgentId: targetAgentId
-          },
-          selectedSkill: currentSkillHint,
-          ownerReport: report
-        })
-      } catch {
-        // Ignore progress push failures. They should never break the main task.
-      }
-    }
-
-    const timer = setInterval(() => {
-      void sendProgress()
-    }, LONG_TASK_PROGRESS_INTERVAL_MS)
-    timer.unref?.()
-
-    return {
-      update(nextStage, nextTurnIndex = turnIndex, nextSkillHint = currentSkillHint) {
-        stage = clean(nextStage) || stage
-        turnIndex = Number.isFinite(nextTurnIndex) ? nextTurnIndex : turnIndex
-        currentSkillHint = clean(nextSkillHint) || currentSkillHint
-      },
-      stop() {
-        stopped = true
-        clearInterval(timer)
-      }
-    }
-  } catch {
-    return {
-      update() {},
-      stop() {}
-    }
-  }
 }
 
 async function pushCliOwnerReport({
@@ -1292,20 +1147,9 @@ async function commandMessageSend(args) {
   const ownerLanguage = inferOwnerFacingLanguage(text)
   const ownerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   let skillHint = 'friend-im'
-  let progressNotifier = null
   const skillFile = clean(args['skill-file'])
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
-  progressNotifier = await createCliLongTaskProgressNotifier({
-    agentId: context.agentId,
-    keyFile: context.keyFile,
-    args,
-    targetAgentId,
-    skillHint: explicitSkillName || clean(sharedSkill?.name) || 'friend-im',
-    conversationKey: randomRequestId('progress'),
-    ownerLanguage
-  })
-  progressNotifier.update('selecting-skill', 1)
   const skillDecision = await resolveOutboundSkillHint({
     agentId: context.agentId,
     keyFile: context.keyFile,
@@ -1321,7 +1165,6 @@ async function commandMessageSend(args) {
   const sentAt = new Date().toISOString()
   let localSkillInventorySnapshot = ''
   if (skillHint === 'agent-mutual-learning') {
-    progressNotifier.update('inspecting-local-skills', 1, skillHint)
     try {
       const hostContext = await resolveCliOpenClawHostContext({
         agentId: context.agentId,
@@ -1370,7 +1213,6 @@ async function commandMessageSend(args) {
   let continuationError = ''
   try {
     while (true) {
-      progressNotifier.update('waiting-remote-reply', turnIndex, skillHint)
       result = await gatewayConnect(gatewayBase, {
         targetAgentId,
         skillHint,
@@ -1440,7 +1282,6 @@ async function commandMessageSend(args) {
 
       let localExecution
       try {
-        progressNotifier.update('preparing-next-turn', nextTurnIndex, skillHint)
         localExecution = await executeLocalConversationTurn({
           localRuntimeExecutor,
           localAgentId: context.agentId,
@@ -1481,7 +1322,6 @@ async function commandMessageSend(args) {
       }
     }
   } catch (error) {
-    progressNotifier?.stop?.()
     const failure = classifyOutboundFailure(error?.message, targetAgentId)
     const senderReport = buildSenderFailureReport({
       localAgentId: context.agentId,
@@ -1506,10 +1346,11 @@ async function commandMessageSend(args) {
       ownerReport: senderReport,
       deliveryId: `sender-failure-${conversationKey || randomRequestId('conversation')}`
     })
-    const ownerFacingText = ownerDelivery.delivered
+    const deliveredToOwner = Boolean(ownerDelivery.delivered)
+    const ownerFacingText = deliveredToOwner
       ? buildOwnerReportDeliveredText(ownerLanguage)
       : renderOwnerFacingReport(senderReport)
-    printJson({
+    const payload = {
       ok: false,
       targetAgentId,
       skillHint,
@@ -1523,15 +1364,18 @@ async function commandMessageSend(args) {
         detail: clean(error?.message)
       },
       ownerDelivery,
-      ownerReport: senderReport,
-      senderReport,
       ownerFacingMode: 'verbatim',
-      ownerFacingInstruction: ownerDelivery.delivered
+      ownerFacingInstruction: deliveredToOwner
         ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Use ownerFacingText verbatim only as a short acknowledgement.'
         : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
       ownerFacingText,
       ownerFacingLines: toOwnerFacingLines(ownerFacingText)
-    })
+    }
+    if (!deliveredToOwner) {
+      payload.ownerReport = senderReport
+      payload.senderReport = senderReport
+    }
+    printJson(payload)
     process.exitCode = 1
     return
   }
@@ -1547,7 +1391,6 @@ async function commandMessageSend(args) {
   let summarizedDifferentiatedSkills = []
   if (skillHint === 'agent-mutual-learning') {
     try {
-      progressNotifier.update('preparing-summary', turnIndex, skillHint)
       const hostContext = await resolveCliOpenClawHostContext({
         agentId: context.agentId,
         keyFile: context.keyFile,
@@ -1635,10 +1478,11 @@ async function commandMessageSend(args) {
     ownerReport: senderReport,
     deliveryId: `sender-success-${conversationKey || randomRequestId('conversation')}`
   })
-  const ownerFacingText = ownerDelivery.delivered
+  const deliveredToOwner = Boolean(ownerDelivery.delivered)
+  const ownerFacingText = deliveredToOwner
     ? buildOwnerReportDeliveredText(ownerLanguage)
     : renderOwnerFacingReport(senderReport)
-  printJson({
+  const payload = {
     ok: true,
     targetAgentId,
     skillHint,
@@ -1654,16 +1498,18 @@ async function commandMessageSend(args) {
     conversationTurns: turnLog,
     replyText,
     ownerDelivery,
-    ownerReport: senderReport,
-    senderReport,
     ownerFacingMode: 'verbatim',
-    ownerFacingInstruction: ownerDelivery.delivered
+    ownerFacingInstruction: deliveredToOwner
       ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Use ownerFacingText verbatim only as a short acknowledgement.'
       : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
     ownerFacingText,
     ownerFacingLines: toOwnerFacingLines(ownerFacingText)
-  })
-  progressNotifier?.stop?.()
+  }
+  if (!deliveredToOwner) {
+    payload.ownerReport = senderReport
+    payload.senderReport = senderReport
+  }
+  printJson(payload)
 }
 
 async function commandLearningStart(args) {
