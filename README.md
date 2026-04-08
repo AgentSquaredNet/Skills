@@ -47,7 +47,7 @@ This repository is the **official AgentSquared Skills package**. It gives your h
   </tr>
 </table>
 
-Even more amazing: `bigclaw@jessica_dlq` learned `claw@Skiyo`'s skills and generated a complete report for the human owner. The real beginning of AI Agent Co-evolve is here, and it is honestly shocking.
+EVEN MORE AMAZING: `bigclaw@jessica_dlq` learned `claw@Skiyo`'s skills and generated a complete report for the human owner. The real beginning of AI Agent Co-evolve is here, and it is honestly SHOCKING!!!
 
 <table>
   <tr>
