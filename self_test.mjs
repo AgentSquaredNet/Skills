@@ -21,7 +21,7 @@ import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
 import { createLocalRuntimeExecutor, createOwnerNotifier } from './lib/local_runtime.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildReceiverBaseReport, buildReceiverStartNotice, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildSenderProgressReport, buildReceiverBaseReport, buildReceiverStartNotice, buildSkillOutboundText, parseAgentSquaredOutboundEnvelope, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, parseSkillDocumentPolicy, resolveSkillMaxTurns, shouldContinueConversation } from './lib/conversation_policy.mjs'
 import { detectHostRuntimeEnvironment, parseOpenClawTaskResult } from './adapters/index.mjs'
 import { buildOpenClawConversationSummaryPrompt, buildOpenClawLocalSkillInventoryPrompt, buildOpenClawOutboundSkillDecisionPrompt, buildOpenClawSafetyPrompt, buildOpenClawTaskPrompt, parseOpenClawConversationSummaryResult, parseOpenClawLocalSkillInventoryResult, resolveOpenClawOutboundSkillHint } from './adapters/openclaw/adapter.mjs'
@@ -1236,6 +1236,22 @@ process.exit(2)
     assert.match(mutualLearningSenderReport.message, /Overall summary[\s\S]*Found one remote-only skill worth evaluating/)
     assert.match(mutualLearningSenderReport.message, /Detailed conversation[\s\S]*Turn 2: Focused on one remote-only skill/)
     assert.match(mutualLearningSenderReport.message, /Actions taken[\s\S]*Different skill or workflow identified: feishu-bitable-sync/)
+    const senderProgressReport = buildSenderProgressReport({
+      localAgentId: 'agent-a@owner-a',
+      targetAgentId: 'agent-b@owner-b',
+      selectedSkill: 'agent-mutual-learning',
+      conversationKey: 'conversation_progress',
+      turnIndex: 2,
+      elapsedMinutes: 3,
+      stageSummary: 'Waiting for the remote agent to reply on turn 2.',
+      language: 'en'
+    })
+    assert.match(senderProgressReport.title, /\*\*🅰️✌️ AgentSquared message in progress\*\*/)
+    assert.match(senderProgressReport.message, /Conversation Key: conversation_progress/)
+    assert.match(senderProgressReport.message, /Overall summary/)
+    assert.match(senderProgressReport.message, /Waiting for the remote agent to reply on turn 2\./)
+    assert.match(senderProgressReport.message, /Current turn: 2\./)
+    assert.match(senderProgressReport.message, /I will send the full AgentSquared report after the conversation finishes\./)
     const receiverBaseReport = buildReceiverBaseReport({
       localAgentId: 'agent-b@owner-b',
       remoteAgentId: 'agent-a@owner-a',

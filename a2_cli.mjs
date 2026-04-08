@@ -15,7 +15,7 @@ import { createHostRuntimeAdapter, detectHostRuntimeEnvironment } from './adapte
 import { inspectOpenClawLocalSkills, resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
-import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { buildSenderBaseReport, buildSenderFailureReport, buildSenderProgressReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
@@ -122,6 +122,13 @@ function buildLongTaskProgressText({
   return `🅰️✌️ AgentSquared is still working.\nRemote: ${remote}\nSkill: ${skill}\nProgress: ${stageTextEn}\nElapsed: about ${minutes} minute(s).`
 }
 
+function buildOwnerReportDeliveredText(language = 'en') {
+  if (`${language}`.toLowerCase().startsWith('zh')) {
+    return '🅰️✌️ 完整的 AgentSquared 报告已经通过当前主人频道发送。'
+  }
+  return '🅰️✌️ The full AgentSquared report has already been sent through the current owner channel.'
+}
+
 async function createCliLongTaskProgressNotifier({
   agentId,
   keyFile,
@@ -177,6 +184,16 @@ async function createCliLongTaskProgressNotifier({
         turnIndex,
         elapsedMs: Date.now() - startedAt
       })
+      const report = buildSenderProgressReport({
+        localAgentId: agentId,
+        targetAgentId,
+        selectedSkill: currentSkillHint,
+        conversationKey,
+        turnIndex,
+        elapsedMinutes: formatElapsedMinutes(Date.now() - startedAt),
+        stageSummary: excerpt(summary, 400),
+        language: ownerLanguage
+      })
       try {
         await hostAdapter.pushOwnerReport({
           item: {
@@ -184,10 +201,7 @@ async function createCliLongTaskProgressNotifier({
             remoteAgentId: targetAgentId
           },
           selectedSkill: currentSkillHint,
-          ownerReport: {
-            summary,
-            message: summary
-          }
+          ownerReport: report
         })
       } catch {
         // Ignore progress push failures. They should never break the main task.
@@ -214,6 +228,59 @@ async function createCliLongTaskProgressNotifier({
     return {
       update() {},
       stop() {}
+    }
+  }
+}
+
+async function pushCliOwnerReport({
+  agentId,
+  keyFile,
+  args,
+  targetAgentId,
+  selectedSkill,
+  ownerReport,
+  deliveryId = ''
+} = {}) {
+  try {
+    const hostContext = await resolveCliOpenClawHostContext({
+      agentId,
+      keyFile,
+      args,
+      purpose: 'AgentSquared owner report delivery'
+    })
+    const hostAdapter = createHostRuntimeAdapter({
+      hostRuntime: 'openclaw',
+      localAgentId: agentId,
+      openclaw: {
+        stateDir: hostContext.openclawStateDir,
+        openclawAgent: hostContext.resolvedOpenClawAgent,
+        command: hostContext.openclawCommand,
+        cwd: hostContext.openclawCwd,
+        configPath: hostContext.openclawConfigPath,
+        sessionPrefix: hostContext.openclawSessionPrefix,
+        timeoutMs: 30000,
+        gatewayUrl: hostContext.openclawGatewayUrl,
+        gatewayToken: hostContext.openclawGatewayToken,
+        gatewayPassword: hostContext.openclawGatewayPassword
+      }
+    })
+    if (!hostAdapter?.pushOwnerReport) {
+      return { delivered: false, attempted: false, mode: 'openclaw', reason: 'host-adapter-missing-push-owner-report' }
+    }
+    return await hostAdapter.pushOwnerReport({
+      item: {
+        inboundId: clean(deliveryId) || randomRequestId('sender-owner-report'),
+        remoteAgentId: targetAgentId
+      },
+      selectedSkill,
+      ownerReport
+    })
+  } catch (error) {
+    return {
+      delivered: false,
+      attempted: true,
+      mode: 'openclaw',
+      reason: clean(error?.message) || 'owner-report-delivery-failed'
     }
   }
 }
@@ -1430,7 +1497,18 @@ async function commandMessageSend(args) {
       timeZone: ownerTimeZone,
       localTime: true
     })
-    const ownerFacingText = renderOwnerFacingReport(senderReport)
+    const ownerDelivery = await pushCliOwnerReport({
+      agentId: context.agentId,
+      keyFile: context.keyFile,
+      args,
+      targetAgentId,
+      selectedSkill: skillHint,
+      ownerReport: senderReport,
+      deliveryId: `sender-failure-${conversationKey || randomRequestId('conversation')}`
+    })
+    const ownerFacingText = ownerDelivery.delivered
+      ? buildOwnerReportDeliveredText(ownerLanguage)
+      : renderOwnerFacingReport(senderReport)
     printJson({
       ok: false,
       targetAgentId,
@@ -1444,10 +1522,13 @@ async function commandMessageSend(args) {
         message: failure.reason,
         detail: clean(error?.message)
       },
+      ownerDelivery,
       ownerReport: senderReport,
       senderReport,
       ownerFacingMode: 'verbatim',
-      ownerFacingInstruction: 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
+      ownerFacingInstruction: ownerDelivery.delivered
+        ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Use ownerFacingText verbatim only as a short acknowledgement.'
+        : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
       ownerFacingText,
       ownerFacingLines: toOwnerFacingLines(ownerFacingText)
     })
@@ -1545,7 +1626,18 @@ async function commandMessageSend(args) {
     timeZone: ownerTimeZone,
     localTime: true
   })
-  const ownerFacingText = renderOwnerFacingReport(senderReport)
+  const ownerDelivery = await pushCliOwnerReport({
+    agentId: context.agentId,
+    keyFile: context.keyFile,
+    args,
+    targetAgentId,
+    selectedSkill: skillHint,
+    ownerReport: senderReport,
+    deliveryId: `sender-success-${conversationKey || randomRequestId('conversation')}`
+  })
+  const ownerFacingText = ownerDelivery.delivered
+    ? buildOwnerReportDeliveredText(ownerLanguage)
+    : renderOwnerFacingReport(senderReport)
   printJson({
     ok: true,
     targetAgentId,
@@ -1561,10 +1653,13 @@ async function commandMessageSend(args) {
     continuationError,
     conversationTurns: turnLog,
     replyText,
+    ownerDelivery,
     ownerReport: senderReport,
     senderReport,
     ownerFacingMode: 'verbatim',
-    ownerFacingInstruction: 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
+    ownerFacingInstruction: ownerDelivery.delivered
+      ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Use ownerFacingText verbatim only as a short acknowledgement.'
+      : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
     ownerFacingText,
     ownerFacingLines: toOwnerFacingLines(ownerFacingText)
   })
