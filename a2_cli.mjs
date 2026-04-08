@@ -11,7 +11,7 @@ import { resolveGatewayBase, defaultGatewayStateFile, readGatewayState, currentR
 import { getAgentCard, getBindingDocument, getFriendDirectory, createConnectTicket, introspectConnectTicket, reportSession } from './lib/relay_http.mjs'
 import { generateRuntimeKeyBundle, writeRuntimeKeyBundle } from './lib/generate_runtime_keypair.mjs'
 import { runGateway } from './lib/gateway_server.mjs'
-import { detectHostRuntimeEnvironment } from './adapters/index.mjs'
+import { createHostRuntimeAdapter, detectHostRuntimeEnvironment } from './adapters/index.mjs'
 import { inspectOpenClawLocalSkills, resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
@@ -78,6 +78,144 @@ function toOwnerFacingLines(text = '') {
     .split('\n')
     .map((line) => line.trimEnd())
     .filter((line) => line.length > 0)
+}
+
+const LONG_TASK_PROGRESS_INTERVAL_MS = 75 * 1000
+
+function formatElapsedMinutes(elapsedMs) {
+  const minutes = Math.max(1, Math.round((Number(elapsedMs) || 0) / 60000))
+  return minutes
+}
+
+function buildLongTaskProgressText({
+  language = 'en',
+  targetAgentId = '',
+  skillHint = 'friend-im',
+  stage = 'working',
+  turnIndex = 0,
+  elapsedMs = 0
+} = {}) {
+  const remote = clean(targetAgentId) || 'the remote agent'
+  const skill = clean(skillHint) || 'friend-im'
+  const minutes = formatElapsedMinutes(elapsedMs)
+  const normalizedStage = clean(stage) || 'working'
+  const turnLabel = turnIndex > 0 ? `turn ${turnIndex}` : 'the current turn'
+  const stageTextEn = {
+    'selecting-skill': 'choosing the best AgentSquared workflow',
+    'inspecting-local-skills': 'reviewing local skills before the learning exchange',
+    'waiting-remote-reply': `waiting for ${remote} to reply on ${turnLabel}`,
+    'preparing-next-turn': `preparing the next local reply after ${turnLabel}`,
+    'preparing-summary': 'preparing the final conversation summary',
+    working: 'continuing the AgentSquared task'
+  }[normalizedStage] || 'continuing the AgentSquared task'
+  const stageTextZh = {
+    'selecting-skill': '正在选择最合适的 AgentSquared 工作流',
+    'inspecting-local-skills': '正在为学习交流盘点本地技能',
+    'waiting-remote-reply': `正在等待 ${remote} 在第 ${turnIndex || 1} 轮回复`,
+    'preparing-next-turn': `正在根据第 ${turnIndex || 1} 轮结果准备下一轮本地回复`,
+    'preparing-summary': '正在整理最终对话总结',
+    working: '正在继续执行 AgentSquared 任务'
+  }[normalizedStage] || '正在继续执行 AgentSquared 任务'
+  if (`${language}`.toLowerCase().startsWith('zh')) {
+    return `🅰️✌️ AgentSquared 仍在处理中。\n对象：${remote}\n技能：${skill}\n进度：${stageTextZh}\n已耗时：约 ${minutes} 分钟。`
+  }
+  return `🅰️✌️ AgentSquared is still working.\nRemote: ${remote}\nSkill: ${skill}\nProgress: ${stageTextEn}\nElapsed: about ${minutes} minute(s).`
+}
+
+async function createCliLongTaskProgressNotifier({
+  agentId,
+  keyFile,
+  args,
+  targetAgentId,
+  skillHint,
+  conversationKey,
+  ownerLanguage
+} = {}) {
+  try {
+    const hostContext = await resolveCliOpenClawHostContext({
+      agentId,
+      keyFile,
+      args,
+      purpose: 'long task progress feedback'
+    })
+    const hostAdapter = createHostRuntimeAdapter({
+      hostRuntime: 'openclaw',
+      localAgentId: agentId,
+      openclaw: {
+        stateDir: hostContext.openclawStateDir,
+        openclawAgent: hostContext.resolvedOpenClawAgent,
+        command: hostContext.openclawCommand,
+        cwd: hostContext.openclawCwd,
+        configPath: hostContext.openclawConfigPath,
+        sessionPrefix: hostContext.openclawSessionPrefix,
+        timeoutMs: 30000,
+        gatewayUrl: hostContext.openclawGatewayUrl,
+        gatewayToken: hostContext.openclawGatewayToken,
+        gatewayPassword: hostContext.openclawGatewayPassword
+      }
+    })
+    if (!hostAdapter?.pushOwnerReport) {
+      throw new Error('host adapter does not expose pushOwnerReport')
+    }
+
+    let stage = 'working'
+    let turnIndex = 0
+    let currentSkillHint = clean(skillHint) || 'friend-im'
+    let stopped = false
+    let heartbeatCount = 0
+    const startedAt = Date.now()
+    const sendProgress = async () => {
+      if (stopped) {
+        return
+      }
+      heartbeatCount += 1
+      const summary = buildLongTaskProgressText({
+        language: ownerLanguage,
+        targetAgentId,
+        skillHint: currentSkillHint,
+        stage,
+        turnIndex,
+        elapsedMs: Date.now() - startedAt
+      })
+      try {
+        await hostAdapter.pushOwnerReport({
+          item: {
+            inboundId: `sender-progress-${conversationKey}-${heartbeatCount}`,
+            remoteAgentId: targetAgentId
+          },
+          selectedSkill: currentSkillHint,
+          ownerReport: {
+            summary,
+            message: summary
+          }
+        })
+      } catch {
+        // Ignore progress push failures. They should never break the main task.
+      }
+    }
+
+    const timer = setInterval(() => {
+      void sendProgress()
+    }, LONG_TASK_PROGRESS_INTERVAL_MS)
+    timer.unref?.()
+
+    return {
+      update(nextStage, nextTurnIndex = turnIndex, nextSkillHint = currentSkillHint) {
+        stage = clean(nextStage) || stage
+        turnIndex = Number.isFinite(nextTurnIndex) ? nextTurnIndex : turnIndex
+        currentSkillHint = clean(nextSkillHint) || currentSkillHint
+      },
+      stop() {
+        stopped = true
+        clearInterval(timer)
+      }
+    }
+  } catch {
+    return {
+      update() {},
+      stop() {}
+    }
+  }
 }
 
 function resolveUserPath(inputPath) {
@@ -1086,9 +1224,21 @@ async function commandMessageSend(args) {
   const text = requireArg(args.text, '--text is required')
   const ownerLanguage = inferOwnerFacingLanguage(text)
   const ownerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  let skillHint = 'friend-im'
+  let progressNotifier = null
   const skillFile = clean(args['skill-file'])
   const sharedSkill = skillFile ? loadSharedSkillFile(skillFile) : null
   const explicitSkillName = clean(args['skill-name'] || args.skill)
+  progressNotifier = await createCliLongTaskProgressNotifier({
+    agentId: context.agentId,
+    keyFile: context.keyFile,
+    args,
+    targetAgentId,
+    skillHint: explicitSkillName || clean(sharedSkill?.name) || 'friend-im',
+    conversationKey: randomRequestId('progress'),
+    ownerLanguage
+  })
+  progressNotifier.update('selecting-skill', 1)
   const skillDecision = await resolveOutboundSkillHint({
     agentId: context.agentId,
     keyFile: context.keyFile,
@@ -1098,12 +1248,13 @@ async function commandMessageSend(args) {
     explicitSkillName,
     sharedSkill
   })
-  const skillHint = clean(skillDecision.skillHint) || 'friend-im'
+  skillHint = clean(skillDecision.skillHint) || 'friend-im'
   const conversationPolicy = resolveConversationPolicy(skillHint, sharedSkill)
   const conversationKey = randomRequestId('conversation')
   const sentAt = new Date().toISOString()
   let localSkillInventorySnapshot = ''
   if (skillHint === 'agent-mutual-learning') {
+    progressNotifier.update('inspecting-local-skills', 1, skillHint)
     try {
       const hostContext = await resolveCliOpenClawHostContext({
         agentId: context.agentId,
@@ -1152,6 +1303,7 @@ async function commandMessageSend(args) {
   let continuationError = ''
   try {
     while (true) {
+      progressNotifier.update('waiting-remote-reply', turnIndex, skillHint)
       result = await gatewayConnect(gatewayBase, {
         targetAgentId,
         skillHint,
@@ -1221,6 +1373,7 @@ async function commandMessageSend(args) {
 
       let localExecution
       try {
+        progressNotifier.update('preparing-next-turn', nextTurnIndex, skillHint)
         localExecution = await executeLocalConversationTurn({
           localRuntimeExecutor,
           localAgentId: context.agentId,
@@ -1261,6 +1414,7 @@ async function commandMessageSend(args) {
       }
     }
   } catch (error) {
+    progressNotifier?.stop?.()
     const failure = classifyOutboundFailure(error?.message, targetAgentId)
     const senderReport = buildSenderFailureReport({
       localAgentId: context.agentId,
@@ -1315,6 +1469,7 @@ async function commandMessageSend(args) {
   let summarizedOwnerAction = 'none'
   if (skillHint === 'agent-mutual-learning') {
     try {
+      progressNotifier.update('preparing-summary', turnIndex, skillHint)
       const hostContext = await resolveCliOpenClawHostContext({
         agentId: context.agentId,
         keyFile: context.keyFile,
@@ -1426,6 +1581,7 @@ async function commandMessageSend(args) {
     ownerFacingText,
     ownerFacingLines: toOwnerFacingLines(ownerFacingText)
   })
+  progressNotifier?.stop?.()
 }
 
 async function commandLearningStart(args) {
