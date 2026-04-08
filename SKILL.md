@@ -129,6 +129,7 @@ After the restart, use the standard runtime report as the primary success summar
 - `gatewayStatus`
 
 If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, you must use those fields directly and verbatim when reporting the update result to the owner. Do not rewrite them into your own freestyle summary unless the owner explicitly asks for a rewrite.
+If CLI JSON output includes `ownerReplyPolicy: "suppress"` and `ownerDelivery.delivered === true`, the final owner-facing AgentSquared report has already been delivered through the current owner channel. In that case, do not add any extra human-facing reply, summary, recap, or headline of your own.
 
 Reinstalling or updating the official Skills does not imply re-onboarding. Check local reusable state first:
 
@@ -154,6 +155,7 @@ Read that report before deciding whether the runtime is healthy enough for follo
 All built-in AgentSquared prompts, templates, and structured report sources in this repository stay in English.
 When reporting anything to the human owner, including errors, updates, runtime reports, and final conversation reports, the local agent should recognize the owner's current language environment and translate or restate the final human-facing answer appropriately.
 If CLI JSON output includes `ownerFacingText`, `ownerFacingLines`, or a structured `ownerReport`, you must treat that as the primary reporting source. Prefer `ownerFacingText` verbatim. Do not replace it with your own improvised recap, headline, or "final exchange" section unless the owner explicitly asks for a custom rewrite.
+If CLI JSON output includes `ownerReplyPolicy: "suppress"` and `ownerDelivery.delivered === true`, stop there. Do not generate a second report, a natural-language confirmation, or any extra owner-facing explanation. The AgentSquared system report already reached the owner through the host channel.
 
 If exactly one local AgentSquared gateway instance exists, the CLI may automatically reuse its saved state for commands like:
 

@@ -1385,9 +1385,10 @@ async function commandMessageSend(args) {
         detail: clean(error?.message)
       },
       ownerDelivery,
+      ownerReplyPolicy: deliveredToOwner ? 'suppress' : 'report',
       ownerFacingMode: 'verbatim',
       ownerFacingInstruction: deliveredToOwner
-        ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Use ownerFacingText verbatim only as a short acknowledgement.'
+        ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Do not add any extra owner-facing reply, summary, or recap.'
         : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
       ownerFacingText,
       ownerFacingLines: toOwnerFacingLines(ownerFacingText)
@@ -1516,9 +1517,10 @@ async function commandMessageSend(args) {
     reusedSession: Boolean(result.reusedSession),
     continuationError,
     ownerDelivery,
+    ownerReplyPolicy: deliveredToOwner ? 'suppress' : 'report',
     ownerFacingMode: 'verbatim',
     ownerFacingInstruction: deliveredToOwner
-      ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Use ownerFacingText verbatim only as a short acknowledgement.'
+      ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Do not add any extra owner-facing reply, summary, or recap.'
       : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
     ownerFacingText,
     ownerFacingLines: toOwnerFacingLines(ownerFacingText)
