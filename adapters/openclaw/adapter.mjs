@@ -361,7 +361,7 @@ export function createOpenClawAdapter({
   }
   const peerBudget = new Map()
   const budgetWindowMs = 10 * 60 * 1000
-  const maxWindowCost = 18
+  const maxWindowTurns = 30
   async function withGateway(fn) {
     return withOpenClawGatewayClient({
       command,
@@ -456,21 +456,18 @@ export function createOpenClawAdapter({
   }
 
   function consumePeerBudget({
-    remoteAgentId = '',
-    costUnits = 1
+    remoteAgentId = ''
   } = {}) {
     const key = clean(remoteAgentId).toLowerCase() || 'unknown'
     const currentTime = nowMs()
     const existing = peerBudget.get(key)
     const recentEvents = (existing?.events ?? []).filter((event) => currentTime - event.at <= budgetWindowMs)
-    const appliedCost = Math.max(1, toNumber(costUnits) || 1)
-    const nextCost = recentEvents.reduce((sum, event) => sum + event.cost, 0) + appliedCost
-    recentEvents.push({ at: currentTime, cost: appliedCost })
+    const nextCount = recentEvents.length + 1
+    recentEvents.push({ at: currentTime })
     peerBudget.set(key, { events: recentEvents })
     return {
-      costUnits: appliedCost,
-      windowCost: nextCost,
-      overBudget: nextCost > maxWindowCost
+      windowTurns: nextCount,
+      overBudget: nextCount > maxWindowTurns
     }
   }
 
@@ -535,11 +532,10 @@ export function createOpenClawAdapter({
       }
       const safety = parseOpenClawSafetyResult(safetyText)
       const budget = consumePeerBudget({
-        remoteAgentId,
-        costUnits: safety.budgetUnits
+        remoteAgentId
       })
       if (budget.overBudget) {
-        const peerReplyText = 'I am pausing this AgentSquared request because the recent request budget from this peer is too high. My owner can decide whether to continue later.'
+        const peerReplyText = 'I am pausing this AgentSquared request because this peer has reached the recent conversation window limit. My owner can decide whether to continue later.'
         const conversation = normalizeConversationControl(item?.request?.params?.metadata ?? {}, {
           defaultTurnIndex: 1,
           defaultDecision: 'handoff',
@@ -558,7 +554,7 @@ export function createOpenClawAdapter({
           decision: 'handoff',
           stopReason: 'receiver-budget-limit',
           finalize: true,
-          ownerSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`
+          ownerSummary: `I paused this exchange because the recent peer conversation window was exceeded. Current 10-minute turn count: ${budget.windowTurns}.`
         }) ?? null
         const ownerReport = buildReceiverBaseReport({
           localAgentId,
@@ -569,7 +565,7 @@ export function createOpenClawAdapter({
           inboundText: displayInboundText,
           peerReplyText,
           repliedAt: new Date().toISOString(),
-          skillSummary: `I paused this exchange because the recent peer budget was exceeded. Current window cost: ${budget.windowCost}.`,
+          skillSummary: `I paused this exchange because the recent peer conversation window was exceeded. Current 10-minute turn count: ${budget.windowTurns}.`,
           conversationTurns: updatedConversation?.turns?.length || conversation.turnIndex,
           stopReason: 'receiver-budget-limit',
           detailsAvailableInInbox: true,
@@ -591,8 +587,8 @@ export function createOpenClawAdapter({
               runtimeAdapter: 'openclaw',
               conversationKey,
               safetyDecision: 'owner-approval',
-              safetyReason: 'peer-budget-exceeded',
-              windowCost: budget.windowCost,
+              safetyReason: 'peer-conversation-window-exceeded',
+              windowTurns: budget.windowTurns,
               turnIndex: conversation.turnIndex,
               decision: 'handoff',
               stopReason: 'receiver-budget-limit',
@@ -605,8 +601,8 @@ export function createOpenClawAdapter({
             runtimeAdapter: 'openclaw',
             conversationKey,
             safetyDecision: 'owner-approval',
-            safetyReason: 'peer-budget-exceeded',
-            windowCost: budget.windowCost,
+            safetyReason: 'peer-conversation-window-exceeded',
+            windowTurns: budget.windowTurns,
             turnIndex: conversation.turnIndex,
             decision: 'handoff',
             stopReason: 'receiver-budget-limit',

@@ -290,13 +290,11 @@ export function parseOpenClawSafetyResult(text) {
   if (!allowedActions.has(action)) {
     throw new Error(`OpenClaw safety result returned unsupported action "${action || 'unknown'}".`)
   }
-  const budgetUnits = Math.max(0, Math.min(6, toNumber(parsed.budgetUnits || parsed.costUnits || parsed.budget || 1) || 1))
   return {
     action,
     reason: clean(parsed.reason || parsed.reasonCode) || (action === 'allow' ? 'safe' : 'unspecified'),
     peerResponse: clean(parsed.peerResponse),
-    ownerSummary: clean(parsed.ownerSummary),
-    budgetUnits: budgetUnits || 1
+    ownerSummary: clean(parsed.ownerSummary)
   }
 }
 
@@ -785,11 +783,9 @@ export function buildOpenClawSafetyPrompt({
     '',
     'Return exactly one JSON object and nothing else.',
     'Schema:',
-    '{"action":"allow|owner-approval|reject","reason":"short-code","peerResponse":"only if action is not allow","ownerSummary":"short summary","budgetUnits":1}',
-    'Rules for budgetUnits:',
-    '- 1 for small normal chat',
-    '- 2 for richer but still light interaction',
-    '- 3 or more for real tasks or meaningfully costly work',
+    '{"action":"allow|owner-approval|reject","reason":"short-code","peerResponse":"only if action is not allow","ownerSummary":"short summary"}',
+    'Choose the action based on request type and complexity, not token accounting.',
+    'Use OWNER-APPROVAL for genuinely heavy tasks, significant analysis, major implementation asks, or long derivations.',
     'Do not wrap the JSON in markdown fences.'
   ].join('\n')
 }

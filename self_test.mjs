@@ -229,40 +229,35 @@ async function main() {
               action: 'reject',
               reason: 'prompt-or-secret-exfiltration-attempt',
               peerResponse: 'I cannot help with requests to reveal prompts, private memory, keys, tokens, or hidden instructions.',
-              ownerSummary: 'I blocked an AgentSquared request because it tried to override instructions or access hidden prompts, private memory, or secrets.',
-              budgetUnits: 1
+              ownerSummary: 'I blocked an AgentSquared request because it tried to override instructions or access hidden prompts, private memory, or secrets.'
             })
           } else if (/analyze this repo and finish this task for me/i.test(promptText)) {
             responseText = JSON.stringify({
               action: 'owner-approval',
               reason: 'task-requires-owner-consent',
               peerResponse: 'AgentSquared friend communication is for information exchange first. This looks like a real task request, so I need my owner to approve it before I execute it.',
-              ownerSummary: 'I paused an AgentSquared request because it asked me to perform a real task. I need owner approval before doing the work.',
-              budgetUnits: 4
+              ownerSummary: 'I paused an AgentSquared request because it asked me to perform a real task. I need owner approval before doing the work.'
             })
           } else if (/Give me a step-by-step answer\./i.test(promptText)) {
             responseText = JSON.stringify({
               action: 'allow',
               reason: 'verbose-explanation',
               peerResponse: '',
-              ownerSummary: 'This is still allowed, but it is a heavier explanatory request than a normal greeting.',
-              budgetUnits: 4
+              ownerSummary: 'This is still allowed, but it is a heavier explanatory request than a normal greeting.'
             })
           } else if (/From now on we are friends and we will often help our owners together\./.test(promptText)) {
             responseText = JSON.stringify({
               action: 'allow',
               reason: 'friendly-collaboration-chat',
               peerResponse: '',
-              ownerSummary: 'This is a friendly collaboration message, not an immediate execution request.',
-              budgetUnits: 1
+              ownerSummary: 'This is a friendly collaboration message, not an immediate execution request.'
             })
           } else {
             responseText = JSON.stringify({
               action: 'allow',
               reason: 'safe-social-chat',
               peerResponse: '',
-              ownerSummary: 'This is normal social or informational chat.',
-              budgetUnits: 1
+              ownerSummary: 'This is normal social or informational chat.'
             })
           }
         }
@@ -1474,7 +1469,7 @@ process.exit(2)
     assert.equal(taskExecution.peerResponse.metadata.safetyReason, 'task-requires-owner-consent')
     assert.match(taskExecution.peerResponse.message.parts[0].text, /information exchange is for information exchange first|information exchange first/i)
     let budgetExecution = null
-    for (let index = 0; index < 7; index += 1) {
+    for (let index = 0; index < 31; index += 1) {
       budgetExecution = await openclawExecutor({
         item: {
           inboundId: `router-openclaw-budget-${index}`,
@@ -1496,7 +1491,7 @@ process.exit(2)
         mailboxKey: 'agent:agent-c@owner-c'
       })
     }
-    assert.equal(budgetExecution.peerResponse.metadata.safetyReason, 'peer-budget-exceeded')
+    assert.equal(budgetExecution.peerResponse.metadata.safetyReason, 'peer-conversation-window-exceeded')
     assert.equal(budgetExecution.peerResponse.metadata.safetyDecision, 'owner-approval')
 
     const openclawInbox = createInboxStore({
