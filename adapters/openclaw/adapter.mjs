@@ -836,12 +836,13 @@ export function createOpenClawAdapter({
         turnOutline: (updatedConversation?.turns ?? []).map((turn) => {
           const inbound = excerpt(turn.inboundText)
           const reply = excerpt(turn.replyText)
+          const isFinalTurn = Boolean(turn.finalize) || ['done', 'handoff'].includes(clean(turn.decision).toLowerCase())
           return {
             turnIndex: turn.turnIndex,
             summary: [
               inbound ? `remote said "${inbound}"` : 'remote sent a message',
               reply ? `I replied "${reply}"` : 'I replied',
-              clean(turn.stopReason) ? `(stop: ${clean(turn.stopReason)})` : ''
+              isFinalTurn && clean(turn.stopReason) ? `(final stop: ${clean(turn.stopReason)})` : ''
             ].filter(Boolean).join(' ')
           }
         }),
