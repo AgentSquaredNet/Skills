@@ -16,6 +16,7 @@ import { inspectOpenClawLocalSkills, resolveOpenClawOutboundSkillHint, summarize
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
+import { scrubOutboundText } from './lib/runtime_safety.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
 import { chooseInboundSkill, resolveMailboxKey } from './lib/agent_router.mjs'
 import { createLocalRuntimeExecutor } from './lib/local_runtime.mjs'
@@ -1365,7 +1366,7 @@ async function commandMessageSend(args) {
         defaultStopReason: nextTurnIndex >= conversationPolicy.maxTurns ? 'max-turns-reached' : '',
         defaultFinalize: nextTurnIndex >= conversationPolicy.maxTurns
       })
-      currentOutboundText = peerResponseText(localExecution.peerResponse)
+      currentOutboundText = scrubOutboundText(peerResponseText(localExecution.peerResponse))
       if (!currentOutboundText) {
         localStopReason = 'goal-satisfied'
         break
@@ -1408,9 +1409,6 @@ async function commandMessageSend(args) {
     const ownerFacingText = deliveredToOwner
       ? ''
       : renderOwnerFacingReport(senderReport)
-    const stdoutNotice = deliveredToOwner
-      ? buildOwnerReportDeliveredText(ownerLanguage)
-      : ''
     const payload = {
       ok: false,
       targetAgentId,
@@ -1431,8 +1429,8 @@ async function commandMessageSend(args) {
         : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
       ownerFacingText,
       ownerFacingLines: toOwnerFacingLines(ownerFacingText),
-      stdoutNotice,
-      stdoutLines: toOwnerFacingLines(stdoutNotice)
+      stdoutNoticeCode: deliveredToOwner ? 'OWNER_REPORT_ALREADY_DELIVERED' : '',
+      stdoutLines: []
     }
     if (!deliveredToOwner) {
       payload.ownerReport = senderReport
@@ -1503,6 +1501,9 @@ async function commandMessageSend(args) {
     }
   })
   const actionItems = []
+  if (skillHint === 'agent-mutual-learning' && clean(localSkillInventorySnapshot)) {
+    actionItems.push('Prepared a verified local skill snapshot before starting the exchange and used it as the baseline for comparison.')
+  }
   for (const item of summarizedDifferentiatedSkills) {
     actionItems.push(`Different skill or workflow identified: ${item}.`)
   }
@@ -1546,9 +1547,6 @@ async function commandMessageSend(args) {
   const ownerFacingText = deliveredToOwner
     ? ''
     : renderOwnerFacingReport(senderReport)
-  const stdoutNotice = deliveredToOwner
-    ? buildOwnerReportDeliveredText(ownerLanguage)
-    : ''
   const payload = {
     ok: true,
     targetAgentId,
@@ -1568,8 +1566,8 @@ async function commandMessageSend(args) {
       : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
     ownerFacingText,
     ownerFacingLines: toOwnerFacingLines(ownerFacingText),
-    stdoutNotice,
-    stdoutLines: toOwnerFacingLines(stdoutNotice)
+    stdoutNoticeCode: deliveredToOwner ? 'OWNER_REPORT_ALREADY_DELIVERED' : '',
+    stdoutLines: []
   }
   if (!deliveredToOwner) {
     payload.turnCount = turnLog.length || 1

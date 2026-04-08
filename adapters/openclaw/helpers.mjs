@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-import { renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
+import { parseAgentSquaredOutboundEnvelope, renderOwnerFacingReport } from '../../lib/a2_message_templates.mjs'
 import { PLATFORM_MAX_TURNS, normalizeConversationControl, resolveSkillMaxTurns } from '../../lib/conversation_policy.mjs'
 
 function clean(value) {
@@ -627,13 +627,15 @@ export function buildOpenClawTaskPrompt({
   item,
   conversationTranscript = '',
   relationshipSummary = '',
-  localSkillInventory = ''
+  senderSkillInventory = ''
 }) {
-  const inboundText = peerResponseText(item?.request?.params?.message)
+  const rawInboundText = peerResponseText(item?.request?.params?.message)
   const messageMethod = clean(item?.request?.method) || 'message/send'
   const peerSessionId = clean(item?.peerSessionId)
   const requestId = clean(item?.request?.id)
   const metadata = item?.request?.params?.metadata ?? {}
+  const parsedEnvelope = parseAgentSquaredOutboundEnvelope(rawInboundText)
+  const displayInboundText = clean(metadata?.originalOwnerText) || clean(parsedEnvelope?.ownerRequest) || rawInboundText
   const conversation = normalizeConversationControl(metadata, {
     defaultTurnIndex: 1,
     defaultDecision: 'done',
@@ -687,13 +689,19 @@ export function buildOpenClawTaskPrompt({
           '- currentConversationTranscript:',
           '(none yet for this live conversation)'
         ]),
-    ...(clean(localSkillInventory)
+    ...(clean(senderSkillInventory)
       ? [
-          '- verifiedLocalSkillSnapshot:',
-          clean(localSkillInventory)
+          '- senderVerifiedSkillSnapshot:',
+          clean(senderSkillInventory)
         ]
       : []),
-    `- messageText: ${inboundText || '(empty)'}`,
+    `- messageText: ${displayInboundText || '(empty)'}`,
+    ...(clean(rawInboundText) && clean(rawInboundText) !== clean(displayInboundText)
+      ? [
+          '- rawTransportMessageText:',
+          clean(rawInboundText)
+        ]
+      : []),
     ...(sharedSkillName || sharedSkillPath || sharedSkillDocument
       ? [
           `- sharedSkillName: ${sharedSkillName || 'unknown'}`,
@@ -720,10 +728,10 @@ export function buildOpenClawTaskPrompt({
     ...(selectedSkill === 'agent-mutual-learning'
       ? [
           '14. For agent-mutual-learning, use this order of operations:',
-          '    a. First identify the remote agent\'s most-used skills, recently installed skills, or clearly differentiated workflows.',
-          '    b. Then judge similarity and novelty against the verified local installed skills above: what does the remote agent have that the local agent likely does not have?',
-          '    c. If both sides already have the same capability, only continue when the remote side has a clearly better implementation, tradeoff, workflow pattern, or copyable detail.',
-          '    d. Once one promising skill or workflow is found, stay focused on that single topic until the sender has enough information to explain what it does, why it matters, and how it differs from the local side.',
+          '    a. First answer by listing your own most-used skills, recently installed skills, or clearly differentiated workflows.',
+          '    b. Then compare those against the senderVerifiedSkillSnapshot above when available, and identify the concrete differences on your side.',
+          '    c. Prefer actual different skills or workflows before discussing shared capabilities.',
+          '    d. Once one promising different skill or workflow is found, stay focused on that single topic until the sender has enough information to explain what it does, why it matters, and how it differs from the sender side.',
           '15. Prefer remote-only skills or recently installed skills before discussing overlapping capabilities.',
           '16. When a concrete skill is worth learning, explain what problem it solves, how it is used in practice, and what tradeoffs or lessons matter.',
           '17. If the overlap is already high and there is little actionable delta, say that plainly, but only after comparing against the verified local inventory rather than relying on conversational impression alone.',

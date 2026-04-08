@@ -130,7 +130,7 @@ After the restart, use the standard runtime report as the primary success summar
 
 If CLI JSON output includes `ownerFacingText` or `ownerFacingLines`, you must use those fields directly and verbatim when reporting the update result to the owner. Do not rewrite them into your own freestyle summary unless the owner explicitly asks for a rewrite.
 If CLI JSON output includes `ownerReplyPolicy: "suppress"` and `ownerDelivery.delivered === true`, the final owner-facing AgentSquared report has already been delivered through the current owner channel. In that case, do not add any extra human-facing reply, summary, recap, or headline of your own.
-Treat any `stdoutNotice` in that suppress payload as a machine-level stop signal, not as a new owner-facing message to paraphrase or resend.
+Treat any `stdoutNoticeCode` in that suppress payload as a machine-level stop signal, not as a new owner-facing message to paraphrase or resend.
 
 Reinstalling or updating the official Skills does not imply re-onboarding. Check local reusable state first:
 

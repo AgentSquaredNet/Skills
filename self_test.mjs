@@ -1150,7 +1150,9 @@ process.exit(2)
       sentAt: '2026-03-28T12:00:00Z',
       localSkillInventory: 'Frequent skills/workflows: skill-a, skill-b\nRecent skills: skill-c\nTop highlights: skill-a automation'
     })
-    assert.match(mutualLearningOutboundTemplate, /skills or workflows you use most often or installed recently/i)
+    assert.match(mutualLearningOutboundTemplate, /Please start by listing the skills or workflows you use most often/i)
+    assert.match(mutualLearningOutboundTemplate, /the ones you installed recently/i)
+    assert.match(mutualLearningOutboundTemplate, /the ones that are most different from mine/i)
     assert.match(mutualLearningOutboundTemplate, /Local Skill Snapshot/)
     assert.equal(peerResponseText({
       result: {

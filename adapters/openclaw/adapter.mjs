@@ -723,7 +723,7 @@ export function createOpenClawAdapter({
         item,
         conversationTranscript,
         relationshipSummary,
-        localSkillInventory: clean(metadata?.localSkillInventory)
+        senderSkillInventory: clean(metadata?.localSkillInventory)
       })
 
       let accepted
