@@ -82,9 +82,9 @@ function toOwnerFacingLines(text = '') {
 
 function buildOwnerReportDeliveredText(language = 'en') {
   if (`${language}`.toLowerCase().startsWith('zh')) {
-    return '🅰️✌️ 完整的 AgentSquared 报告已经通过当前主人频道发送。'
+    return '🅰️✌️ 最终的 AgentSquared 主人报告已经通过当前主人频道发送，请不要再追加任何形式的人类回复。'
   }
-  return '🅰️✌️ The full AgentSquared report has already been sent through the current owner channel.'
+  return '🅰️✌️ The final owner-facing AgentSquared report has already been delivered through the current owner channel. Do not send any additional owner-facing reply.'
 }
 
 async function pushCliOwnerReport({
@@ -1370,8 +1370,11 @@ async function commandMessageSend(args) {
     })
     const deliveredToOwner = Boolean(ownerDelivery.delivered)
     const ownerFacingText = deliveredToOwner
-      ? buildOwnerReportDeliveredText(ownerLanguage)
+      ? ''
       : renderOwnerFacingReport(senderReport)
+    const stdoutNotice = deliveredToOwner
+      ? buildOwnerReportDeliveredText(ownerLanguage)
+      : ''
     const payload = {
       ok: false,
       targetAgentId,
@@ -1386,12 +1389,14 @@ async function commandMessageSend(args) {
       },
       ownerDelivery,
       ownerReplyPolicy: deliveredToOwner ? 'suppress' : 'report',
-      ownerFacingMode: 'verbatim',
+      ownerFacingMode: deliveredToOwner ? 'suppress' : 'verbatim',
       ownerFacingInstruction: deliveredToOwner
         ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Do not add any extra owner-facing reply, summary, or recap.'
         : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
       ownerFacingText,
-      ownerFacingLines: toOwnerFacingLines(ownerFacingText)
+      ownerFacingLines: toOwnerFacingLines(ownerFacingText),
+      stdoutNotice,
+      stdoutLines: toOwnerFacingLines(stdoutNotice)
     }
     if (!deliveredToOwner) {
       payload.ownerReport = senderReport
@@ -1503,8 +1508,11 @@ async function commandMessageSend(args) {
   })
   const deliveredToOwner = Boolean(ownerDelivery.delivered)
   const ownerFacingText = deliveredToOwner
-    ? buildOwnerReportDeliveredText(ownerLanguage)
+    ? ''
     : renderOwnerFacingReport(senderReport)
+  const stdoutNotice = deliveredToOwner
+    ? buildOwnerReportDeliveredText(ownerLanguage)
+    : ''
   const payload = {
     ok: true,
     targetAgentId,
@@ -1518,12 +1526,14 @@ async function commandMessageSend(args) {
     continuationError,
     ownerDelivery,
     ownerReplyPolicy: deliveredToOwner ? 'suppress' : 'report',
-    ownerFacingMode: 'verbatim',
+    ownerFacingMode: deliveredToOwner ? 'suppress' : 'verbatim',
     ownerFacingInstruction: deliveredToOwner
       ? 'The full owner-facing AgentSquared report has already been delivered through the current owner channel. Do not add any extra owner-facing reply, summary, or recap.'
       : 'Use ownerFacingText verbatim as the owner-facing update for the human owner.',
     ownerFacingText,
-    ownerFacingLines: toOwnerFacingLines(ownerFacingText)
+    ownerFacingLines: toOwnerFacingLines(ownerFacingText),
+    stdoutNotice,
+    stdoutLines: toOwnerFacingLines(stdoutNotice)
   }
   if (!deliveredToOwner) {
     payload.turnCount = turnLog.length || 1
