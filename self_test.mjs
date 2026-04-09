@@ -16,7 +16,7 @@ import { attachInboundRouter, buildJsonRpcEnvelope, createConnectTicketWithRecov
 import { signText } from './lib/runtime_key.mjs'
 import { createInboxStore } from './lib/gateway_inbox.mjs'
 import { createGatewayRuntimeState } from './lib/gateway_sessions.mjs'
-import { ensureGatewayForUse } from './lib/gateway_lifecycle.mjs'
+import { assertNoExistingLocalActivation, ensureGatewayForUse } from './lib/gateway_lifecycle.mjs'
 import { currentRuntimeRevision } from './lib/gateway_runtime.mjs'
 import { chooseInboundSkill, createAgentRouter, createMailboxScheduler } from './lib/agent_router.mjs'
 import { createLiveConversationStore } from './lib/live_conversation_store.mjs'
@@ -1547,15 +1547,18 @@ process.exit(2)
     assert.equal(fs.existsSync(fakeOpenClawLog), false)
 
     const cliHome = path.join(tempDir, 'cli-home')
-    const cliProfileDir = path.join(cliHome, '.agentsquared')
-    fs.mkdirSync(cliProfileDir, { recursive: true })
-    fs.writeFileSync(path.join(cliProfileDir, 'assistant_owner-alpha_runtime_key.json'), JSON.stringify({
+    const cliProfileDir = path.join(cliHome, '.openclaw', 'workspace', 'AgentSquared', 'assistant_owner-alpha')
+    const cliIdentityDir = path.join(cliProfileDir, 'identity')
+    const cliRuntimeDir = path.join(cliProfileDir, 'runtime')
+    fs.mkdirSync(cliIdentityDir, { recursive: true })
+    fs.mkdirSync(cliRuntimeDir, { recursive: true })
+    fs.writeFileSync(path.join(cliIdentityDir, 'runtime-key.json'), JSON.stringify({
       keyType: 2,
       publicKey: 'test-public-key'
     }, null, 2))
-    fs.writeFileSync(path.join(cliProfileDir, 'assistant_owner-alpha_gateway.json'), JSON.stringify({
+    fs.writeFileSync(path.join(cliRuntimeDir, 'gateway.json'), JSON.stringify({
       agentId: 'assistant@owner-alpha',
-      keyFile: path.join(cliProfileDir, 'assistant_owner-alpha_runtime_key.json'),
+      keyFile: path.join(cliIdentityDir, 'runtime-key.json'),
       gatewayBase: 'http://127.0.0.1:39953'
     }, null, 2))
     const onboardingToken = [
@@ -1583,10 +1586,24 @@ process.exit(2)
     assert.match(cliOnboard.stderr, /already activated locally for assistant@owner-alpha/i)
     assert.doesNotMatch(cliOnboard.stderr, /--authorization-token is required for first-time onboarding/i)
 
+    const secondAgentToken = [
+      Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url'),
+      Buffer.from(JSON.stringify({
+        hnm: 'owner-alpha',
+        anm: 'assistant-two'
+      })).toString('base64url'),
+      'signature'
+    ].join('.')
+    assert.doesNotThrow(() => {
+      assertNoExistingLocalActivation(secondAgentToken, {
+        searchRoots: [path.join(cliHome, '.openclaw', 'workspace', 'AgentSquared')]
+      })
+    })
+
     const artifactOnlyHome = path.join(tempDir, 'cli-artifact-home')
-    const artifactOnlyDir = path.join(artifactOnlyHome, '.agentsquared')
+    const artifactOnlyDir = path.join(artifactOnlyHome, '.openclaw', 'workspace', 'AgentSquared', 'orphan_agent', 'identity')
     fs.mkdirSync(artifactOnlyDir, { recursive: true })
-    fs.writeFileSync(path.join(artifactOnlyDir, 'orphan_runtime_key.json'), JSON.stringify({
+    fs.writeFileSync(path.join(artifactOnlyDir, 'runtime-key.json'), JSON.stringify({
       keyType: 2,
       publicKey: 'orphan-public-key'
     }, null, 2))

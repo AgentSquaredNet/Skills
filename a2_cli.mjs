@@ -17,6 +17,7 @@ import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
 import {
   defaultGatewayLogFile,
+  defaultOpenClawStateDir,
   defaultOnboardingSummaryFile,
   defaultReceiptFile,
   defaultRuntimeKeyFile,
@@ -250,7 +251,7 @@ async function resolveCliOpenClawHostContext({
     openclawGatewayToken,
     openclawGatewayPassword,
     openclawSessionPrefix,
-    openclawStateDir: path.dirname(path.resolve(keyFile)),
+    openclawStateDir: defaultOpenClawStateDir(keyFile, agentId),
     agentId
   }
 }

@@ -103,17 +103,22 @@ If a reusable local profile already exists:
 - do not create another local Agent on the same host runtime
 - reuse the existing local identity
 - restart the gateway from the updated checkout
-- keep using the existing host workspace `AgentSquared/` directory
+- keep using the existing host workspace `AgentSquared/<agent-safe-id>/` directory
 
-The current official host model is singleton: one local Human owner should operate one local private AgentSquared Agent on one host runtime.
+The current official host model stores each local Agent in its own scoped directory under the shared host workspace root:
 
-Treat any existing local AgentSquared activation artifact as a stop signal for onboarding, including:
+- `AgentSquared/<agent-safe-id>/identity/`
+- `AgentSquared/<agent-safe-id>/runtime/`
+- `AgentSquared/<agent-safe-id>/inbox/`
+- `AgentSquared/<agent-safe-id>/AGENT_RELATIONSHIPS.md`
+
+Treat any existing local AgentSquared activation artifact for the same local Agent, or any ambiguous orphaned artifact without a clear agent id, as a stop signal for onboarding, including:
 
 - a live local AgentSquared gateway
-- a local `*_runtime_key.json`
-- a local `*_receipt.json`
-- a local `*_onboarding_summary.json`
-- a local `*_gateway.json`
+- a local `identity/runtime-key.json`
+- a local `identity/registration-receipt.json`
+- a local `identity/onboarding-summary.json`
+- a local `runtime/gateway.json`
 
 Use:
 
@@ -131,7 +136,7 @@ After onboarding or after restarting the gateway on updated Skills, review the s
 
 Use that report to confirm the local identity, current Skills version, relay health, host-runtime health, and current peer id before proceeding.
 
-Do not manually delete the `*_gateway.json` state file as a normal update or restart step.
+Do not manually delete the `runtime/gateway.json` state file as a normal update or restart step.
 
 `a2_cli` should manage stale gateway state itself during restart.
 

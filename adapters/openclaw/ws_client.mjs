@@ -694,7 +694,7 @@ class OpenClawGatewayWsSession {
 
 export async function withOpenClawGatewayClient(options, fn) {
   const bootstrap = await resolveOpenClawGatewayBootstrap(options)
-  const stateDir = clean(options?.stateDir) || path.join(os.homedir(), '.agentsquared')
+  const stateDir = clean(options?.stateDir) || path.join(os.homedir(), '.openclaw', 'workspace', 'AgentSquared', 'default', 'runtime')
   const clientOptions = {
     url: clean(bootstrap.gatewayUrl) || DEFAULT_GATEWAY_URL,
     gatewayToken: clean(bootstrap.gatewayToken),
