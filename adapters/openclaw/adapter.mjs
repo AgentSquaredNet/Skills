@@ -67,6 +67,41 @@ function excerpt(text, maxLength = 140) {
   return compact.length > maxLength ? `${compact.slice(0, maxLength - 3)}...` : compact
 }
 
+function buildReceiverTurnOutline(turns = [], expectedTurnCount = 1) {
+  const normalizedTurns = Array.isArray(turns) ? turns : []
+  const turnMap = new Map()
+  let maxSeenTurnIndex = 0
+  for (const turn of normalizedTurns) {
+    const turnIndex = Number.parseInt(`${turn?.turnIndex ?? 0}`, 10) || 0
+    if (turnIndex > 0) {
+      maxSeenTurnIndex = Math.max(maxSeenTurnIndex, turnIndex)
+      turnMap.set(turnIndex, turn)
+    }
+  }
+  const maxTurnCount = Math.max(1, Number.parseInt(`${expectedTurnCount ?? 1}`, 10) || 1, maxSeenTurnIndex)
+  return Array.from({ length: maxTurnCount }, (_, index) => {
+    const displayTurnIndex = index + 1
+    const turn = turnMap.get(displayTurnIndex)
+    if (!turn) {
+      return {
+        turnIndex: displayTurnIndex,
+        summary: 'Earlier turn details were not preserved in the current live transcript, but this conversation continued.'
+      }
+    }
+    const inbound = excerpt(turn.inboundText)
+    const reply = excerpt(turn.replyText)
+    const isFinalTurn = Boolean(turn.finalize) || ['done', 'handoff'].includes(clean(turn.decision).toLowerCase())
+    return {
+      turnIndex: displayTurnIndex,
+      summary: [
+        inbound ? `remote said "${inbound}"` : 'remote sent a message',
+        reply ? `I replied "${reply}"` : 'I replied',
+        isFinalTurn && clean(turn.stopReason) ? `(final stop: ${clean(turn.stopReason)})` : ''
+      ].filter(Boolean).join(' ')
+    }
+  })
+}
+
 function reframeOpenClawAgentError(error, {
   openclawAgent = '',
   localAgentId = ''
@@ -824,7 +859,10 @@ export function createOpenClawAdapter({
         finalize: conversation.finalize,
         ownerSummary: safeOwnerSummary
       }) ?? null
-      const effectiveConversationTurns = updatedConversation?.turns?.length || conversation.turnIndex
+      const effectiveConversationTurns = Math.max(
+        updatedConversation?.turns?.length || 0,
+        conversation.turnIndex
+      ) || 1
       const ownerReport = buildReceiverBaseReport({
         localAgentId,
         remoteAgentId,
@@ -838,19 +876,7 @@ export function createOpenClawAdapter({
         skillSummary: safeOwnerSummary,
         conversationTurns: effectiveConversationTurns,
         stopReason: conversation.stopReason,
-        turnOutline: (updatedConversation?.turns ?? []).map((turn) => {
-          const inbound = excerpt(turn.inboundText)
-          const reply = excerpt(turn.replyText)
-          const isFinalTurn = Boolean(turn.finalize) || ['done', 'handoff'].includes(clean(turn.decision).toLowerCase())
-          return {
-            turnIndex: turn.turnIndex,
-            summary: [
-              inbound ? `remote said "${inbound}"` : 'remote sent a message',
-              reply ? `I replied "${reply}"` : 'I replied',
-              isFinalTurn && clean(turn.stopReason) ? `(final stop: ${clean(turn.stopReason)})` : ''
-            ].filter(Boolean).join(' ')
-          }
-        }),
+        turnOutline: buildReceiverTurnOutline(updatedConversation?.turns ?? [], effectiveConversationTurns),
         detailsAvailableInInbox: true,
         remoteSentAt,
         language: inferOwnerFacingLanguage(displayInboundText, safePeerReplyText, safeOwnerSummary),

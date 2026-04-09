@@ -1501,6 +1501,7 @@ async function commandMessageSend(args) {
     selectedSkill: skillHint,
     sentAt,
     originalText: text,
+    sentText: scrubOutboundText(turnLog[0]?.outboundText || outboundText),
     replyText,
     replyAt: new Date().toISOString(),
     peerSessionId: result.peerSessionId,
@@ -1537,15 +1538,6 @@ async function commandMessageSend(args) {
     : renderOwnerFacingReport(senderReport)
   const payload = {
     ok: true,
-    targetAgentId,
-    skillHint,
-    skillHintSource: skillDecision.source,
-    skillHintReason: skillDecision.reason,
-    ticketExpiresAt: result.ticket?.expiresAt ?? '',
-    peerSessionId: result.peerSessionId ?? '',
-    conversationKey,
-    reusedSession: Boolean(result.reusedSession),
-    continuationError,
     ownerDelivery,
     ownerReplyPolicy: deliveredToOwner ? 'suppress' : 'report',
     ownerFacingMode: deliveredToOwner ? 'suppress' : 'verbatim',
@@ -1558,6 +1550,15 @@ async function commandMessageSend(args) {
     stdoutLines: []
   }
   if (!deliveredToOwner) {
+    payload.targetAgentId = targetAgentId
+    payload.skillHint = skillHint
+    payload.skillHintSource = skillDecision.source
+    payload.skillHintReason = skillDecision.reason
+    payload.ticketExpiresAt = result.ticket?.expiresAt ?? ''
+    payload.peerSessionId = result.peerSessionId ?? ''
+    payload.conversationKey = conversationKey
+    payload.reusedSession = Boolean(result.reusedSession)
+    payload.continuationError = continuationError
     payload.turnCount = turnLog.length || 1
     payload.stopReason = finalRemoteControl.stopReason || localStopReason
     payload.conversationTurns = turnLog

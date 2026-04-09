@@ -133,6 +133,7 @@ async function main() {
     methods: [],
     lastAgentParams: null,
     lastSendParams: null,
+    sendCalls: [],
     lastSessionsParams: null,
     connectAuths: [],
     runResults: {}
@@ -360,6 +361,7 @@ async function main() {
       }
       if (frame.method === 'send') {
         fakeGatewayEvents.lastSendParams = frame.params
+        fakeGatewayEvents.sendCalls.push(frame.params)
         socket.send(JSON.stringify({
           type: 'res',
           id: frame.id,
@@ -1150,9 +1152,9 @@ process.exit(2)
       sentAt: '2026-03-28T12:00:00Z',
       localSkillInventory: 'Frequent skills/workflows: skill-a, skill-b\nRecent skills: skill-c\nTop highlights: skill-a automation'
     })
-    assert.match(mutualLearningOutboundTemplate, /Please start by listing the skills or workflows you use most often/i)
-    assert.match(mutualLearningOutboundTemplate, /the ones you installed recently/i)
-    assert.match(mutualLearningOutboundTemplate, /the ones that are most different from mine/i)
+    assert.match(mutualLearningOutboundTemplate, /First list your actual current skill names or workflow names/i)
+    assert.match(mutualLearningOutboundTemplate, /Then list any skills or workflows you installed or added recently/i)
+    assert.match(mutualLearningOutboundTemplate, /call out the 1-3 skills or workflows that seem most different/i)
     assert.match(mutualLearningOutboundTemplate, /Local Skill Snapshot/)
     assert.equal(peerResponseText({
       result: {
@@ -1210,6 +1212,7 @@ process.exit(2)
       selectedSkill: 'agent-mutual-learning',
       sentAt: '2026-03-28T12:00:00Z',
       originalText: 'compare skills',
+      sentText: 'List your current skills first, then compare them against my snapshot.',
       replyText: 'We found one useful delta.',
       replyAt: '2026-03-28T12:03:00Z',
       conversationKey: 'conversation_demo',
@@ -1228,6 +1231,7 @@ process.exit(2)
       timeZone: 'Asia/Shanghai',
       localTime: true
     })
+    assert.match(mutualLearningSenderReport.message, /> List your current skills first, then compare them against my snapshot\./)
     assert.match(mutualLearningSenderReport.message, /Overall summary[\s\S]*Found one remote-only skill worth evaluating/)
     assert.match(mutualLearningSenderReport.message, /Detailed conversation[\s\S]*Turn 2: Focused on one remote-only skill/)
     assert.match(mutualLearningSenderReport.message, /Actions taken[\s\S]*Different skill or workflow identified: feishu-bitable-sync/)
@@ -1545,6 +1549,45 @@ process.exit(2)
     assert.equal(fakeGatewayEvents.lastSendParams.accountId, 'default')
     assert.equal(fakeGatewayEvents.lastSendParams.threadId, 'thread-1')
     assert.equal(fs.existsSync(fakeOpenClawLog), false)
+
+    const duplicateFinalNotifyResult = await openclawNotifier({
+      item: {
+        inboundId: 'router-openclaw-2',
+        remoteAgentId: 'agent-b@owner-b',
+        peerSessionId: 'peer-openclaw'
+      },
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:agent-b@owner-b',
+      ownerReport: {
+        summary: 'duplicate final summary',
+        conversationKey: 'conv-final-dedupe',
+        finalize: true
+      },
+      peerResponse: openclawExecution.peerResponse,
+      notifyOwnerNow: true
+    })
+    assert.equal(duplicateFinalNotifyResult.deliveredToOwner, true)
+    const sendsAfterFirstFinal = fakeGatewayEvents.sendCalls.length
+    const suppressedDuplicateNotifyResult = await openclawNotifier({
+      item: {
+        inboundId: 'router-openclaw-3',
+        remoteAgentId: 'agent-b@owner-b',
+        peerSessionId: 'peer-openclaw'
+      },
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:agent-b@owner-b',
+      ownerReport: {
+        summary: 'duplicate final summary second time',
+        conversationKey: 'conv-final-dedupe',
+        finalize: true
+      },
+      peerResponse: openclawExecution.peerResponse,
+      notifyOwnerNow: true
+    })
+    assert.equal(suppressedDuplicateNotifyResult.delivered, true)
+    assert.equal(suppressedDuplicateNotifyResult.deliveredToOwner, false)
+    assert.equal(suppressedDuplicateNotifyResult.ownerDelivery.reason, 'duplicate-final-report-suppressed')
+    assert.equal(fakeGatewayEvents.sendCalls.length, sendsAfterFirstFinal)
 
     const cliHome = path.join(tempDir, 'cli-home')
     const cliProfileDir = path.join(cliHome, '.openclaw', 'workspace', 'AgentSquared', 'assistant_owner-alpha')
