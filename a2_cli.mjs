@@ -15,6 +15,14 @@ import { createHostRuntimeAdapter, detectHostRuntimeEnvironment } from './adapte
 import { inspectOpenClawLocalSkills, resolveOpenClawOutboundSkillHint, summarizeOpenClawConversation } from './adapters/openclaw/adapter.mjs'
 import { resolveOpenClawAgentSelection } from './adapters/openclaw/detect.mjs'
 import { defaultInboxDir } from './lib/gateway_inbox.mjs'
+import {
+  defaultGatewayLogFile,
+  defaultOnboardingSummaryFile,
+  defaultReceiptFile,
+  defaultRuntimeKeyFile,
+  resolveAgentSquaredDir,
+  resolveUserPath
+} from './lib/agentsquared_paths.mjs'
 import { buildSenderBaseReport, buildSenderFailureReport, buildSkillOutboundText, inferOwnerFacingLanguage, peerResponseText, renderOwnerFacingReport } from './lib/a2_message_templates.mjs'
 import { scrubOutboundText } from './lib/runtime_safety.mjs'
 import { buildStandardRuntimeOwnerLines, buildStandardRuntimeReport } from './lib/runtime_report.mjs'
@@ -139,10 +147,6 @@ async function pushCliOwnerReport({
       reason: clean(error?.message) || 'owner-report-delivery-failed'
     }
   }
-}
-
-function resolveUserPath(inputPath) {
-  return path.resolve(`${inputPath}`.replace(/^~(?=$|\/|\\)/, process.env.HOME || '~'))
 }
 
 function unique(values = []) {
@@ -400,20 +404,16 @@ async function executeLocalConversationTurn({
   })
 }
 
-function safeAgentId(value) {
-  return clean(value).replace(/[^a-zA-Z0-9_.-]+/g, '_')
-}
-
 function receiptFileFor(keyFile, fullName) {
-  return path.join(path.dirname(resolveUserPath(keyFile)), `${safeAgentId(fullName)}_receipt.json`)
+  return defaultReceiptFile(keyFile, fullName)
 }
 
 function onboardingSummaryFileFor(keyFile, fullName) {
-  return path.join(path.dirname(resolveUserPath(keyFile)), `${safeAgentId(fullName)}_onboarding_summary.json`)
+  return defaultOnboardingSummaryFile(keyFile, fullName)
 }
 
 function gatewayLogFileFor(keyFile, fullName) {
-  return path.join(path.dirname(resolveUserPath(keyFile)), `${safeAgentId(fullName)}_gateway.log`)
+  return defaultGatewayLogFile(keyFile, fullName)
 }
 
 function writeJson(filePath, payload) {
@@ -543,33 +543,6 @@ function assertSupportedActivationHostRuntime(detectedHostRuntime = null) {
 
 function isFlagToken(value) {
   return clean(value).startsWith('-')
-}
-
-function resolveHostWorkspaceDir(detectedHostRuntime = null) {
-  return clean(
-    detectedHostRuntime?.workspaceDir
-      ?? detectedHostRuntime?.overviewStatus?.agents?.agents?.find?.((item) => clean(item?.workspaceDir))?.workspaceDir
-      ?? detectedHostRuntime?.overviewStatus?.agents?.agents?.[0]?.workspaceDir
-  )
-}
-
-function resolveAgentSquaredDir(args = {}, detectedHostRuntime = null) {
-  const explicit = clean(args['agentsquared-dir'])
-  if (explicit) {
-    return resolveUserPath(explicit)
-  }
-  const workspaceDir = resolveHostWorkspaceDir(detectedHostRuntime)
-  if (workspaceDir) {
-    return path.join(resolveUserPath(workspaceDir), 'AgentSquared')
-  }
-  if (process.env.HOME) {
-    return path.join(process.env.HOME, '.agentsquared')
-  }
-  return path.join(process.cwd(), 'AgentSquared')
-}
-
-function defaultRuntimeKeyFile(agentName, args = {}, detectedHostRuntime = null) {
-  return path.join(resolveAgentSquaredDir(args, detectedHostRuntime), `${safeAgentId(agentName)}_runtime_key.json`)
 }
 
 function sleep(ms) {
