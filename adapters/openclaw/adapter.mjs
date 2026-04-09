@@ -90,13 +90,13 @@ function resolveFinalAssistantResultText({
   label = 'OpenClaw run',
   sessionKey = ''
 } = {}) {
-  const fromHistory = latestAssistantText(history, { runId })
-  if (clean(fromHistory)) {
-    return fromHistory
-  }
   const fromWaited = latestAssistantText(waited, { runId })
   if (clean(fromWaited)) {
     return fromWaited
+  }
+  const fromHistory = latestAssistantText(history, { runId })
+  if (clean(fromHistory)) {
+    return fromHistory
   }
   throw new Error(`${clean(label) || 'OpenClaw run'} did not produce a final assistant message for session ${clean(sessionKey) || 'unknown'}.`)
 }
