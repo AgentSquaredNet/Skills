@@ -349,6 +349,8 @@ async function executeLocalConversationTurn({
   skillHint,
   sharedSkill,
   inboundText,
+  originalOwnerText = '',
+  localSkillInventory = '',
   turnIndex,
   remoteControl = null
 }) {
@@ -377,7 +379,8 @@ async function executeLocalConversationTurn({
           ...(sharedSkill ? { sharedSkill } : {}),
           from: targetAgentId,
           to: localAgentId,
-          originalOwnerText: clean(inboundText),
+          originalOwnerText: clean(originalOwnerText) || clean(inboundText),
+          ...(clean(localSkillInventory) ? { localSkillInventory: clean(localSkillInventory) } : {}),
           conversationKey: clean(conversationKey),
           turnIndex,
           decision: normalizedRemoteControl.decision,
@@ -1355,6 +1358,8 @@ async function commandMessageSend(args) {
           skillHint,
           sharedSkill,
           inboundText: replyText,
+          originalOwnerText: text,
+          localSkillInventory: localSkillInventorySnapshot,
           turnIndex: nextTurnIndex,
           remoteControl
         })

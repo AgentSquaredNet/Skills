@@ -636,6 +636,7 @@ export function buildOpenClawTaskPrompt({
   const metadata = item?.request?.params?.metadata ?? {}
   const parsedEnvelope = parseAgentSquaredOutboundEnvelope(rawInboundText)
   const displayInboundText = clean(metadata?.originalOwnerText) || clean(parsedEnvelope?.ownerRequest) || rawInboundText
+  const originalOwnerGoal = clean(metadata?.originalOwnerText)
   const conversation = normalizeConversationControl(metadata, {
     defaultTurnIndex: 1,
     defaultDecision: 'done',
@@ -695,6 +696,12 @@ export function buildOpenClawTaskPrompt({
           clean(senderSkillInventory)
         ]
       : []),
+    ...(clean(originalOwnerGoal) && clean(originalOwnerGoal) !== clean(displayInboundText)
+      ? [
+          '- originalOwnerGoal:',
+          clean(originalOwnerGoal)
+        ]
+      : []),
     `- messageText: ${displayInboundText || '(empty)'}`,
     ...(clean(rawInboundText) && clean(rawInboundText) !== clean(displayInboundText)
       ? [
@@ -732,6 +739,7 @@ export function buildOpenClawTaskPrompt({
           '    b. Then compare those against the senderVerifiedSkillSnapshot above when available, and identify the concrete differences on your side.',
           '    c. Prefer actual different skills or workflows before discussing shared capabilities.',
           '    d. Once one promising different skill or workflow is found, stay focused on that single topic until the sender has enough information to explain what it does, why it matters, and how it differs from the sender side.',
+          '    e. Do not switch into a broad free-form architecture debate when the sender is still trying to finish the inventory-difference-learning flow.',
           '15. Prefer remote-only skills or recently installed skills before discussing overlapping capabilities.',
           '16. When a concrete skill is worth learning, explain what problem it solves, how it is used in practice, and what tradeoffs or lessons matter.',
           '17. If the overlap is already high and there is little actionable delta, say that plainly, but only after comparing against the verified local inventory rather than relying on conversational impression alone.',
