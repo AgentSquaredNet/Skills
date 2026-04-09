@@ -687,6 +687,14 @@ function classifyOutboundFailure(error = '', targetAgentId = '') {
   }
 }
 
+function extractFailureDetail(error = null) {
+  const raw = clean(typeof error === 'object' && error != null ? error.message : error)
+  if (!raw) {
+    return ''
+  }
+  return raw.replace(/^delivery status is unknown after the request was dispatched:\s*/i, '').trim()
+}
+
 
 async function registerAgent(args) {
   const apiBase = clean(args['api-base']) || 'https://api.agentsquared.net'
@@ -1391,6 +1399,7 @@ async function commandMessageSend(args) {
       confirmationLevel: failure.confirmationLevel,
       failureCode: failure.code,
       failureReason: failure.reason,
+      failureDetail: extractFailureDetail(error),
       nextStep: failure.nextStep,
       language: ownerLanguage,
       timeZone: ownerTimeZone,
