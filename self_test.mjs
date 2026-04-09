@@ -1708,6 +1708,80 @@ process.exit(2)
     assert.equal(appended.index.totalCount, 1)
     assert.equal(inboxStore.readIndex().recent[0].id, 'router3')
     assert.equal(inboxStore.readIndex().ownerPushAttemptedCount, 0)
+    const appendedDuplicateRequest = inboxStore.appendEntry({
+      agentId: 'agent-a@owner-a',
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:peer@test',
+      item: {
+        inboundId: 'router3-duplicate',
+        remoteAgentId: 'peer@Test',
+        peerSessionId: 'peer-router3',
+        request: {
+          id: 'same-request-id',
+          params: {
+            message: {
+              parts: [{ kind: 'text', text: 'Hello inbox duplicate' }]
+            }
+          }
+        }
+      },
+      ownerReport: {
+        summary: 'peer@Test sent: Hello inbox duplicate'
+      },
+      ownerDelivery: {
+        attempted: false,
+        delivered: false,
+        mode: 'inbox',
+        reason: 'audit-only'
+      },
+      peerResponse: {
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text: 'ack duplicate' }]
+        }
+      }
+    })
+    const appendedDuplicateRequestAgain = inboxStore.appendEntry({
+      agentId: 'agent-a@owner-a',
+      selectedSkill: 'friend-im',
+      mailboxKey: 'agent:peer@test',
+      item: {
+        inboundId: 'router3-duplicate-2',
+        remoteAgentId: 'peer@Test',
+        peerSessionId: 'peer-router3',
+        request: {
+          id: 'same-request-id',
+          params: {
+            message: {
+              parts: [{ kind: 'text', text: 'Hello inbox duplicate again' }]
+            }
+          }
+        }
+      },
+      ownerReport: {
+        summary: 'peer@Test sent: Hello inbox duplicate again'
+      },
+      ownerDelivery: {
+        attempted: false,
+        delivered: false,
+        mode: 'inbox',
+        reason: 'audit-only'
+      },
+      peerResponse: {
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text: 'ack duplicate again' }]
+        }
+      }
+    })
+    assert.equal(appendedDuplicateRequest.index.totalCount, 2)
+    assert.equal(appendedDuplicateRequestAgain.index.totalCount, 2)
+    assert.equal(
+      inboxStore.readIndex().recent.filter((item) => item.messageExcerpt.includes('duplicate')).length,
+      1
+    )
 
     const routerProtocol = '/agentsquared/router-test/1.0'
     const responderState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
@@ -2151,6 +2225,32 @@ process.exit(2)
     })
     assert.equal(retryOnEmptyAttempts, 1)
     assert.equal(emptyRetryResult.response?.result?.message?.parts?.[0]?.text, 'retried-ok')
+    const duplicatePendingState = createGatewayRuntimeState({ inboundTimeoutMs: 1000, peerSessionTTLms: 1000 })
+    const duplicatePendingFirst = await duplicatePendingState.enqueueInbound({
+      request: { id: 'req-duplicate-pending', params: { metadata: {} } },
+      remotePeerId: 'peer-1',
+      remoteAgentId: 'agent-b@owner-b',
+      peerSessionId: 'peer-session-1',
+      suggestedSkill: 'friend-im',
+      defaultSkill: 'friend-im'
+    })
+    const duplicatePendingSecond = await duplicatePendingState.enqueueInbound({
+      request: { id: 'req-duplicate-pending', params: { metadata: {} } },
+      remotePeerId: 'peer-1',
+      remoteAgentId: 'agent-b@owner-b',
+      peerSessionId: 'peer-session-1',
+      suggestedSkill: 'friend-im',
+      defaultSkill: 'friend-im'
+    })
+    assert.equal(duplicatePendingSecond.duplicateOfPending, true)
+    assert.equal(duplicatePendingSecond.inboundId, duplicatePendingFirst.inboundId)
+    assert.equal(duplicatePendingState.snapshot().queuedInbound, 1)
+    duplicatePendingState.respondInbound({
+      inboundId: duplicatePendingFirst.inboundId,
+      result: { ok: true }
+    })
+    const duplicatePendingResult = await duplicatePendingSecond.responsePromise
+    assert.deepEqual(duplicatePendingResult, { ok: true })
 
     let ambiguousAttempt = 0
     let ambiguousReadCount = 0
