@@ -496,8 +496,9 @@ export function buildOpenClawLocalSkillInventoryPrompt({
     '',
     'Return exactly one JSON object and nothing else.',
     'Schema:',
-    '{"frequentSkills":["..."],"recentSkills":["..."],"topHighlights":["..."],"inventorySummary":"short paragraph"}',
+    '{"allSkills":["..."],"frequentSkills":["..."],"recentSkills":["..."],"topHighlights":["..."],"inventorySummary":"short paragraph"}',
     'Rules:',
+    '- allSkills: concrete current skill or workflow names that are actually available locally; prefer real names over abstract capability labels',
     '- frequentSkills: the most-used local skills or workflows',
     '- recentSkills: recently installed or recently added skills if you can verify them, otherwise []',
     '- topHighlights: 1-3 concrete strengths worth introducing to a remote agent',
@@ -593,10 +594,12 @@ export function parseOpenClawConversationSummaryResult(text) {
 
 export function parseOpenClawLocalSkillInventoryResult(text) {
   const parsed = parseJsonOutput(text, 'OpenClaw local skill inventory')
+  const allSkills = asArray(parsed.allSkills).map((item) => clean(item)).filter(Boolean)
   const frequentSkills = asArray(parsed.frequentSkills).map((item) => clean(item)).filter(Boolean)
   const recentSkills = asArray(parsed.recentSkills).map((item) => clean(item)).filter(Boolean)
   const topHighlights = asArray(parsed.topHighlights).map((item) => clean(item)).filter(Boolean).slice(0, 3)
   return {
+    allSkills,
     frequentSkills,
     recentSkills,
     topHighlights,
@@ -608,11 +611,13 @@ export function formatOpenClawLocalSkillInventoryForPrompt(inventory = null) {
   if (!inventory || typeof inventory !== 'object') {
     return ''
   }
+  const allSkills = asArray(inventory.allSkills).map((item) => clean(item)).filter(Boolean)
   const frequent = asArray(inventory.frequentSkills).map((item) => clean(item)).filter(Boolean)
   const recent = asArray(inventory.recentSkills).map((item) => clean(item)).filter(Boolean)
   const highlights = asArray(inventory.topHighlights).map((item) => clean(item)).filter(Boolean)
   const summary = clean(inventory.inventorySummary)
   return [
+    ...(allSkills.length > 0 ? [`All skills/workflows: ${allSkills.join(', ')}`] : []),
     ...(frequent.length > 0 ? [`Frequent skills/workflows: ${frequent.join(', ')}`] : []),
     ...(recent.length > 0 ? [`Recent skills: ${recent.join(', ')}`] : []),
     ...(highlights.length > 0 ? [`Top highlights: ${highlights.join('; ')}`] : []),
@@ -736,30 +741,33 @@ export function buildOpenClawTaskPrompt({
       ? [
           '14. For agent-mutual-learning, use this order of operations:',
           '    a. First answer with a concrete skill inventory, not a generic capability summary.',
-          '    b. Explicitly list your current skill names or workflow names, especially the ones you use most often.',
-          '    c. Then list recently installed or recently added skills if you can verify them.',
-          '    d. Then compare those lists against the senderVerifiedSkillSnapshot above when available, and identify the concrete differences on your side.',
+          '    b. Explicitly list all your current skill names or workflow names first when you can verify them.',
+          '    c. Then separately list the ones you use most often.',
+          '    d. Then list recently installed or recently added skills if you can verify them.',
+          '    e. Then compare those lists against the senderVerifiedSkillSnapshot above when available, and identify the concrete differences on your side.',
           '    e. Prefer actual different skills or workflows before discussing shared capabilities.',
-          '    f. Once one promising different skill or workflow is found, stay focused on that single topic until the sender has enough information to explain what it does, why it matters, and how it differs from the sender side.',
-          '    g. Do not switch into a broad free-form architecture debate when the sender is still trying to finish the inventory-difference-learning flow.',
+          '    f. Prefer remote-only skills before remote-only workflow patterns when both are available.',
+          '    g. Once one promising different skill or workflow is found, stay focused on that single topic until the sender has enough information to explain what it does, why it matters, and how it differs from the sender side.',
+          '    h. Do not switch into a broad free-form architecture debate when the sender is still trying to finish the inventory-difference-learning flow.',
           '15. Prefer remote-only skills or recently installed skills before discussing overlapping capabilities.',
-          '16. When a concrete skill is worth learning, explain what problem it solves, how it is used in practice, and what tradeoffs or lessons matter.',
-          '17. If the overlap is already high and there is little actionable delta, say that plainly, but only after comparing against the verified local inventory rather than relying on conversational impression alone.',
-          '18. If the sender asked broadly, your first useful answer should still contain named skills or workflows. Do not answer only with abstract strengths like "I am good at enterprise integration" when you can name the actual skills.',
-          '19. ownerReport for agent-mutual-learning must stay compact and practical. Use this shape:',
+          '16. If the sender shared their all-skills list, explicitly compare against it and prefer items that are truly missing on the sender side.',
+          '17. When a concrete skill is worth learning, explain what problem it solves, how it is used in practice, and what tradeoffs or lessons matter.',
+          '18. If the overlap is already high and there is little actionable delta, say that plainly, but only after comparing against the verified local inventory rather than relying on conversational impression alone.',
+          '19. If the sender asked broadly, your first useful answer should still contain named skills or workflows. Do not answer only with abstract strengths like "I am good at enterprise integration" when you can name the actual skills.',
+          '20. ownerReport for agent-mutual-learning must stay compact and practical. Use this shape:',
           '    Overall summary: short overall takeaway only.',
           '    Detailed conversation: Turn 1, Turn 2, Turn 3 style short lines.',
           '    Actions taken: which different skills or workflows were identified, what they are for, and whether the exchange reached a clear conclusion.',
-          '20. Do not dump the full raw conversation into ownerReport. The inbox already keeps the detailed transcript.',
-          '21. When there is learning value, focus on one concrete pattern at a time: implementation detail, tradeoff, file/workflow pattern, or copyable idea.',
-          '22. If a candidate skill or workflow is worth adopting, make it easy for the sender to report back: name it clearly and explain what it does and why it is meaningfully different.',
-          '23. When there is no meaningful delta left, mark the turn as done with goal-satisfied or no-new-information.',
-          '24. For agent-mutual-learning, do not stop after generic pleasantries if there is still room to answer the current learning topic well.',
-          '25. Prefer one concrete answer at a time: explain one specific capability, workflow, or implementation detail clearly enough that the sender can decide whether to continue.',
-          '26. Strong answers include: what a specific skill is for, how it is implemented at a high level, what workflow pattern it supports, what tradeoffs were found, and what is worth copying locally.',
-          '27. If the peer asked broadly, answer with the single most promising remote-only or clearly better area first instead of ending early or opening a new unrelated question.',
+          '21. Do not dump the full raw conversation into ownerReport. The inbox already keeps the detailed transcript.',
+          '22. When there is learning value, focus on one concrete pattern at a time: implementation detail, tradeoff, file/workflow pattern, or copyable idea.',
+          '23. If a candidate skill or workflow is worth adopting, make it easy for the sender to report back: name it clearly and explain what it does and why it is meaningfully different.',
+          '24. When there is no meaningful delta left, mark the turn as done with goal-satisfied or no-new-information.',
+          '25. For agent-mutual-learning, do not stop after generic pleasantries if there is still room to answer the current learning topic well.',
+          '26. Prefer one concrete answer at a time: explain one specific capability, workflow, or implementation detail clearly enough that the sender can decide whether to continue.',
+          '27. Strong answers include: what a specific skill is for, how it is implemented at a high level, what workflow pattern it supports, what tradeoffs were found, and what is worth copying locally.',
+          '28. If the peer asked broadly, answer with the single most promising remote-only or clearly better area first instead of ending early or opening a new unrelated question.',
           ...(mutualLearningDefaultContinue
-            ? ['28. The current live conversation still has room to continue, so do not mark this turn as done unless you truly believe the learning value is exhausted or the remote side explicitly finalized.']
+            ? ['29. The current live conversation still has room to continue, so do not mark this turn as done unless you truly believe the learning value is exhausted or the remote side explicitly finalized.']
             : [])
         ]
       : []),

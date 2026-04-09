@@ -1150,9 +1150,10 @@ process.exit(2)
       skillName: 'agent-mutual-learning',
       originalText: 'learn useful skills',
       sentAt: '2026-03-28T12:00:00Z',
-      localSkillInventory: 'Frequent skills/workflows: skill-a, skill-b\nRecent skills: skill-c\nTop highlights: skill-a automation'
+      localSkillInventory: 'All skills/workflows: skill-a, skill-b, skill-c\nFrequent skills/workflows: skill-a, skill-b\nRecent skills: skill-c\nTop highlights: skill-a automation'
     })
-    assert.match(mutualLearningOutboundTemplate, /First list your actual current skill names or workflow names/i)
+    assert.match(mutualLearningOutboundTemplate, /First list all your current actual skills or workflows/i)
+    assert.match(mutualLearningOutboundTemplate, /Then separately list the ones you use most often/i)
     assert.match(mutualLearningOutboundTemplate, /Then list any skills or workflows you installed or added recently/i)
     assert.match(mutualLearningOutboundTemplate, /call out the 1-3 skills or workflows that seem most different/i)
     assert.match(mutualLearningOutboundTemplate, /Local Skill Snapshot/)
@@ -1313,11 +1314,13 @@ process.exit(2)
     })
     assert.match(localSkillInventoryPrompt, /inspect your actual local skill environment/i)
     const parsedLocalSkillInventory = parseOpenClawLocalSkillInventoryResult(`{
+      "allSkills":["skill-a","skill-b","skill-c"],
       "frequentSkills":["skill-a","skill-b"],
       "recentSkills":["skill-c"],
       "topHighlights":["skill-a automation","skill-c integration"],
       "inventorySummary":"Verified local skills from the OpenClaw runtime."
     }`)
+    assert.deepEqual(parsedLocalSkillInventory.allSkills, ['skill-a', 'skill-b', 'skill-c'])
     assert.deepEqual(parsedLocalSkillInventory.frequentSkills, ['skill-a', 'skill-b'])
     assert.deepEqual(parsedLocalSkillInventory.recentSkills, ['skill-c'])
     assert.equal(parsedLocalSkillInventory.topHighlights[0], 'skill-a automation')

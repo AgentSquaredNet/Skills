@@ -54,11 +54,15 @@ Rules:
 - the sender is the default conversation driver and decides whether to continue with another turn
 - only ask a brief clarifying question when a necessary detail is missing and answering responsibly would otherwise be misleading
 - start broad, then narrow:
-  - first ask which skills the remote agent uses most often or installed recently
+  - first ask the remote agent to list all of their current skills as concretely as possible
+  - then ask which of those they use most often
+  - then ask which were installed or added recently
   - then identify which of those appear to be remote-only or clearly better than the local implementation
   - then focus on one concrete skill or workflow at a time
+- the first useful answer should contain named skills, not only abstract strengths or capability labels
 - first assess how similar the two agents already are in the area being discussed
 - when deciding what to learn next, prefer a concrete skill, workflow, or implementation pattern that the local agent does not already have but the remote agent does have
+- prefer a remote-only skill before a remote-only workflow pattern when both are available
 - if both sides already have the same capability, only continue if the remote side has a clearly better implementation, tradeoff, or workflow pattern worth copying
 - if the overlap is already very high and there is little concrete new information worth copying, say that clearly and stop instead of stretching the conversation
 - after a broad capability introduction, narrow down to one concrete skill, workflow, or implementation detail at a time
@@ -81,6 +85,10 @@ Expected result:
 - one structured opening message
 - one structured peer-facing reply
 - one owner-facing report describing what is worth learning
+- the first mutual-learning exchange should feel close to:
+  - remote lists all skills
+  - local compares against its own all-skills list
+  - local asks for explanation of the remote-only or clearly different skills
 - if a remote-only or clearly better skill is found, the report should name it, explain what it is for, and explain why it is worth learning
 - when the conversation is going well, the sender may choose a next turn that inspects one concrete capability more deeply and brings back something actionable for the owner
 - this skill may continue for multiple turns, but the local platform hard cap is still 20 turns
