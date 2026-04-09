@@ -83,6 +83,24 @@ function reframeOpenClawAgentError(error, {
   return error
 }
 
+function resolveFinalAssistantResultText({
+  waited = null,
+  history = null,
+  runId = '',
+  label = 'OpenClaw run',
+  sessionKey = ''
+} = {}) {
+  const fromHistory = latestAssistantText(history, { runId })
+  if (clean(fromHistory)) {
+    return fromHistory
+  }
+  const fromWaited = latestAssistantText(waited, { runId })
+  if (clean(fromWaited)) {
+    return fromWaited
+  }
+  throw new Error(`${clean(label) || 'OpenClaw run'} did not produce a final assistant message for session ${clean(sessionKey) || 'unknown'}.`)
+}
+
 export async function resolveOpenClawOutboundSkillHint({
   localAgentId,
   targetAgentId,
@@ -149,10 +167,13 @@ export async function resolveOpenClawOutboundSkillHint({
       sessionKey,
       limit: 8
     }, timeoutMs)
-    const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
-    if (!resultText) {
-      throw new Error(`OpenClaw outbound skill decision did not produce a final assistant message for session ${sessionKey}.`)
-    }
+    const resultText = resolveFinalAssistantResultText({
+      waited,
+      history,
+      runId,
+      label: 'OpenClaw outbound skill decision',
+      sessionKey
+    })
     const parsed = parseOpenClawSkillDecisionResult(resultText, {
       availableSkills,
       defaultSkill: 'friend-im'
@@ -250,10 +271,13 @@ export async function summarizeOpenClawConversation({
       sessionKey,
       limit: 8
     }, timeoutMs)
-    const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
-    if (!resultText) {
-      throw new Error(`OpenClaw conversation summary did not produce a final assistant message for session ${sessionKey}.`)
-    }
+    const resultText = resolveFinalAssistantResultText({
+      waited,
+      history,
+      runId,
+      label: 'OpenClaw conversation summary',
+      sessionKey
+    })
     const parsed = parseOpenClawConversationSummaryResult(resultText)
     return {
       ...parsed,
@@ -326,10 +350,13 @@ export async function inspectOpenClawLocalSkills({
       sessionKey,
       limit: 8
     }, timeoutMs)
-    const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
-    if (!resultText) {
-      throw new Error(`OpenClaw local skill inventory did not produce a final assistant message for session ${sessionKey}.`)
-    }
+    const resultText = resolveFinalAssistantResultText({
+      waited,
+      history,
+      runId,
+      label: 'OpenClaw local skill inventory',
+      sessionKey
+    })
     const parsed = parseOpenClawLocalSkillInventoryResult(resultText)
     return {
       ...parsed,
@@ -758,10 +785,13 @@ export function createOpenClawAdapter({
         sessionKey,
         limit: 12
       }, timeoutMs)
-      const resultText = latestAssistantText(waited, { runId }) || latestAssistantText(history, { runId })
-      if (!resultText) {
-        throw new Error(`OpenClaw chat.history did not include a final assistant message for session ${sessionKey}.`)
-      }
+      const resultText = resolveFinalAssistantResultText({
+        waited,
+        history,
+        runId,
+        label: 'OpenClaw inbound task',
+        sessionKey
+      })
 
       const parsed = parseOpenClawTaskResult(resultText, {
         defaultSkill: selectedSkill,
