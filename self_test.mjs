@@ -1152,10 +1152,10 @@ process.exit(2)
       sentAt: '2026-03-28T12:00:00Z',
       localSkillInventory: 'All skills/workflows: skill-a, skill-b, skill-c\nFrequent skills/workflows: skill-a, skill-b\nRecent skills: skill-c\nTop highlights: skill-a automation'
     })
-    assert.match(mutualLearningOutboundTemplate, /First list all your current actual skills or workflows/i)
-    assert.match(mutualLearningOutboundTemplate, /Then separately list the ones you use most often/i)
-    assert.match(mutualLearningOutboundTemplate, /Then list any skills or workflows you installed or added recently/i)
-    assert.match(mutualLearningOutboundTemplate, /call out the 1-3 skills or workflows that seem most different/i)
+    assert.match(mutualLearningOutboundTemplate, /ALL SKILLS: list your current actual skill names or workflow names/i)
+    assert.match(mutualLearningOutboundTemplate, /MOST USED: list the ones you use most often/i)
+    assert.match(mutualLearningOutboundTemplate, /RECENT: list any skills or workflows you installed or added recently/i)
+    assert.match(mutualLearningOutboundTemplate, /DIFFERENT VS MY SNAPSHOT/i)
     assert.match(mutualLearningOutboundTemplate, /Local Skill Snapshot/)
     assert.equal(peerResponseText({
       result: {
@@ -1776,8 +1776,96 @@ process.exit(2)
         }
       }
     })
+    const appendedFinalConversation = inboxStore.appendEntry({
+      agentId: 'agent-a@owner-a',
+      selectedSkill: 'agent-mutual-learning',
+      mailboxKey: 'agent:peer@test',
+      item: {
+        inboundId: 'router-final-1',
+        remoteAgentId: 'peer@Test',
+        peerSessionId: 'peer-router3',
+        request: {
+          id: 'final-request-1',
+          params: {
+            metadata: {
+              conversationKey: 'conv-final-upsert'
+            },
+            message: {
+              parts: [{ kind: 'text', text: 'final one' }]
+            }
+          }
+        }
+      },
+      ownerReport: {
+        summary: 'first final summary',
+        conversationKey: 'conv-final-upsert',
+        finalize: true
+      },
+      ownerDelivery: {
+        attempted: true,
+        delivered: true,
+        mode: 'openclaw',
+        reason: ''
+      },
+      peerResponse: {
+        metadata: {
+          conversationKey: 'conv-final-upsert'
+        },
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text: 'ack final one' }]
+        }
+      }
+    })
+    const appendedFinalConversationAgain = inboxStore.appendEntry({
+      agentId: 'agent-a@owner-a',
+      selectedSkill: 'agent-mutual-learning',
+      mailboxKey: 'agent:peer@test',
+      item: {
+        inboundId: 'router-final-2',
+        remoteAgentId: 'peer@Test',
+        peerSessionId: 'peer-router3',
+        request: {
+          id: 'final-request-2',
+          params: {
+            metadata: {
+              conversationKey: 'conv-final-upsert'
+            },
+            message: {
+              parts: [{ kind: 'text', text: 'final two' }]
+            }
+          }
+        }
+      },
+      ownerReport: {
+        summary: 'second final summary',
+        conversationKey: 'conv-final-upsert',
+        finalize: true
+      },
+      ownerDelivery: {
+        attempted: true,
+        delivered: true,
+        mode: 'openclaw',
+        reason: ''
+      },
+      peerResponse: {
+        metadata: {
+          conversationKey: 'conv-final-upsert'
+        },
+        message: {
+          kind: 'message',
+          role: 'agent',
+          parts: [{ kind: 'text', text: 'ack final two' }]
+        }
+      }
+    })
     assert.equal(appendedDuplicateRequest.index.totalCount, 2)
     assert.equal(appendedDuplicateRequestAgain.index.totalCount, 2)
+    assert.equal(appendedFinalConversation.index.totalCount, 3)
+    assert.equal(appendedFinalConversationAgain.index.totalCount, 3)
+    assert.equal(appendedFinalConversation.entry.file, appendedFinalConversationAgain.entry.file)
+    assert.equal(inboxStore.findDeliveredFinalConversationReport('conv-final-upsert')?.ownerReport?.summary, 'second final summary')
     assert.equal(
       inboxStore.readIndex().recent.filter((item) => item.messageExcerpt.includes('duplicate')).length,
       1

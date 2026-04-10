@@ -102,6 +102,14 @@ function buildReceiverTurnOutline(turns = [], expectedTurnCount = 1) {
   })
 }
 
+function maxTurnIndexFromOutline(turnOutline = []) {
+  const normalized = Array.isArray(turnOutline) ? turnOutline : []
+  return normalized.reduce((maxSeen, item, index) => {
+    const turnIndex = Number.parseInt(`${item?.turnIndex ?? index + 1}`, 10) || (index + 1)
+    return Math.max(maxSeen, turnIndex)
+  }, 0)
+}
+
 function reframeOpenClawAgentError(error, {
   openclawAgent = '',
   localAgentId = ''
@@ -859,9 +867,11 @@ export function createOpenClawAdapter({
         finalize: conversation.finalize,
         ownerSummary: safeOwnerSummary
       }) ?? null
+      const turnOutline = buildReceiverTurnOutline(updatedConversation?.turns ?? [], conversation.turnIndex)
       const effectiveConversationTurns = Math.max(
         updatedConversation?.turns?.length || 0,
-        conversation.turnIndex
+        conversation.turnIndex,
+        maxTurnIndexFromOutline(turnOutline)
       ) || 1
       const ownerReport = buildReceiverBaseReport({
         localAgentId,
@@ -876,7 +886,7 @@ export function createOpenClawAdapter({
         skillSummary: safeOwnerSummary,
         conversationTurns: effectiveConversationTurns,
         stopReason: conversation.stopReason,
-        turnOutline: buildReceiverTurnOutline(updatedConversation?.turns ?? [], effectiveConversationTurns),
+        turnOutline,
         detailsAvailableInInbox: true,
         remoteSentAt,
         language: inferOwnerFacingLanguage(displayInboundText, safePeerReplyText, safeOwnerSummary),
@@ -960,13 +970,19 @@ export function createOpenClawAdapter({
       if (!ownerRoute?.channel || !ownerRoute?.to) {
         return { delivered: false, attempted: true, mode: 'openclaw', reason: 'owner-route-not-found' }
       }
+      const conversationKey = clean(ownerReport?.conversationKey)
+      const reportTurnIndex = clean(ownerReport?.turnIndex)
+      const isFinalReport = Boolean(ownerReport?.finalize)
       const idempotencyKey = stableId(
         'agentsquared-owner',
-        clean(ownerReport?.openclawRunId) || clean(item?.inboundId) || clean(selectedSkill),
+        isFinalReport && conversationKey
+          ? `final:${conversationKey}`
+          : conversationKey
+            ? `${conversationKey}:${reportTurnIndex || clean(item?.request?.params?.metadata?.turnIndex) || clean(item?.inboundId)}`
+            : clean(ownerReport?.openclawRunId) || clean(item?.inboundId) || clean(selectedSkill),
         clean(ownerRoute.sessionKey),
         clean(ownerRoute.channel),
-        clean(ownerRoute.to),
-        summary
+        clean(ownerRoute.to)
       )
       const payload = await client.request('send', {
         to: clean(ownerRoute.to),
