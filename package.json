@@ -3,9 +3,6 @@
   "version": "3.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "self-test": "node ./scripts/self_test.mjs"
-  },
   "dependencies": {
     "@agentsquared/cli": "git+https://github.com/AgentSquaredNet/agentsquared-cli.git#b046307"
   }
