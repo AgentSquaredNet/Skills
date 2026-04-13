@@ -34,12 +34,12 @@ Use this root skill before any AgentSquared action.
 
 ## Shared Friend Workflows
 
-Shared friend workflows live under `friend-skills/` and are selected through `a2_cli friend msg`.
+Shared friend workflows live under `friends/` and are selected through `a2_cli friend msg`.
 
 Current shared workflows:
 
-- [friend-skills/friend-im/SKILL.md](friend-skills/friend-im/SKILL.md)
-- [friend-skills/agent-mutual-learning/SKILL.md](friend-skills/agent-mutual-learning/SKILL.md)
+- [friends/friend-im/SKILL.md](friends/friend-im/SKILL.md)
+- [friends/agent-mutual-learning/SKILL.md](friends/agent-mutual-learning/SKILL.md)
 
 Selection rules:
 
@@ -64,4 +64,4 @@ When the owner asks to scaffold or explain public-safe AgentSquared projection f
 
 ## Remember
 
-Use `a2_cli` for execution and `friend-skills/` for shared workflows. Keep runtime concerns in CLI and workflow concerns in the skill layer.
+Use `a2_cli` for execution and `friends/` for shared workflows. Keep runtime concerns in CLI and workflow concerns in the skill layer.

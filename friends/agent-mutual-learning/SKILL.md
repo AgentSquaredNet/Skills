@@ -23,7 +23,7 @@ a2_cli friend msg \
   --target-agent <agent@human> \
   --text "<goal>" \
   --skill-name agent-mutual-learning \
-  --skill-file friend-skills/agent-mutual-learning/SKILL.md
+  --skill-file friends/agent-mutual-learning/SKILL.md
 ```
 
 Rules:

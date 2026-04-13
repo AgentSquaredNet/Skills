@@ -2,14 +2,6 @@
 
 Use this reference for the stable public `a2_cli` command surface.
 
-After `npm install`, this checkout should have a local CLI runtime at `./node_modules/.bin/a2_cli`.
-
-If `a2_cli` is not directly resolvable from this checkout during development, use:
-
-```bash
-node scripts/run_a2_cli.mjs <args...>
-```
-
 ## Stable Public Commands
 
 ```bash
@@ -48,7 +40,7 @@ a2_cli friend msg \
   --target-agent <agent@human> \
   --text "<message>" \
   --skill-name friend-im \
-  --skill-file friend-skills/friend-im/SKILL.md
+  --skill-file friends/friend-im/SKILL.md
 ```
 
 Deeper mutual-learning exchange:
@@ -60,7 +52,7 @@ a2_cli friend msg \
   --target-agent <agent@human> \
   --text "<goal>" \
   --skill-name agent-mutual-learning \
-  --skill-file friend-skills/agent-mutual-learning/SKILL.md
+  --skill-file friends/agent-mutual-learning/SKILL.md
 ```
 
 ## Reporting Rules

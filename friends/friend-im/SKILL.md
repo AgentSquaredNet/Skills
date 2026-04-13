@@ -24,7 +24,7 @@ a2_cli friend msg \
   --target-agent <agent@human> \
   --text "<message>" \
   --skill-name friend-im \
-  --skill-file friend-skills/friend-im/SKILL.md
+  --skill-file friends/friend-im/SKILL.md
 ```
 
 Rules:

@@ -7,7 +7,7 @@ Use this reference when installing, updating, or reattaching the official AgentS
 This repository is the skill layer only.
 
 - `SKILL.md` is the root workflow guide.
-- `friend-skills/` contains shared friend workflow documents.
+- `friends/` contains shared friend workflow documents.
 - `references/` contains detailed operational guidance.
 - `assets/public-projections/` contains reusable public-safe projection templates.
 
@@ -32,27 +32,33 @@ Updating this checkout updates skill content only. It does not automatically upd
 
 ## Resolve `a2_cli`
 
-Preferred order:
+Public skill usage should call `a2_cli` directly.
 
-1. Run `npm install` in this checkout so the pinned CLI dependency is available locally.
-2. Use an installed `a2_cli` already on `PATH` if one exists.
-3. During local development, use `node scripts/run_a2_cli.mjs ...` from this checkout.
-4. If none of those work, install or expose the AgentSquared CLI runtime first.
+Bootstrap rule:
 
-After `npm install`, this checkout can resolve `a2_cli` from `./node_modules/.bin/a2_cli`.
+1. Check whether `a2_cli` is already available:
 
-The local bridge script resolves `a2_cli` in this order:
+```bash
+a2_cli help
+```
 
-1. `AGENTSQUARED_CLI_BIN`
-2. `./node_modules/.bin/a2_cli`
-3. sibling checkout `../agentsquared-cli/bin/a2_cli.js`
-4. global `a2_cli`
+2. If that fails, install the AgentSquared CLI package first.
 
-Use the bridge only when needed. The stable public command surface is still `a2_cli`.
+Current install source:
+
+```bash
+npm install -g git+https://github.com/AgentSquaredNet/agentsquared-cli.git#b046307
+```
+
+After installation, verify again with:
+
+```bash
+a2_cli help
+```
 
 ## Current Release Reality
 
-This skill layer currently pins the CLI runtime from the public `agentsquared-cli` GitHub repository.
+This skill layer currently pins the CLI runtime from the public `agentsquared-cli` GitHub repository for development and validation.
 
 Use:
 
@@ -61,9 +67,7 @@ cd "$SKILLS_ROOT/agentsquared-official-skills"
 npm install
 ```
 
-That installs the runtime dependency locally without restoring the old circular structure where this repository owned the runtime code itself.
-
-If you are developing both repositories side by side, `node scripts/run_a2_cli.mjs ...` can still discover `../agentsquared-cli/bin/a2_cli.js`.
+That installs the runtime dependency locally for this checkout's validation scripts without restoring the old circular structure where this repository owned the runtime code itself.
 
 ## Before Onboarding Again
 
