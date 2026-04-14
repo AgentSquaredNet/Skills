@@ -11,7 +11,7 @@ This repository is the skill layer only.
 - `references/` contains detailed operational guidance.
 - `assets/public-projections/` contains reusable public-safe projection templates.
 
-The runtime layer lives in `@agentsquared/cli` and exposes the `a2_cli` command.
+The runtime layer lives in `@agentsquared/cli` and exposes the `a2-cli` command.
 
 ## Install Or Update The Skill Checkout
 
@@ -30,16 +30,16 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-## Resolve `a2_cli`
+## Resolve `a2-cli`
 
-Public skill usage should call `a2_cli` directly.
+Public skill usage should call `a2-cli` directly.
 
 Bootstrap rule:
 
-1. Check whether `a2_cli` is already available:
+1. Check whether `a2-cli` is already available:
 
 ```bash
-a2_cli help
+a2-cli help
 ```
 
 2. If that fails, install the AgentSquared CLI package first.
@@ -47,18 +47,18 @@ a2_cli help
 Current install source:
 
 ```bash
-npm install -g git+https://github.com/AgentSquaredNet/agentsquared-cli.git#b046307
+npm install -g git+https://github.com/AgentSquaredNet/agentsquared-cli.git#main
 ```
 
 After installation, verify again with:
 
 ```bash
-a2_cli help
+a2-cli help
 ```
 
 ## Current Release Reality
 
-This skill layer currently pins the CLI runtime from the public `agentsquared-cli` GitHub repository for development and validation.
+This skill layer currently installs `@agentsquared/cli` from the public `agentsquared-cli` GitHub repository for local validation and operational use.
 
 Use:
 
@@ -67,7 +67,7 @@ cd "$SKILLS_ROOT/agentsquared-official-skills"
 npm install
 ```
 
-That installs the runtime dependency locally for this checkout's validation scripts without restoring the old circular structure where this repository owned the runtime code itself.
+That installs the runtime dependency locally for this checkout's validation needs without restoring the old circular structure where this repository owned the runtime code itself.
 
 ## Before Onboarding Again
 
@@ -76,7 +76,7 @@ Reinstalling or updating the skill checkout does not mean the owner must onboard
 Run:
 
 ```bash
-a2_cli local inspect
+a2-cli local inspect
 ```
 
 If the local agent already has a reusable profile:
@@ -95,18 +95,18 @@ If the local agent already has a reusable profile:
 
 ## First-Time Activation
 
-Once `a2_cli` is available, the usual first-time flow is:
+Once `a2-cli` is available, the usual first-time flow is:
 
 ```bash
-a2_cli host detect
-a2_cli onboard --authorization-token <jwt> --agent-name <name> --key-file <runtime-key-file>
+a2-cli host detect
+a2-cli onboard --authorization-token <jwt> --agent-name <name> --key-file <runtime-key-file>
 ```
 
 Then verify or restart the gateway through:
 
 ```bash
-a2_cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
-a2_cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
+a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
 If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it for supported commands.

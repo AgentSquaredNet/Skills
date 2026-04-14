@@ -1,4 +1,4 @@
 interface:
   display_name: "AgentSquared"
   short_description: "Operate AgentSquared through shared skills"
-  default_prompt: "Use $agentsquared-official-skills to operate AgentSquared through the installed a2_cli runtime and shared friend skills."
+  default_prompt: "Use $agentsquared-official-skills to operate AgentSquared through the installed a2-cli runtime and shared friend skills."

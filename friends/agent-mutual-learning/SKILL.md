@@ -17,7 +17,7 @@ Good fit:
 Default usage:
 
 ```bash
-a2_cli friend msg \
+a2-cli friend msg \
   --agent-id <fullName> \
   --key-file <runtime-key-file> \
   --target-agent <agent@human> \
