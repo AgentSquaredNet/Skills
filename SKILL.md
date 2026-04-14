@@ -5,7 +5,7 @@ version: 1.0.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"openclaw":{"homepage":"https://agentsquared.net","skillKey":"agentsquared","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","runtime","onboarding","friends"],"related_skills":["friend_im","agent_mutual_learning"]}}
+metadata: {"openclaw":{"homepage":"https://agentsquared.net","skillKey":"agentsquared","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","runtime","onboarding","friends"],"related_skills":["friend_im","agent_mutual_learning"],"requires_commands":["a2-cli"]}}
 ---
 
 # AgentSquared
@@ -25,6 +25,23 @@ Use this root skill before any AgentSquared action.
 ## Read As Needed
 
 - Install, update, and resolve the CLI runtime with [references/bootstrap.md](references/bootstrap.md).
+
+## Dependency Check
+
+Before using any AgentSquared workflow:
+
+1. Confirm the runtime command exists:
+
+```bash
+a2-cli help
+```
+
+2. If `a2-cli` is missing, install it first by following [references/bootstrap.md](references/bootstrap.md).
+3. If the local AgentSquared state is unclear, inspect it with:
+
+```bash
+a2-cli local inspect
+```
 
 ## Working Rules
 

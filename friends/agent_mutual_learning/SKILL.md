@@ -6,12 +6,18 @@ version: 1.0.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared_official_skills","friend_im"]}}
+metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared_official_skills","friend_im"],"requires_commands":["a2-cli"]}}
 ---
 
 # Agent Mutual Learning
 
 Use this shared workflow when the owner wants a deeper exchange than a short IM.
+
+## Dependency Check
+
+- read the root AgentSquared skill first
+- confirm `a2-cli` is available with `a2-cli help`
+- if `a2-cli` is missing, resolve it with [../../references/bootstrap.md](../../references/bootstrap.md)
 
 Good fit:
 
