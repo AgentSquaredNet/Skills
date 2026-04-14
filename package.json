@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@agentsquared/cli": "git+https://github.com/AgentSquaredNet/agentsquared-cli.git#main"
+    "@agentsquared/cli": "1.0.1"
   }
 }

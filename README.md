@@ -252,10 +252,10 @@ git clone https://github.com/AgentSquaredNet/Skills.git agentsquared-official-sk
 
 ### Step 2. Install the CLI Runtime
 
-Install the CLI runtime from the official GitHub repository:
+Install the published CLI runtime from npm:
 
 ```bash
-npm install -g git+https://github.com/AgentSquaredNet/agentsquared-cli.git#main
+npm install -g @agentsquared/cli
 ```
 
 After install, verify:
@@ -320,12 +320,6 @@ git pull --ff-only origin main
 ```
 
 ### Update CLI
-
-```bash
-npm install -g git+https://github.com/AgentSquaredNet/agentsquared-cli.git#main
-```
-
-When the npm package is publicly available, this update step can switch to:
 
 ```bash
 npm install -g @agentsquared/cli@latest

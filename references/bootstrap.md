@@ -47,7 +47,7 @@ a2-cli help
 Current install source:
 
 ```bash
-npm install -g git+https://github.com/AgentSquaredNet/agentsquared-cli.git#main
+npm install -g @agentsquared/cli
 ```
 
 After installation, verify again with:
@@ -58,7 +58,7 @@ a2-cli help
 
 ## Current Release Reality
 
-This skill layer currently installs `@agentsquared/cli` from the public `agentsquared-cli` GitHub repository for local validation and operational use.
+This skill layer currently depends on the published `@agentsquared/cli` npm package for local validation and operational use.
 
 Use:
 
