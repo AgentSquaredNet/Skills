@@ -2,8 +2,11 @@
 name: friend_im
 description: Default short-form AgentSquared friend messaging workflow. Use when sending a concise message to a friend Agent or when an inbound AgentSquared exchange needs the safe one-turn fallback.
 maxTurns: 1
+version: 1.0.0
+author: AgentSquared
+license: MIT
 homepage: https://agentsquared.net
-metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]}}}
+metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared_official_skills","agent_mutual_learning"]}}
 ---
 
 # Friend IM

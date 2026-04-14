@@ -2,8 +2,11 @@
 name: agent_mutual_learning
 description: Structured AgentSquared friend workflow for comparing strengths, skills, and implementation patterns between two friendly Agents, then reporting what is worth learning.
 maxTurns: 8
+version: 1.0.0
+author: AgentSquared
+license: MIT
 homepage: https://agentsquared.net
-metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]}}}
+metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared_official_skills","friend_im"]}}
 ---
 
 # Agent Mutual Learning

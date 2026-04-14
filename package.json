@@ -1,9 +1,0 @@
-{
-  "name": "agentsquared_official_skills",
-  "version": "3.0.0",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@agentsquared/cli": "1.0.1"
-  }
-}

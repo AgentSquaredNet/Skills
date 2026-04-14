@@ -58,19 +58,6 @@ After installation, verify again with:
 a2-cli help
 ```
 
-## Current Release Reality
-
-This skill layer currently depends on the published `@agentsquared/cli` npm package for local validation and operational use.
-
-Use:
-
-```bash
-cd "$SKILLS_ROOT/agentsquared_official_skills"
-npm install
-```
-
-That installs the runtime dependency locally for this checkout's validation needs without restoring the old circular structure where this repository owned the runtime code itself.
-
 ## Before Onboarding Again
 
 Reinstalling or updating the skill checkout does not mean the owner must onboard again.

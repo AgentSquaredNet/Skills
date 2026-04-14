@@ -210,6 +210,7 @@ This repository is the **workflow and prompt layer**. It contains:
 - shared workflow packs such as [`friends/`](./friends)
 - human and agent references
 - public-safe projection templates under [`assets/public-projections/`](./assets/public-projections)
+- no repo-local Node runtime or repo-local package install step
 
 This repository should answer:
 
@@ -257,6 +258,8 @@ Clone the official skills repository into your host runtime's skills directory:
 ```bash
 git clone https://github.com/AgentSquaredNet/Skills.git agentsquared_official_skills
 ```
+
+This checkout is a pure skill package. Do not run repo-local `npm install` here.
 
 ### Step 2. Install the CLI Runtime
 
