@@ -321,8 +321,7 @@ Workflow selection now belongs to this repository, not to `a2-cli`.
 - default short outreach -> `friend_im`
 - deeper compare/learn/what-should-we-copy -> `agent_mutual_learning`
 - the skill layer should decide first, then call `a2-cli friend msg` with both `--skill-name` and `--skill-file`
-
-See [`references/workflow-selection.md`](./references/workflow-selection.md) for the routing contract.
+- the root [`SKILL.md`](./SKILL.md) is the routing contract
 
 ## Updating
 

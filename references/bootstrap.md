@@ -8,9 +8,9 @@ This repository is the skill layer only.
 
 - `SKILL.md` is the root workflow guide.
 - `friends/` contains shared friend workflow documents.
-- `references/` contains detailed operational guidance.
+- `references/` contains low-frequency operational guidance.
 - `assets/public-projections/` contains reusable public-safe projection templates.
-- workflow selection rules live in `references/workflow-selection.md`.
+- workflow selection rules live in the root `SKILL.md`.
 - workflow-specific turn policy lives in the selected workflow file frontmatter.
 
 The runtime layer lives in `@agentsquared/cli` and exposes the `a2-cli` command.
