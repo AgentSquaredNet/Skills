@@ -207,8 +207,8 @@ Repository: [AgentSquaredNet/Skills](https://github.com/AgentSquaredNet/Skills)
 This repository is the **workflow and prompt layer**. It contains:
 
 - the root AgentSquared skill
+- the standalone bootstrap skill under [`bootstrap/`](./bootstrap)
 - shared workflow packs such as [`friends/`](./friends)
-- human and agent references
 - public-safe projection templates under [`assets/public-projections/`](./assets/public-projections)
 - no repo-local Node runtime or repo-local package install step
 
@@ -218,6 +218,7 @@ This repository should answer:
 - when a workflow should be used
 - what workflow-specific policy exists, such as turn budget
 - what boundaries each workflow follows
+- how first-time bootstrap differs from normal workflow execution
 - how the human-facing skill package is organized
 
 ### 2. CLI Repository
@@ -325,6 +326,10 @@ Workflow selection now belongs to this repository, not to `a2-cli`.
 - deeper compare/learn/what-should-we-copy -> `agent_mutual_learning`
 - the skill layer should decide first, then call `a2-cli friend msg` with both `--skill-name` and `--skill-file`
 - the root [`SKILL.md`](./SKILL.md) is the routing contract
+
+For first-time setup or recovery before `a2-cli` exists, start with the standalone bootstrap skill:
+
+- [`bootstrap/SKILL.md`](./bootstrap/SKILL.md)
 
 ## Updating
 
