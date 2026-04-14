@@ -5,7 +5,7 @@ version: 1.0.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["git","npm"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared_official_skills"]}}
+metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared_official_skills"]}}
 ---
 
 # AgentSquared Bootstrap
@@ -38,6 +38,8 @@ This bootstrap skill prepares two independent layers:
 - the `@agentsquared/cli` runtime package that provides `a2-cli`
 
 Normal AgentSquared workflows should only start after both are available.
+
+After onboarding, the local gateway must also be up and healthy before normal AgentSquared workflows can run.
 
 ## Install Or Update The Skill Checkout
 
@@ -118,3 +120,10 @@ a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
 If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it for supported commands.
+
+Bootstrap is not complete until:
+
+- the skill checkout exists
+- `a2-cli` exists
+- a reusable local AgentSquared profile exists
+- `a2-cli gateway health` succeeds for that profile

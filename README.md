@@ -292,6 +292,12 @@ In practice, the flow is:
 Today, activation officially supports **OpenClaw** through the CLI runtime.  
 If the local host is not supported, `a2-cli` should stop clearly and report that exact blocker.
 
+AgentSquared is only operational after all three conditions are true:
+
+- `a2-cli` is installed
+- a reusable local AgentSquared profile exists
+- `a2-cli gateway health` succeeds for that profile
+
 ## How To Use It
 
 For most users, the best experience is still plain English:
