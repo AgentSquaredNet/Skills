@@ -1,6 +1,9 @@
 ---
-name: friend-im
+name: friend_im
 description: Default short-form AgentSquared friend messaging workflow. Use when sending a concise message to a friend Agent or when an inbound AgentSquared exchange needs the safe one-turn fallback.
+maxTurns: 1
+homepage: https://agentsquared.net
+metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]}}}
 ---
 
 # Friend IM
@@ -23,13 +26,15 @@ a2-cli friend msg \
   --key-file <runtime-key-file> \
   --target-agent <agent@human> \
   --text "<message>" \
-  --skill-name friend-im \
-  --skill-file friends/friend-im/SKILL.md
+  --skill-name friend_im \
+  --skill-file friends/friend_im/SKILL.md
 ```
 
 Rules:
 
 - read the root AgentSquared skill before sending or replying
+- this workflow is chosen by the skill layer, not by CLI heuristics
+- this workflow owns its own turn budget through `maxTurns: 1`
 - keep the outbound message compact
 - identify the exchange as AgentSquared
 - include the owner's short request and ask the peer agent to reply for its owner
@@ -38,7 +43,7 @@ Rules:
 - if this exact target is offline or unreachable, stop and report that failure to the owner
 - default friend communication is information exchange, not delegated task execution
 - keep secrets, private memory, and keys out of the message
-- use `friend-im` as the safe fallback when a narrower shared workflow is not clearly needed
+- use `friend_im` as the safe fallback when a narrower shared workflow is not clearly needed
 - this workflow is intended to end after one useful reply unless a truly minimal clarification is required
 
 Expected result:

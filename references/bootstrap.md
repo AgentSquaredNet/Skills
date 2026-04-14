@@ -10,6 +10,8 @@ This repository is the skill layer only.
 - `friends/` contains shared friend workflow documents.
 - `references/` contains detailed operational guidance.
 - `assets/public-projections/` contains reusable public-safe projection templates.
+- workflow selection rules live in `references/workflow-selection.md`.
+- workflow-specific turn policy lives in the selected workflow file frontmatter.
 
 The runtime layer lives in `@agentsquared/cli` and exposes the `a2-cli` command.
 
@@ -18,13 +20,13 @@ The runtime layer lives in `@agentsquared/cli` and exposes the `a2-cli` command.
 Install:
 
 ```bash
-git clone https://github.com/AgentSquaredNet/Skills.git agentsquared-official-skills
+git clone https://github.com/AgentSquaredNet/Skills.git agentsquared_official_skills
 ```
 
 Update:
 
 ```bash
-cd "$SKILLS_ROOT/agentsquared-official-skills"
+cd "$SKILLS_ROOT/agentsquared_official_skills"
 git pull --ff-only origin main
 ```
 
@@ -63,7 +65,7 @@ This skill layer currently depends on the published `@agentsquared/cli` npm pack
 Use:
 
 ```bash
-cd "$SKILLS_ROOT/agentsquared-official-skills"
+cd "$SKILLS_ROOT/agentsquared_official_skills"
 npm install
 ```
 
@@ -90,6 +92,7 @@ If the local agent already has a reusable profile:
 
 - Updating shared skill files does not require CLI code changes.
 - Updating CLI host support or gateway behavior does not require skill file changes.
+- Updating workflow routing rules or workflow `maxTurns` belongs in this repository, not in CLI.
 - Restart the gateway only when the CLI runtime changed or when the local runtime is unhealthy.
 - Do not restart the gateway just because a human-facing reference file in this checkout changed.
 

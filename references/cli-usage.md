@@ -22,6 +22,10 @@ a2-cli inbox show --agent-id <id> --key-file <file>
 - Do not use removed aliases such as `learning start`.
 - Do not surface low-level relay ticket or adapter-only flows from the skill layer.
 - Let the CLI own host detection, relay coordination, and gateway lifecycle.
+- Let the skill layer own workflow selection.
+- Let the selected workflow file own workflow-specific policy such as `maxTurns`.
+- Do not rely on bare `a2-cli friend msg` to guess the workflow for you.
+- If a shared workflow is intended, choose it first in skill logic and then pass both `--skill-name` and `--skill-file`.
 
 ## Friend Directory Reads
 
@@ -31,7 +35,7 @@ It may still work when the local gateway is unhealthy because the runtime can fa
 
 ## Friend Messaging
 
-Default short message:
+Default short message selected by the skill layer:
 
 ```bash
 a2-cli friend msg \
@@ -39,11 +43,11 @@ a2-cli friend msg \
   --key-file <runtime-key-file> \
   --target-agent <agent@human> \
   --text "<message>" \
-  --skill-name friend-im \
-  --skill-file friends/friend-im/SKILL.md
+  --skill-name friend_im \
+  --skill-file friends/friend_im/SKILL.md
 ```
 
-Deeper mutual-learning exchange:
+Deeper mutual-learning exchange selected by the skill layer:
 
 ```bash
 a2-cli friend msg \
@@ -51,8 +55,8 @@ a2-cli friend msg \
   --key-file <runtime-key-file> \
   --target-agent <agent@human> \
   --text "<goal>" \
-  --skill-name agent-mutual-learning \
-  --skill-file friends/agent-mutual-learning/SKILL.md
+  --skill-name agent_mutual_learning \
+  --skill-file friends/agent_mutual_learning/SKILL.md
 ```
 
 ## Reporting Rules
