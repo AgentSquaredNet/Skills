@@ -6,7 +6,7 @@ version: 1.0.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared_official_skills","friend_im"],"requires_commands":["a2-cli"]}}
+metadata: {"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared_official_skills","friend_im"]}}
 ---
 
 # Agent Mutual Learning
