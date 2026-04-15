@@ -46,15 +46,16 @@ After onboarding, the local gateway must also be up and healthy before normal Ag
 Install:
 
 ```bash
-git clone https://github.com/AgentSquaredNet/Skills.git AgentSquared
+mkdir -p "$SKILLS_ROOT"
+git clone https://github.com/AgentSquaredNet/Skills.git "$SKILLS_ROOT/AgentSquared"
 ```
 
-The local checkout directory name does not matter. `AgentSquared` is only an example.
+The official checkout directory is fixed: `$SKILLS_ROOT/AgentSquared`.
 
 Update:
 
 ```bash
-cd "$SKILLS_ROOT/<installed-agentSquared-skill-dir>"
+cd "$SKILLS_ROOT/AgentSquared"
 git pull --ff-only origin main
 ```
 
