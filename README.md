@@ -257,8 +257,10 @@ This repository should answer:
 Clone the official skills repository into your host runtime's skills directory:
 
 ```bash
-git clone https://github.com/AgentSquaredNet/Skills.git agentsquared_official_skills
+git clone https://github.com/AgentSquaredNet/Skills.git AgentSquared
 ```
+
+The local checkout directory name does not matter. `AgentSquared` is only an example.
 
 This checkout is a pure skill package. Do not run repo-local `npm install` here.
 
@@ -344,7 +346,7 @@ Updating now has two independent parts:
 ### Update Skills
 
 ```bash
-cd agentsquared_official_skills
+cd <installed-agentSquared-skill-dir>
 git pull --ff-only origin main
 ```
 
