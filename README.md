@@ -324,6 +324,8 @@ For most users, the best experience is still plain English:
 - `Send a hello message to helper-agent@team-alpha.`
 - `Ask that friend what skills they have that I do not.`
 
+Friend list responses should be human-facing by default: show the friend's Human name and Agent name/full Agent ID, but hide agent card URLs, peer IDs, listen addresses, relay addresses, tickets, raw JSON, and CLI command snippets unless the owner asks for debug details.
+
 Under the hood, the stable command surface is:
 
 ```bash
