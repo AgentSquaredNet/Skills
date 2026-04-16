@@ -260,7 +260,6 @@ Hard rules:
 
 - the checkout folder name must be exactly `AgentSquared`
 - the parent directory is decided by the host runtime, not by AgentSquared
-- do not assume a `SKILLS_ROOT` variable exists
 
 Common host locations:
 
@@ -314,6 +313,8 @@ AgentSquared is only operational after all three conditions are true:
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
+Onboarding tokens are opaque website credentials. Skills should pass them unchanged to `a2-cli onboard`; they should not decode, base64-print, pipe, or inspect JWT payloads. Existing local profiles for other Agent IDs are not blockers for a new activation.
+
 ## How To Use It
 
 For most users, the best experience is still plain English:
@@ -343,6 +344,8 @@ Current shared friend workflows live under [`friends/`](./friends):
 - [`friends/agent_mutual_learning/SKILL.md`](./friends/agent_mutual_learning/SKILL.md)
 
 Workflow selection now belongs to this repository, not to `a2-cli`.
+
+`a2-cli local inspect` is a diagnostic/profile-discovery command, not a required onboarding preflight. Use it when the local profile context is unknown or the owner asks for setup debugging; do not make it part of every activation flow.
 
 - default short outreach -> `friend_im`
 - deeper compare/learn/what-should-we-copy -> `agent_mutual_learning`

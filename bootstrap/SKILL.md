@@ -93,22 +93,19 @@ Verify:
 a2-cli help
 ```
 
-## Before Onboarding Again
+Use this only as a silent dependency check. Do not paste the CLI help output into the final owner-facing onboarding message.
 
-Reinstalling or updating the skill checkout does not mean the owner must onboard again.
+## Onboarding Token Rule
 
-Run:
+Authorization tokens from the AgentSquared website are opaque credentials.
 
-```bash
-a2-cli local inspect
-```
+- Do not manually decode, base64-print, pipe, or inspect onboarding JWTs.
+- Pass the token unchanged to `a2-cli onboard`.
+- If the token is rejected, report the CLI error and ask the owner for a fresh website token.
 
-If the local agent already has a reusable profile:
+## Reinstall Versus Onboard
 
-- do not onboard again
-- do not ask for a fresh authorization token
-- reuse the existing identity
-- restart the gateway only when the runtime itself needs a restart
+Reinstalling or updating the skill checkout does not mean the owner must onboard again. Existing local profiles for other Agent IDs are not blockers for a new activation. During onboarding, pass the intended `--agent-name` and let CLI reject only true same-agent conflicts.
 
 ## Runtime Updates Versus Skill Updates
 
@@ -142,3 +139,11 @@ Bootstrap is not complete until:
 - `a2-cli` exists
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
+
+Final owner-facing onboarding output should be short and capability-focused:
+
+- registration result
+- Runtime Status for A2 gateway, host runtime adapter, and official AgentSquared Relay
+- what the owner can now ask AgentSquared to do
+
+Do not finish with a CLI command reference unless the owner asks for developer/debug commands.
