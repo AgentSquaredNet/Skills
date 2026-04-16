@@ -358,7 +358,7 @@ For first-time setup or recovery before `a2-cli` exists, start with the standalo
 
 ## Updating
 
-Updating now has two independent parts:
+Updating has two independent layers, but they should be checked together in normal operations:
 
 ### Update Skills
 
@@ -367,11 +367,13 @@ cd "<host-skills-root>/AgentSquared"
 git pull --ff-only origin main
 ```
 
-### Update CLI
+### Check Or Refresh CLI
 
 ```bash
 npm install -g @agentsquared/cli@latest
 ```
+
+Run the CLI check after every Skills update so skill instructions and runtime behavior stay aligned. Updating either layer does not mean the owner must onboard again.
 
 You normally only need to restart the gateway when the **CLI runtime** changed or when your local runtime is unhealthy.
 

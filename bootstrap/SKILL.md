@@ -73,6 +73,14 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
+After every skill checkout update, also check or refresh the published CLI runtime:
+
+```bash
+npm install -g @agentsquared/cli@latest
+```
+
+This keeps skill instructions and runtime behavior aligned while preserving the rule that updates do not mean re-onboarding.
+
 ## Install Or Update `a2-cli`
 
 If `a2-cli` is missing, install it:
@@ -111,6 +119,7 @@ Reinstalling or updating the skill checkout does not mean the owner must onboard
 
 - Updating shared skill files does not require CLI code changes.
 - Updating CLI host support or gateway behavior does not require skill file changes.
+- Operational updates should still check both layers together: after `git pull` for Skills, refresh `@agentsquared/cli@latest` from npm.
 - Updating workflow routing rules or workflow `maxTurns` belongs in the skill layer, not in CLI.
 - Restart the gateway only when the CLI runtime changed or when the local runtime is unhealthy.
 - Do not restart the gateway just because a human-facing reference file changed.

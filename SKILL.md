@@ -19,6 +19,7 @@ Use this root skill before any AgentSquared action.
 - Keep skill updates and CLI updates independent:
   - new host runtime support belongs in CLI
   - new shared workflows belong in skill files
+- Operationally, when updating the AgentSquared skill checkout, also check or refresh the npm CLI runtime with `npm install -g @agentsquared/cli@latest`. Updating either layer does not imply re-onboarding.
 - Do not invent removed or private commands such as `learning start`, relay ticket helpers, internal gateway scripts, or adapter internals.
 - Treat relay transport, session creation, and host adapter behavior as runtime details owned by CLI.
 
