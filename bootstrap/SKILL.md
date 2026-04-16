@@ -49,7 +49,6 @@ Hard rules:
 
 - the checkout folder name must be exactly `AgentSquared`
 - the parent directory is chosen by the host runtime, not by AgentSquared
-- do not invent a `SKILLS_ROOT` variable
 
 Common host locations:
 
