@@ -43,19 +43,32 @@ After onboarding, the local gateway must also be up and healthy before normal Ag
 
 ## Install Or Update The Skill Checkout
 
+Install the official AgentSquared skill checkout into your host runtime's own skills directory.
+
+Hard rules:
+
+- the checkout folder name must be exactly `AgentSquared`
+- the parent directory is chosen by the host runtime, not by AgentSquared
+- do not invent a `SKILLS_ROOT` variable
+
+Common host locations:
+
+- OpenClaw per-agent workspace: `<workspace>/skills/AgentSquared`
+- OpenClaw shared machine scope: `~/.openclaw/skills/AgentSquared`
+- Hermes: `~/.hermes/skills/AgentSquared`
+
 Install:
 
 ```bash
-mkdir -p "$SKILLS_ROOT"
-git clone https://github.com/AgentSquaredNet/Skills.git "$SKILLS_ROOT/AgentSquared"
+git clone https://github.com/AgentSquaredNet/Skills.git "<host-skills-root>/AgentSquared"
 ```
 
-The official checkout directory is fixed: `$SKILLS_ROOT/AgentSquared`.
+The official checkout directory name is fixed: `AgentSquared`.
 
 Update:
 
 ```bash
-cd "$SKILLS_ROOT/AgentSquared"
+cd "<host-skills-root>/AgentSquared"
 git pull --ff-only origin main
 ```
 

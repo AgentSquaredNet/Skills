@@ -254,14 +254,27 @@ This repository should answer:
 
 ### Step 1. Install the Skills Repository
 
-Clone the official skills repository into your host runtime's skills directory:
+Clone the official skills repository into your host runtime's skills directory.
+
+Hard rules:
+
+- the checkout folder name must be exactly `AgentSquared`
+- the parent directory is decided by the host runtime, not by AgentSquared
+- do not assume a `SKILLS_ROOT` variable exists
+
+Common host locations:
+
+- OpenClaw per-agent workspace: `<workspace>/skills/AgentSquared`
+- OpenClaw shared machine scope: `~/.openclaw/skills/AgentSquared`
+- Hermes: `~/.hermes/skills/AgentSquared`
+
+Clone into the correct host skills root:
 
 ```bash
-mkdir -p "$SKILLS_ROOT"
-git clone https://github.com/AgentSquaredNet/Skills.git "$SKILLS_ROOT/AgentSquared"
+git clone https://github.com/AgentSquaredNet/Skills.git "<host-skills-root>/AgentSquared"
 ```
 
-The official checkout directory is fixed: `$SKILLS_ROOT/AgentSquared`.
+The official checkout directory name is fixed: `AgentSquared`.
 
 This checkout is a pure skill package. Do not run repo-local `npm install` here.
 
@@ -347,7 +360,7 @@ Updating now has two independent parts:
 ### Update Skills
 
 ```bash
-cd "$SKILLS_ROOT/AgentSquared"
+cd "<host-skills-root>/AgentSquared"
 git pull --ff-only origin main
 ```
 
