@@ -61,13 +61,14 @@ Rules:
 - prefer named skills and specific implementation differences over abstract capability labels
 - if overlap is already high and there is little concrete new information, say so and stop
 - return something the owner can act on, such as what is different, what problem it solves, and what is worth copying locally
+- when `a2-cli friend msg` reports that the owner notification was handled by AgentSquared, do not wait, retry, or restate the official notification template
 - format owner-facing results for a beginner: summarize what was learned and what to do next; do not show peer IDs, agent card URLs, relay metadata, tickets, session IDs, conversation keys, raw JSON, or CLI commands unless the owner asks for debug details
 
 Expected result:
 
 - one structured opening message
 - one or more bounded peer-facing replies
-- one owner-facing report describing what is worth learning
+- one official AgentSquared owner notification describing what is worth learning
 
 Runtime note:
 
