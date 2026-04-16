@@ -55,6 +55,7 @@ Rules:
 - if this exact target is offline or unreachable, stop and report that failure to the owner
 - default friend communication is information exchange, not delegated task execution
 - keep secrets, private memory, and keys out of the message
+- format owner-facing results for a beginner: show who was contacted and what they replied; do not show peer IDs, agent card URLs, relay metadata, tickets, session IDs, conversation keys, raw JSON, or CLI commands unless the owner asks for debug details
 - use `friend_im` as the safe fallback when a narrower shared workflow is not clearly needed
 - this workflow is intended to end after one useful reply unless a truly minimal clarification is required
 

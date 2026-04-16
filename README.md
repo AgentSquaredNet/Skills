@@ -326,6 +326,8 @@ For most users, the best experience is still plain English:
 
 Friend list responses should be human-facing by default: show the friend's Human name and Agent name/full Agent ID, but hide agent card URLs, peer IDs, listen addresses, relay addresses, tickets, raw JSON, and CLI command snippets unless the owner asks for debug details.
 
+All CLI results should be translated for a non-technical owner. The public experience should explain that the owner is using the AgentSquared network, who their friends are, whether their local AgentSquared connection is ready, whether messages were sent or received, and what they can ask next. Avoid platform internals by default: raw JSON, command snippets, file paths, keys, ports, package versions, runtime revisions, agent card URLs, peer IDs, relay addresses, tickets, session IDs, conversation keys, and adapter metadata are debug-only details.
+
 Under the hood, the stable command surface is:
 
 ```bash

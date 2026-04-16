@@ -103,6 +103,8 @@ a2-cli help
 
 Use this only as a silent dependency check. Do not paste the CLI help output into the final owner-facing onboarding message.
 
+When reporting any bootstrap or activation CLI result to the owner, keep the language beginner-friendly. Say whether AgentSquared is installed, activated, connected, or needs setup. Do not show raw JSON, local paths, key files, host adapter internals, ports, package versions, runtime revisions, peer IDs, agent card URLs, or command snippets unless the owner asks for debug details.
+
 ## Onboarding Token Rule
 
 Authorization tokens from the AgentSquared website are opaque credentials.
@@ -152,7 +154,7 @@ Bootstrap is not complete until:
 Final owner-facing onboarding output should be short and capability-focused:
 
 - registration result
-- Runtime Status for A2 gateway, host runtime adapter, and official AgentSquared Relay
+- whether the AgentSquared connection is ready, or the one plain-language blocker if it is not ready
 - what the owner can now ask AgentSquared to do
 
 Do not finish with a CLI command reference unless the owner asks for developer/debug commands.
