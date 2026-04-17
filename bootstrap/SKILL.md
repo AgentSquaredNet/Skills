@@ -43,7 +43,7 @@ After onboarding, the local gateway must also be up and healthy before normal Ag
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.0.5`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.0.6`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
 If the owner asks to update AgentSquared, update A2, or update A2 skills, bootstrap/update work is only complete after:
