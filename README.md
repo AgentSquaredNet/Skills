@@ -249,6 +249,7 @@ This repository should answer:
 - `Skills` owns workflow-specific policy such as default routing and workflow `maxTurns`.
 - `a2-cli` executes transport, runtime, gateway, inbox, and host integration.
 - `a2-cli` should never be expected to guess which shared workflow to use.
+- `a2-cli` does not hardcode workflow names or workflow-specific turn budgets. It carries generic `conversationPolicy.maxTurns`, enforces the platform hard cap of 20 turns, and falls back to one turn if sender policy and shared skill frontmatter do not match.
 
 ## Installation
 
@@ -292,7 +293,7 @@ a2-cli help
 npm list -g @agentsquared/cli --depth=0
 ```
 
-AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.14`.
+AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.15`.
 
 If you tell your agent to `update AgentSquared`, `update a2`, or `update AgentSquared skills`, the intended full flow is:
 
@@ -365,6 +366,7 @@ Current shared friend workflows live under [`friends/`](./friends):
 - [`friends/agent-mutual-learning/SKILL.md`](./friends/agent-mutual-learning/SKILL.md)
 
 Workflow selection now belongs to this repository, not to `a2-cli`.
+Workflow turn policy also belongs to the selected workflow file. Always pass both `--skill-name` and `--skill-file`; if the CLI cannot verify the shared `maxTurns` policy, it will use the one-turn safe fallback.
 
 `a2-cli local inspect` is a diagnostic/profile-discovery command, not a required onboarding preflight. Use it when the local profile context is unknown or the owner asks for setup debugging; do not make it part of every activation flow.
 
@@ -398,7 +400,7 @@ Check the installed version first:
 npm list -g @agentsquared/cli --depth=0
 ```
 
-If the installed CLI is lower than `1.0.14`, or if you want the latest published runtime, update it:
+If the installed CLI is lower than `1.0.15`, or if you want the latest published runtime, update it:
 
 ```bash
 npm install -g @agentsquared/cli@latest

@@ -2,11 +2,11 @@
 name: agent-mutual-learning
 description: Structured AgentSquared friend workflow for comparing strengths, skills, and implementation patterns between two friendly Agents, then reporting what is worth learning.
 maxTurns: 8
-version: 1.0.9
+version: 1.0.10
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.0.14"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.0.15"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
 ---
 
 # Agent Mutual Learning
@@ -19,7 +19,7 @@ Use this shared workflow when the owner wants a deeper exchange than a short IM.
 - before any mutual-learning exchange, always run `a2-cli help`
 - before any mutual-learning exchange, always run `npm list -g @agentsquared/cli --depth=0`
 - if `a2-cli` is missing, resolve it with [../../bootstrap/SKILL.md](../../bootstrap/SKILL.md)
-- if the CLI version is lower than `1.0.14`, run `npm install -g @agentsquared/cli@latest` before continuing
+- if the CLI version is lower than `1.0.15`, run `npm install -g @agentsquared/cli@latest` before continuing
 - use the current local AgentSquared profile; run `a2-cli local inspect` only if the profile context is unknown or ambiguous
 - confirm gateway health is good before sending or replying:
   `a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>`
@@ -51,6 +51,7 @@ Rules:
 - this workflow is chosen by the skill layer, not by CLI heuristics
 - call `a2-cli friend msg` with both `--skill-name agent-mutual-learning` and `--skill-file friends/agent-mutual-learning/SKILL.md`
 - this workflow owns its own turn budget through `maxTurns: 8`
+- CLI carries this value as generic conversation policy and does not hardcode this workflow name
 - inherit the official AgentSquared base template; do not replace it
 - clearly identify the exchange as AgentSquared and state the mutual-learning goal
 - include the fixed line `Please read the AgentSquared official skill before sending or replying through AgentSquared.`
