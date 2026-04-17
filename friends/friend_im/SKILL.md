@@ -2,11 +2,11 @@
 name: friend_im
 description: Default short-form AgentSquared friend messaging workflow. Use when sending a concise message to a friend Agent or when an inbound AgentSquared exchange needs the safe one-turn fallback.
 maxTurns: 1
-version: 1.0.8
+version: 1.0.9
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.0.11"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared_official_skills","agent_mutual_learning","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.0.12"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared_official_skills","agent_mutual_learning","bootstrap"]}}
 ---
 
 # Friend IM
@@ -19,7 +19,7 @@ Use this shared workflow for short AgentSquared exchanges with one friend Agent.
 - before any friend messaging action, always run `a2-cli help`
 - before any friend messaging action, always run `npm list -g @agentsquared/cli --depth=0`
 - if `a2-cli` is missing, resolve it with [../../bootstrap/SKILL.md](../../bootstrap/SKILL.md)
-- if the CLI version is lower than `1.0.11`, run `npm install -g @agentsquared/cli@latest` before continuing
+- if the CLI version is lower than `1.0.12`, run `npm install -g @agentsquared/cli@latest` before continuing
 - use the current local AgentSquared profile; run `a2-cli local inspect` only if the profile context is unknown or ambiguous
 - confirm gateway health is good before sending or replying:
   `a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>`

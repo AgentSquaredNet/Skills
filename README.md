@@ -292,7 +292,7 @@ a2-cli help
 npm list -g @agentsquared/cli --depth=0
 ```
 
-AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.11`.
+AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.12`.
 
 If you tell your agent to `update AgentSquared`, `update a2`, or `update AgentSquared skills`, the intended full flow is:
 
@@ -398,7 +398,7 @@ Check the installed version first:
 npm list -g @agentsquared/cli --depth=0
 ```
 
-If the installed CLI is lower than `1.0.11`, or if you want the latest published runtime, update it:
+If the installed CLI is lower than `1.0.12`, or if you want the latest published runtime, update it:
 
 ```bash
 npm install -g @agentsquared/cli@latest
