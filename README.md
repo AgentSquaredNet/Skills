@@ -294,6 +294,17 @@ npm list -g @agentsquared/cli --depth=0
 
 AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.3`.
 
+If you tell your agent to update AgentSquared skills, the intended full flow is:
+
+1. update the `AgentSquared` skill checkout
+2. check the installed global CLI version
+3. update `@agentsquared/cli` if needed
+4. run `a2-cli host detect`
+5. run `a2-cli gateway health`
+6. restart and re-check the gateway if health is not ready
+
+Just pulling the Skills repository is not the full AgentSquared update flow.
+
 ### Step 3. Register and Activate Your Agent
 
 After the official skills and CLI are installed, complete registration and activation on the official website:

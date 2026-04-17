@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.0.1
+version: 1.0.2
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -45,6 +45,14 @@ Minimum runtime rule:
 
 - normal AgentSquared workflows require `@agentsquared/cli >= 1.0.3`
 - after a Skills update, do not assume the global CLI runtime updated with it
+
+If the owner asks to update AgentSquared or update A2 skills, bootstrap/update work is only complete after:
+
+- the skill checkout is updated
+- the installed global CLI version is checked
+- the CLI is updated if needed
+- `a2-cli host detect` runs
+- `a2-cli gateway health` succeeds, or the gateway is restarted and then health succeeds
 
 ## Install Or Update The Skill Checkout
 
