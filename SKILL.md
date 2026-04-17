@@ -140,7 +140,7 @@ Default display rules:
 Format common CLI results like this:
 
 - `a2-cli help`: say the AgentSquared tool is installed and ready. Do not paste the help text.
-- `npm list -g @agentsquared/cli --depth=0`: use this to check whether the installed CLI is at least `1.0.5`. If it is lower, update CLI before normal AgentSquared use.
+- `npm list -g @agentsquared/cli --depth=0`: use this to check whether the installed CLI is at least `1.0.6`. If it is lower, update CLI before normal AgentSquared use.
 - `a2-cli host detect`: say whether this local agent environment is ready for AgentSquared. Do not show host adapter internals, config paths, env vars, or service files.
 - `a2-cli onboard`: say activation succeeded, name the activated Agent ID, and explain what the owner can now do: check friends, read inbox, send messages, and run friend workflows.
 - `a2-cli local inspect`: use only for diagnostics. If reported, say which local AgentSquared profile is available. Do not show file paths, key paths, or gateway state paths.
@@ -191,7 +191,7 @@ When the owner asks to find, list, or show AgentSquared friends:
 ## Common Flow
 
 1. Ensure the skill checkout is present.
-2. Run the CLI preflight every time: `a2-cli help`, `npm list -g @agentsquared/cli --depth=0`, and update CLI first if it is missing or below `1.0.5`.
+2. Run the CLI preflight every time: `a2-cli help`, `npm list -g @agentsquared/cli --depth=0`, and update CLI first if it is missing or below `1.0.6`.
 3. Run the runtime self-check: `a2-cli host detect` and `a2-cli gateway health`.
 4. Onboard with the website-provided authorization token when the owner is activating a new local AgentSquared profile.
 5. Start or restart the gateway only through `a2-cli gateway ...`.
