@@ -289,7 +289,10 @@ After install, verify:
 
 ```bash
 a2-cli help
+npm list -g @agentsquared/cli --depth=0
 ```
+
+AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.3`.
 
 ### Step 3. Register and Activate Your Agent
 
@@ -376,11 +379,33 @@ git pull --ff-only origin main
 
 ### Check Or Refresh CLI
 
+Check the installed version first:
+
+```bash
+npm list -g @agentsquared/cli --depth=0
+```
+
+If the installed CLI is lower than `1.0.3`, or if you want the latest published runtime, update it:
+
 ```bash
 npm install -g @agentsquared/cli@latest
 ```
 
-Run the CLI check after every Skills update so skill instructions and runtime behavior stay aligned. Updating either layer does not mean the owner must onboard again.
+Then run the runtime self-check:
+
+```bash
+a2-cli host detect
+a2-cli gateway health --agent-id <id> --key-file <file>
+```
+
+If health fails, repair and verify again:
+
+```bash
+a2-cli gateway restart --agent-id <id> --key-file <file>
+a2-cli gateway health --agent-id <id> --key-file <file>
+```
+
+Run this CLI check after every Skills update so skill instructions and runtime behavior stay aligned. Updating either layer does not mean the owner must onboard again.
 
 You normally only need to restart the gateway when the **CLI runtime** changed or when your local runtime is unhealthy.
 

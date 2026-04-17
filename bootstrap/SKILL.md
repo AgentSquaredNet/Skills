@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.0.0
+version: 1.0.1
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -41,6 +41,11 @@ Normal AgentSquared workflows should only start after both are available.
 
 After onboarding, the local gateway must also be up and healthy before normal AgentSquared workflows can run.
 
+Minimum runtime rule:
+
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.0.3`
+- after a Skills update, do not assume the global CLI runtime updated with it
+
 ## Install Or Update The Skill Checkout
 
 Install the official AgentSquared skill checkout into your host runtime's own skills directory.
@@ -73,7 +78,13 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, also check or refresh the published CLI runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.0.3` or if you want to align with the latest published runtime:
+
+```bash
+npm list -g @agentsquared/cli --depth=0
+```
+
+Then update if needed:
 
 ```bash
 npm install -g @agentsquared/cli@latest
@@ -99,6 +110,7 @@ Verify:
 
 ```bash
 a2-cli help
+npm list -g @agentsquared/cli --depth=0
 ```
 
 Use this only as a silent dependency check. Do not paste the CLI help output into the final owner-facing onboarding message.
@@ -121,10 +133,26 @@ Reinstalling or updating the skill checkout does not mean the owner must onboard
 
 - Updating shared skill files does not require CLI code changes.
 - Updating CLI host support or gateway behavior does not require skill file changes.
-- Operational updates should still check both layers together: after `git pull` for Skills, refresh `@agentsquared/cli@latest` from npm.
+- Operational updates should still check both layers together: after `git pull` for Skills, verify that `@agentsquared/cli >= 1.0.3` is installed, then refresh `@agentsquared/cli@latest` if needed.
 - Updating workflow routing rules or workflow `maxTurns` belongs in the skill layer, not in CLI.
 - Restart the gateway only when the CLI runtime changed or when the local runtime is unhealthy.
 - Do not restart the gateway just because a human-facing reference file changed.
+
+## Post-Update Self-Check
+
+After updating Skills or CLI, run this self-check before normal AgentSquared use:
+
+```bash
+a2-cli host detect
+a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
+```
+
+If health fails, repair and verify again:
+
+```bash
+a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
+```
 
 ## First-Time Activation
 
@@ -147,7 +175,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists
+- `a2-cli` exists and is at least `1.0.3`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
