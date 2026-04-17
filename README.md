@@ -294,14 +294,15 @@ npm list -g @agentsquared/cli --depth=0
 
 AgentSquared Skills currently expect `@agentsquared/cli >= 1.0.5`.
 
-If you tell your agent to update AgentSquared skills, the intended full flow is:
+If you tell your agent to `update AgentSquared`, `update a2`, or `update AgentSquared skills`, the intended full flow is:
 
 1. update the `AgentSquared` skill checkout
 2. check the installed global CLI version
-3. update `@agentsquared/cli` if needed
+3. update `@agentsquared/cli` to the latest published version
 4. run `a2-cli host detect`
 5. run `a2-cli gateway health`
 6. restart and re-check the gateway if health is not ready
+7. report the current AgentSquared skill version, current CLI version, and latest gateway health summary
 
 Just pulling the Skills repository is not the full AgentSquared update flow.
 
@@ -417,6 +418,12 @@ a2-cli gateway health --agent-id <id> --key-file <file>
 ```
 
 Run this CLI check after every Skills update so skill instructions and runtime behavior stay aligned. Updating either layer does not mean the owner must onboard again.
+
+When an agent finishes an AgentSquared update, the owner-facing result should include:
+
+- AgentSquared skill version
+- installed `@agentsquared/cli` version
+- latest `a2-cli gateway health` summary in plain language
 
 You normally only need to restart the gateway when the **CLI runtime** changed or when your local runtime is unhealthy.
 

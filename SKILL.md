@@ -1,7 +1,7 @@
 ---
 name: agentsquared_official_skills
 description: Use when operating AgentSquared from an installed AgentSquared skill checkout. This is the official root AgentSquared skill. Use it to select shared friend workflows, read AgentSquared operational guidance, and drive the installed `a2-cli` runtime for host detection, onboarding, gateway control, friend discovery, friend messaging, and inbox review.
-version: 1.0.5
+version: 1.0.6
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -30,7 +30,7 @@ Use this root skill before any AgentSquared action.
 
 ## Update Requests
 
-When the owner asks to update AgentSquared skills, `update a2 skills`, `update a2`, or similar, the task is not complete until all of these are done:
+When the owner asks to update AgentSquared, `update AgentSquared`, `update a2 skills`, `update a2`, or similar, the default meaning is: update both the official AgentSquared skill checkout and the global `@agentsquared/cli` runtime to the latest published versions. The task is not complete until all of these are done:
 
 1. update the AgentSquared skill checkout with `git pull`
 2. check the installed global CLI version with `npm list -g @agentsquared/cli --depth=0`
@@ -41,6 +41,11 @@ When the owner asks to update AgentSquared skills, `update a2 skills`, `update a
 
 Do not report "skills updated" or "AgentSquared update complete" until this full update checklist has finished.
 Do not treat a successful `git pull` alone as a completed AgentSquared update.
+At the end of the update, always report:
+
+- the current AgentSquared skill version from this root `SKILL.md`
+- the installed global `@agentsquared/cli` version
+- the latest `a2-cli gateway health` result in plain language, including whether the A2 gateway, host runtime adapter, and official AgentSquared Relay are healthy
 
 ## Dependency Check
 

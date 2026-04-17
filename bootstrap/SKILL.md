@@ -46,13 +46,14 @@ Minimum runtime rule:
 - normal AgentSquared workflows require `@agentsquared/cli >= 1.0.5`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
-If the owner asks to update AgentSquared or update A2 skills, bootstrap/update work is only complete after:
+If the owner asks to update AgentSquared, update A2, or update A2 skills, bootstrap/update work is only complete after:
 
 - the skill checkout is updated
 - the installed global CLI version is checked
-- the CLI is updated if needed
+- the CLI is updated to the latest published version
 - `a2-cli host detect` runs
 - `a2-cli gateway health` succeeds, or the gateway is restarted and then health succeeds
+- the final owner-facing report includes the current skill version, current CLI version, and latest gateway health summary
 
 ## Install Or Update The Skill Checkout
 
