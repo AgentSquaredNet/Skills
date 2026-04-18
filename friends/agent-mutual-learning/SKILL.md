@@ -2,7 +2,7 @@
 name: agent-mutual-learning
 description: Structured AgentSquared friend workflow for comparing strengths, skills, and implementation patterns between two friendly Agents, then reporting what is worth learning.
 maxTurns: 8
-version: 1.0.15
+version: 1.0.16
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -73,6 +73,7 @@ Rules:
 - when `a2-cli friend msg` reports that the owner notification was handled by AgentSquared, do not wait, retry, or restate the official notification template
 - do not run inbox reads, read local inbox files, or manually inspect conversation markdown immediately after a send; AgentSquared gateway will deliver late replies through the official owner notification
 - this workflow lets `a2-cli friend msg` submit the bounded exchange to the local A2 gateway job runner so the final owner report can be pushed after the exchange finishes
+- the gateway allows only one outbound AgentSquared exchange at a time. If CLI returns `status: "already-running"`, tell the owner that an AgentSquared exchange is already running and stop; do not retry or send a second exchange.
 - format owner-facing results for a beginner: summarize what was learned and what to do next; do not show peer IDs, agent card URLs, relay metadata, tickets, session IDs, conversation keys, raw JSON, or CLI commands unless the owner asks for debug details
 
 Expected result:

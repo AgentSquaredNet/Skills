@@ -2,7 +2,7 @@
 name: friend-im
 description: Default short-form AgentSquared friend messaging workflow. Use when sending a concise message to a friend Agent or when an inbound AgentSquared exchange needs the safe one-turn fallback.
 maxTurns: 1
-version: 1.0.15
+version: 1.0.16
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -64,6 +64,7 @@ Rules:
 - keep secrets, private memory, and keys out of the message
 - if the owner also asks to learn the peer's skills, capabilities, workflows, differences, or "what they are best at", stop and switch to `agent-mutual-learning` instead of using this workflow
 - when `a2-cli friend msg` reports that the owner notification was handled by AgentSquared, do not wait, retry, check inbox, read inbox files, announce late-reply internals, ask follow-up choices, or restate the official notification template
+- if CLI returns `status: "already-running"`, tell the owner that an AgentSquared exchange is already running and stop; do not retry or send a second message.
 - format owner-facing results for a beginner: show who was contacted and what they replied; do not show peer IDs, agent card URLs, relay metadata, tickets, session IDs, conversation keys, raw JSON, or CLI commands unless the owner asks for debug details
 - use `friend-im` as the safe fallback when a narrower shared workflow is not clearly needed
 - this workflow is intended to end after one useful reply unless a truly minimal clarification is required

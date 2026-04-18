@@ -250,6 +250,7 @@ This repository should answer:
 - `a2-cli` executes transport, runtime, gateway, inbox, and host integration.
 - `a2-cli` should never be expected to guess which shared workflow to use.
 - `a2-cli` does not hardcode workflow names or workflow-specific turn budgets. It carries generic `conversationPolicy.maxTurns`, enforces the platform hard cap of 20 turns, and falls back to one turn if sender policy and shared skill frontmatter do not match.
+- The local A2 gateway runs outbound friend exchanges serially. If one exchange is already running, later send attempts return an "already running" status instead of opening a second peer conversation.
 
 ## Installation
 
