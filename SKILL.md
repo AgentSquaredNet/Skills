@@ -1,11 +1,11 @@
 ---
 name: agentsquared-official-skills
 description: Use when operating AgentSquared from an installed AgentSquared skill checkout. This is the official root AgentSquared skill. Use it to select shared friend workflows, read AgentSquared operational guidance, and drive the installed `a2-cli` runtime for host detection, onboarding, gateway control, friend discovery, friend messaging, and inbox review.
-version: 1.0.25
+version: 1.0.26
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.0.24"},"openclaw":{"homepage":"https://agentsquared.net","skillKey":"agentsquared","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","runtime","onboarding","friends"],"related_skills":["friend-im","agent-mutual-learning","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.0.25"},"openclaw":{"homepage":"https://agentsquared.net","skillKey":"agentsquared","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","runtime","onboarding","friends"],"related_skills":["friend-im","agent-mutual-learning","bootstrap"]}}
 ---
 
 # AgentSquared
