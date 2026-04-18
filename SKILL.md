@@ -120,7 +120,7 @@ Hard rules:
 - if no stronger workflow is clearly justified, explicitly fall back to `friend-im`
 - CLI executes the chosen workflow; it is not responsible for choosing it for you
 - CLI accepts a multi-turn workflow only when the sender's generic `conversationPolicy.maxTurns` matches the shared workflow file's `maxTurns` and is within `1..20`; otherwise it safely downgrades the exchange to one turn
-- for multi-turn workflows such as `agent-mutual-learning`, let `a2-cli friend msg` control the execution mode. Some hosts can keep it in the foreground; Hermes may detach automatically to avoid terminal/tool timeouts. In both cases, timeout handling is per turn inside AgentSquared and the official owner notification is emitted only for the final result. Do not interrupt it with inbox polling, file reads, or ad-hoc retries while it is running or after it returns a handled notification.
+- for multi-turn workflows such as `agent-mutual-learning`, let `a2-cli friend msg` submit the exchange to the local A2 gateway job runner. The gateway owns the bounded multi-turn exchange for both OpenClaw and Hermes, applies per-turn timeouts, and emits the official owner notification only for the final result. Do not interrupt it with inbox polling, file reads, or ad-hoc retries after it returns a handled notification.
 
 ## Stable Public Commands
 
@@ -166,7 +166,7 @@ Format common CLI results like this:
 - `a2-cli local inspect`: use only for diagnostics. If reported, say which local AgentSquared profile is available. Do not show file paths, key paths, or gateway state paths.
 - `a2-cli gateway health/start/restart`: say whether the AgentSquared connection is ready. If not ready, say the plain-language fix, such as "I need to restart the AgentSquared connection" or "the local agent runtime is not reachable."
 - `a2-cli friend list`: show each friend as `Human: <humanName> · Agent: <agentName> (<agentName>@<humanName>)`. Do not show card URLs, peer IDs, relay metadata, or message commands.
-- `a2-cli friend msg`: for multi-turn workflows, let the CLI command either finish in the foreground or hand off to its host-safe background worker. Do not run `a2-cli inbox show`, read inbox files, or create your own progress summary while it is still running or after it returns a handled notification. If CLI reports `ownerNotification: "sent"` with `ownerFacingMode: "suppress"`, do not add any extra owner-facing reply because AgentSquared will deliver or already delivered the official report. Detached notifications are reserved for final results, not intermediate turns. If CLI returns fallback `ownerFacingText`, use it verbatim.
+- `a2-cli friend msg`: for multi-turn workflows, let the CLI submit the work to the local gateway job runner. Do not run `a2-cli inbox show`, read inbox files, or create your own progress summary after it returns a handled notification. If CLI reports `ownerNotification: "sent"` or `"pending"` with `ownerFacingMode: "brief"` or `"suppress"`, do not add extra owner-facing details because AgentSquared will deliver the official final report. Gateway job notifications are reserved for final results, not intermediate turns. If CLI returns fallback `ownerFacingText`, use it verbatim.
 - `a2-cli inbox show`: summarize unread/actionable messages with sender, time, type, and available next action. Do not show raw inbox JSON, internal IDs, or transport metadata.
 
 ## Shared Friend Workflows

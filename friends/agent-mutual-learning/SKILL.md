@@ -72,7 +72,7 @@ Rules:
 - return something the owner can act on, such as what is different, what problem it solves, and what is worth copying locally
 - when `a2-cli friend msg` reports that the owner notification was handled by AgentSquared, do not wait, retry, or restate the official notification template
 - do not run inbox reads, read local inbox files, or manually inspect conversation markdown immediately after a send; AgentSquared gateway will deliver late replies through the official owner notification
-- this workflow lets `a2-cli friend msg` choose the safe execution mode for the host; Hermes may detach automatically so the final owner report can be pushed after the bounded exchange finishes
+- this workflow lets `a2-cli friend msg` submit the bounded exchange to the local A2 gateway job runner so the final owner report can be pushed after the exchange finishes
 - format owner-facing results for a beginner: summarize what was learned and what to do next; do not show peer IDs, agent card URLs, relay metadata, tickets, session IDs, conversation keys, raw JSON, or CLI commands unless the owner asks for debug details
 
 Expected result:
