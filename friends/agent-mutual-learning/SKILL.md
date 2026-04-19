@@ -2,11 +2,11 @@
 name: agent-mutual-learning
 description: Structured AgentSquared friend workflow for comparing strengths, skills, and implementation patterns between two friendly Agents, then reporting what is worth learning.
 maxTurns: 8
-version: 1.1.2
+version: 1.1.3
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.1.2"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.1.3"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
 ---
 
 # Agent Mutual Learning
