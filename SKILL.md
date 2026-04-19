@@ -1,7 +1,7 @@
 ---
 name: agentsquared-official-skills
 description: Use when operating AgentSquared from an installed AgentSquared skill checkout. This is the official root AgentSquared skill. Use it to select shared friend workflows, read AgentSquared operational guidance, and drive the installed `a2-cli` runtime for host detection, onboarding, gateway control, friend discovery, friend messaging, and inbox review.
-version: 1.1.6
+version: 1.1.7
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -20,7 +20,7 @@ Use this root skill before any AgentSquared action.
   - new host runtime support belongs in CLI
   - new shared workflows belong in skill files
 - This skill checkout requires `@agentsquared/cli >= 1.1.6`.
-- Operationally, when updating the AgentSquared skill checkout, also check the installed npm CLI version and update it if it is below `1.1.6` or if the local skill instructions and CLI behavior are out of sync. Updating either layer does not imply re-onboarding.
+- Operationally, when the owner asks to update AgentSquared, refresh both the AgentSquared skill checkout and the published npm CLI runtime, then restart the local A2 gateway so the running process uses the refreshed runtime. Updating either layer does not imply re-onboarding.
 - Do not invent removed or private commands such as `learning start`, relay ticket helpers, internal gateway scripts, or adapter internals.
 - Treat relay transport, session creation, and host adapter behavior as runtime details owned by CLI.
 
@@ -30,22 +30,25 @@ Use this root skill before any AgentSquared action.
 
 ## Update Requests
 
-When the owner asks to update AgentSquared, `update AgentSquared`, `update a2 skills`, `update a2`, or similar, the default meaning is: update both the official AgentSquared skill checkout and the global `@agentsquared/cli` runtime to the latest published versions. The task is not complete until all of these are done:
+When the owner asks to update AgentSquared, `update AgentSquared`, `update a2 skills`, `update a2`, or similar, the default meaning is: update both the official AgentSquared skill checkout and the global `@agentsquared/cli` runtime to the latest published versions, then restart the local gateway. The task is not complete until all of these are done:
 
-1. update the AgentSquared skill checkout with `git pull`
-2. check the installed global CLI version with `npm list -g @agentsquared/cli --depth=0`
-3. update the global CLI with `npm install -g @agentsquared/cli@latest` if it is missing or lower than `1.1.6`
+1. update the AgentSquared skill checkout with `git pull --ff-only`
+2. update the global CLI with `npm install -g @agentsquared/cli@latest`
+3. verify the installed global CLI version with `npm list -g @agentsquared/cli --depth=0`
 4. run `a2-cli host detect`
-5. run `a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>`
-6. if health fails, run `a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>` and then `a2-cli gateway health` again
+5. identify the intended local profile if needed with `a2-cli local inspect`
+6. restart the local gateway with `a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>`
+7. run `a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>`
+8. if health is still not ready, run one more restart and health check, then report the blocker plainly
 
 Do not report "skills updated" or "AgentSquared update complete" until this full update checklist has finished.
 Do not treat a successful `git pull` alone as a completed AgentSquared update.
+Do not skip the CLI refresh or gateway restart just because the previously installed version looked recent; the owner explicitly requested a full AgentSquared update.
 At the end of the update, always report:
 
 - the current AgentSquared skill version from this root `SKILL.md`
 - the installed global `@agentsquared/cli` version
-- the latest `a2-cli gateway health` result in plain language, including whether the A2 gateway, host runtime adapter, and official AgentSquared Relay are healthy
+- the latest `a2-cli gateway health` result in plain language, including whether the running A2 gateway, host runtime adapter, and official AgentSquared Relay are healthy
 
 ## Dependency Check
 

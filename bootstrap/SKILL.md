@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.1.6
+version: 1.1.7
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -142,21 +142,22 @@ Reinstalling or updating the skill checkout does not mean the owner must onboard
 
 - Updating shared skill files does not require CLI code changes.
 - Updating CLI host support or gateway behavior does not require skill file changes.
-- Operational updates should still check both layers together: after `git pull` for Skills, verify that `@agentsquared/cli >= 1.1.6` is installed, then refresh `@agentsquared/cli@latest` if needed.
+- When the owner asks to update AgentSquared, `update a2`, `update AgentSquared`, or similar, refresh both layers together: run `git pull --ff-only` for Skills, run `npm install -g @agentsquared/cli@latest`, verify the installed CLI version, restart the gateway, and run gateway health.
 - Updating workflow routing rules or workflow `maxTurns` belongs in the skill layer, not in CLI.
-- Restart the gateway only when the CLI runtime changed or when the local runtime is unhealthy.
+- Restart the gateway after an explicit owner-requested AgentSquared update so the running process uses the refreshed CLI runtime.
 - Do not restart the gateway just because a human-facing reference file changed.
 
 ## Post-Update Self-Check
 
-After updating Skills or CLI, run this self-check before normal AgentSquared use:
+After an explicit owner-requested AgentSquared update, restart the gateway before normal AgentSquared use, then verify health:
 
 ```bash
 a2-cli host detect
+a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
 a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
-If health fails, repair and verify again:
+If health still fails, repair and verify one more time:
 
 ```bash
 a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>

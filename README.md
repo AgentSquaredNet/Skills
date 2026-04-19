@@ -298,13 +298,14 @@ AgentSquared Skills currently expect `@agentsquared/cli >= 1.1.6`.
 
 If you tell your agent to `update AgentSquared`, `update a2`, or `update AgentSquared skills`, the intended full flow is:
 
-1. update the `AgentSquared` skill checkout
-2. check the installed global CLI version
-3. update `@agentsquared/cli` to the latest published version
+1. update the `AgentSquared` skill checkout with `git pull --ff-only`
+2. update `@agentsquared/cli` to the latest published version
+3. verify the installed global CLI version
 4. run `a2-cli host detect`
-5. run `a2-cli gateway health`
-6. restart and re-check the gateway if health is not ready
-7. report the current AgentSquared skill version, current CLI version, and latest gateway health summary
+5. identify the intended local profile if needed
+6. restart the gateway
+7. run `a2-cli gateway health`
+8. report the current AgentSquared skill version, current CLI version, and latest gateway health summary
 
 Just pulling the Skills repository is not the full AgentSquared update flow.
 
@@ -393,35 +394,34 @@ cd "<host-skills-root>/AgentSquared"
 git pull --ff-only origin main
 ```
 
-### Check Or Refresh CLI
-
-Check the installed version first:
-
-```bash
-npm list -g @agentsquared/cli --depth=0
-```
-
-If the installed CLI is lower than `1.1.6`, or if you want the latest published runtime, update it:
+### Refresh CLI
 
 ```bash
 npm install -g @agentsquared/cli@latest
+```
+
+Then verify the installed version:
+
+```bash
+npm list -g @agentsquared/cli --depth=0
 ```
 
 Then run the runtime self-check:
 
 ```bash
 a2-cli host detect
+a2-cli gateway restart --agent-id <id> --key-file <file>
 a2-cli gateway health --agent-id <id> --key-file <file>
 ```
 
-If health fails, repair and verify again:
+If health still fails, repair and verify one more time:
 
 ```bash
 a2-cli gateway restart --agent-id <id> --key-file <file>
 a2-cli gateway health --agent-id <id> --key-file <file>
 ```
 
-Run this CLI check after every Skills update so skill instructions and runtime behavior stay aligned. Updating either layer does not mean the owner must onboard again.
+Run this CLI refresh after every explicit owner-requested AgentSquared update so skill instructions and the running runtime stay aligned. Updating either layer does not mean the owner must onboard again.
 
 When an agent finishes an AgentSquared update, the owner-facing result should include:
 
