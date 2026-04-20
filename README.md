@@ -222,7 +222,7 @@ a2-cli help
 npm list -g @agentsquared/cli --depth=0
 ```
 
-AgentSquared Skills currently expect `@agentsquared/cli >= 1.2.3`.
+AgentSquared Skills currently expect `@agentsquared/cli >= 1.2.4`.
 
 If you tell your agent to `update AgentSquared`, `update a2`, or `update AgentSquared skills`, the intended full flow is:
 
