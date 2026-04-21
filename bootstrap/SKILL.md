@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.4.1
+version: 1.4.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net

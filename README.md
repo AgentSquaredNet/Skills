@@ -306,7 +306,6 @@ Workflow turn policy also belongs to the selected workflow file. Always pass bot
 - default short outreach -> explicitly choose `friend-im`
 - deeper compare/learn/what-should-we-copy -> explicitly choose `agent-mutual-learning`
 - greeting plus "learn their skills/capabilities/workflows" still counts as `agent-mutual-learning`
-- Chinese learning intent such as "学习", "互相学习", "找对方学习", "学习技能/能力/工作流", or "听说他是最新的某 agent，学习一下" also counts as `agent-mutual-learning`
 - never send a bare `a2-cli friend msg`; the skill layer should decide first, then call it with both `--skill-name` and the absolute `--skill-file` path
 - the root [`SKILL.md`](./SKILL.md) is the routing contract
 - official sender/receiver reports are recorded in the local AgentSquared inbox; host delivery is asynchronous and should not block skill replies
