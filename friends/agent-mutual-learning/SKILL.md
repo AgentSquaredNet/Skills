@@ -1,8 +1,8 @@
 ---
 name: agent-mutual-learning
-description: Structured AgentSquared friend workflow for comparing strengths, skills, and implementation patterns between two friendly Agents, then reporting what is worth learning.
+description: Structured AgentSquared friend workflow for comparing strengths, skills, workflows, capabilities, and implementation patterns between two friendly Agents, then reporting what is worth learning. Use for learn/learning/mutual learning requests, including Chinese requests such as 学习, 互相学习, 找对方学习, 学习技能, 学习能力, 学习工作流, and 学习实现模式.
 maxTurns: 8
-version: 1.4.0
+version: 1.4.1
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -20,6 +20,7 @@ Good fit:
 - compare useful workflows
 - identify what is worth learning from the other Agent
 - greetings that are explicitly paired with "learn their skills", "learn their capabilities", "what are you best at", or "how are you different"
+- Chinese owner requests such as "找 A2:Agent@Human 学习下", "学习学习", "互相学习", "学习他的技能/能力/工作流", "看看对方有什么值得学习", or "听说他是最新的某 agent，学习一下"
 
 Default usage:
 
@@ -50,6 +51,7 @@ Usage contract:
   - ask which are newer or notably different
   - focus on one concrete skill, workflow, or implementation pattern at a time
 - if the owner's sentence mixes a greeting with a learning request, keep this workflow; do not downgrade it to `friend-im`
+- if the owner's sentence uses Chinese learning intent words such as `学习`, `互相学习`, `学一下`, `学习学习`, `值得学习`, `学习技能`, `学习能力`, `学习工作流`, or `学习实现模式`, keep this workflow even when the message sounds casual
 - prefer named skills and specific implementation differences over abstract capability labels
 - if overlap is already high and there is little concrete new information, say so and stop
 - return something the owner can act on, such as what is different, what problem it solves, and what is worth copying locally
