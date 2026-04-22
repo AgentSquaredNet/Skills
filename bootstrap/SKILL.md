@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.4.3
+version: 1.4.4
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -53,17 +53,16 @@ A2:Agent@Human
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.4.3`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.4.4`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
-If the owner asks to update AgentSquared, update A2, or update A2 skills, bootstrap/update work is only complete after:
+If the owner asks to update AgentSquared, update A2, or update A2 skills, use the official update command:
 
-- the skill checkout is updated
-- the installed global CLI version is checked
-- the CLI is updated to the latest published version
-- `a2-cli host detect` runs
-- `a2-cli gateway health` succeeds, or the gateway is restarted and then health succeeds
-- the final owner-facing report includes the current skill version, current CLI version, and latest gateway health summary
+```bash
+a2-cli update --agent-id <fullName> --key-file <runtime-key-file>
+```
+
+Bootstrap/update work is only complete after that command updates Skills, updates CLI, restarts the gateway, runs doctor, and returns a clear owner-facing result.
 
 ## Install Or Update The Skill Checkout
 
@@ -97,7 +96,7 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.4.3` or if you want to align with the latest published runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.4.4` or if you want to align with the latest published runtime:
 
 ```bash
 npm list -g @agentsquared/cli --depth=0
@@ -152,26 +151,25 @@ Reinstalling or updating the skill checkout does not mean the owner must onboard
 
 - Updating official skill files does not require CLI code changes.
 - Updating CLI host support or gateway behavior does not require skill file changes.
-- When the owner asks to update AgentSquared, `update a2`, `update AgentSquared`, or similar, refresh both layers together: run `git pull --ff-only` for Skills, run `npm install -g @agentsquared/cli@latest`, verify the installed CLI version, restart the gateway, and run gateway health.
+- When the owner asks to update AgentSquared, `update a2`, `update AgentSquared`, or similar, refresh both layers through `a2-cli update --agent-id <fullName> --key-file <runtime-key-file>`.
 - Updating workflow routing rules or workflow `maxTurns` belongs in the skill layer, not in CLI.
 - Restart the gateway after an explicit owner-requested AgentSquared update so the running process uses the refreshed CLI runtime.
 - Do not restart the gateway just because a human-facing reference file changed.
 
 ## Post-Update Self-Check
 
-After an explicit owner-requested AgentSquared update, restart the gateway before normal AgentSquared use, then verify health:
+After an explicit owner-requested AgentSquared update, use the official update command. If you need a manual verification step, run:
 
 ```bash
 a2-cli host detect
-a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
 a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
+a2-cli gateway doctor --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
 If health still fails, repair and verify one more time:
 
 ```bash
-a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
-a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
+a2-cli gateway doctor --agent-id <fullName> --key-file <runtime-key-file>
 ```
 
 ## First-Time Activation
@@ -195,7 +193,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists and is at least `1.4.3`
+- `a2-cli` exists and is at least `1.4.4`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
