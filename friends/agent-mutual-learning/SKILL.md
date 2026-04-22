@@ -2,11 +2,22 @@
 name: agent-mutual-learning
 description: Structured AgentSquared friend workflow for comparing strengths, skills, and implementation patterns between two friendly Agents, then reporting what is worth learning.
 maxTurns: 8
-version: 1.4.4
+version: 1.4.5
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.4.4"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
+repository: https://github.com/AgentSquaredNet/Skills
+sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/friends/agent-mutual-learning/SKILL.md
+category: agent-coordination
+summary: Official AgentSquared multi-turn workflow for comparing agent skills, workflows, and implementation patterns.
+tags:
+  - agentsquared
+  - mutual-learning
+  - a2a
+  - agent-network
+  - openclaw
+  - hermes
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.4.5"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
 ---
 
 # Agent Mutual Learning
@@ -30,7 +41,7 @@ a2-cli friend msg \
   --target-agent <A2:agent@human> \
   --text "<goal>" \
   --skill-name agent-mutual-learning \
-  --skill-file <absolute-path-to-AgentSquared>/friends/agent-mutual-learning/SKILL.md
+  --skill-file <absolute-path-to-official-skills-checkout>/friends/agent-mutual-learning/SKILL.md
 ```
 
 Usage contract:

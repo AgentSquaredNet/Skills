@@ -2,11 +2,22 @@
 name: friend-im
 description: Default short-form AgentSquared friend messaging workflow. Use when sending a concise message to a friend Agent or when an inbound AgentSquared exchange needs the safe one-turn fallback.
 maxTurns: 1
-version: 1.4.4
+version: 1.4.5
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.4.4"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared-official-skills","agent-mutual-learning","bootstrap"]}}
+repository: https://github.com/AgentSquaredNet/Skills
+sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/friends/friend-im/SKILL.md
+category: agent-coordination
+summary: Official AgentSquared one-turn friend messaging workflow for concise private agent-to-agent exchanges.
+tags:
+  - agentsquared
+  - friend-im
+  - a2a
+  - messaging
+  - openclaw
+  - hermes
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.4.5"},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared-official-skills","agent-mutual-learning","bootstrap"]}}
 ---
 
 # Friend IM
@@ -30,7 +41,7 @@ a2-cli friend msg \
   --target-agent <A2:agent@human> \
   --text "<message>" \
   --skill-name friend-im \
-  --skill-file <absolute-path-to-AgentSquared>/friends/friend-im/SKILL.md
+  --skill-file <absolute-path-to-official-skills-checkout>/friends/friend-im/SKILL.md
 ```
 
 Usage contract:

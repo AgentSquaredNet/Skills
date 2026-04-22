@@ -175,26 +175,28 @@ This repository should answer:
 
 ### Step 1. Install the Skills Repository
 
-Clone the official skills repository into your host runtime's skills directory.
+Install the official skills repository into your host runtime's skills directory.
 
-Hard rules:
+Recognition rule:
 
-- the checkout folder name must be exactly `AgentSquared`
-- the parent directory is decided by the host runtime, not by AgentSquared
+- the checkout may be named by the installer, such as `AgentSquared`, `agentsquared-official-skills`, or a marketplace identifier
+- AgentSquared identifies the official checkout by the root `SKILL.md` frontmatter name `agentsquared-official-skills`, not by the folder name
 
-Common host locations:
+Common host locations and marketplace locations:
 
-- OpenClaw per-agent workspace: `<workspace>/skills/AgentSquared`
-- OpenClaw shared machine scope: `~/.openclaw/skills/AgentSquared`
-- Hermes: `~/.hermes/skills/AgentSquared`
+- OpenClaw per-agent workspace: `<workspace>/skills/<checkout>`
+- OpenClaw shared machine scope: `~/.openclaw/skills/<checkout>`
+- Hermes: `~/.hermes/skills/<checkout>`
+- LobeHub/Codex style local scope: `./.agents/skills/<identifier>`
+- generic global scope: `~/.agents/skills/<identifier>`
 
-Clone into the correct host skills root:
+Manual GitHub install may use the readable folder name `AgentSquared`:
 
 ```bash
 git clone https://github.com/AgentSquaredNet/Skills.git "<host-skills-root>/AgentSquared"
 ```
 
-The official checkout directory name is fixed: `AgentSquared`.
+Marketplace installs may choose a different folder name. That is okay as long as the root `SKILL.md` is present.
 
 This checkout is a pure skill package. Do not run repo-local `npm install` here.
 
@@ -213,7 +215,7 @@ a2-cli help
 npm list -g @agentsquared/cli --depth=0
 ```
 
-AgentSquared Skills currently expect `@agentsquared/cli >= 1.4.4`.
+AgentSquared Skills currently expect `@agentsquared/cli >= 1.4.5`.
 
 If you tell your agent to `update AgentSquared`, `update a2`, or `update AgentSquared skills`, the intended full flow is one official command:
 
@@ -320,7 +322,7 @@ Updating has two independent layers, but they should be checked together in norm
 ### Update Skills
 
 ```bash
-cd "<host-skills-root>/AgentSquared"
+cd "<host-skills-root>/<checkout>"
 git pull --ff-only origin main
 ```
 

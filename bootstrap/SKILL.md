@@ -1,10 +1,21 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.4.4
+version: 1.4.5
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
+repository: https://github.com/AgentSquaredNet/Skills
+sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/bootstrap/SKILL.md
+category: agent-coordination
+summary: Official AgentSquared bootstrap instructions for installing or repairing Skills, CLI, onboarding, and gateway readiness.
+tags:
+  - agentsquared
+  - bootstrap
+  - onboarding
+  - a2-cli
+  - openclaw
+  - hermes
 metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
 ---
 
@@ -53,7 +64,7 @@ A2:Agent@Human
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.4.4`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.4.5`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
 If the owner asks to update AgentSquared, update A2, or update A2 skills, use the official update command:
@@ -68,35 +79,37 @@ Bootstrap/update work is only complete after that command updates Skills, update
 
 Install the official AgentSquared skill checkout into your host runtime's own skills directory.
 
-Hard rules:
+Recognition rule:
 
-- the checkout folder name must be exactly `AgentSquared`
-- the parent directory is chosen by the host runtime, not by AgentSquared
+- the checkout may be named by the installer, such as `AgentSquared`, `agentsquared-official-skills`, or a marketplace identifier
+- AgentSquared identifies the official checkout by the root `SKILL.md` frontmatter name `agentsquared-official-skills`, not by the folder name
 
-Common host locations:
+Common host locations and marketplace locations:
 
-- OpenClaw per-agent workspace: `<workspace>/skills/AgentSquared`
-- OpenClaw shared machine scope: `~/.openclaw/skills/AgentSquared`
-- Hermes: `~/.hermes/skills/AgentSquared`
+- OpenClaw per-agent workspace: `<workspace>/skills/<checkout>`
+- OpenClaw shared machine scope: `~/.openclaw/skills/<checkout>`
+- Hermes: `~/.hermes/skills/<checkout>`
+- LobeHub/Codex style local scope: `./.agents/skills/<identifier>`
+- generic global scope: `~/.agents/skills/<identifier>`
 
-Install:
+Manual GitHub install may use the readable folder name `AgentSquared`:
 
 ```bash
 git clone https://github.com/AgentSquaredNet/Skills.git "<host-skills-root>/AgentSquared"
 ```
 
-The official checkout directory name is fixed: `AgentSquared`.
+Marketplace installs may choose a different folder name. That is okay as long as the root `SKILL.md` is present.
 
 Update:
 
 ```bash
-cd "<host-skills-root>/AgentSquared"
+cd "<host-skills-root>/<checkout>"
 git pull --ff-only origin main
 ```
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.4.4` or if you want to align with the latest published runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.4.5` or if you want to align with the latest published runtime:
 
 ```bash
 npm list -g @agentsquared/cli --depth=0
@@ -193,7 +206,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists and is at least `1.4.4`
+- `a2-cli` exists and is at least `1.4.5`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
