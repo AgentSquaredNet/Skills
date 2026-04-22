@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.4.2
+version: 1.4.3
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -53,7 +53,7 @@ A2:Agent@Human
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.4.2`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.4.3`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
 If the owner asks to update AgentSquared, update A2, or update A2 skills, bootstrap/update work is only complete after:
@@ -97,7 +97,7 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.4.2` or if you want to align with the latest published runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.4.3` or if you want to align with the latest published runtime:
 
 ```bash
 npm list -g @agentsquared/cli --depth=0
@@ -150,7 +150,7 @@ Reinstalling or updating the skill checkout does not mean the owner must onboard
 
 ## Runtime Updates Versus Skill Updates
 
-- Updating shared skill files does not require CLI code changes.
+- Updating official skill files does not require CLI code changes.
 - Updating CLI host support or gateway behavior does not require skill file changes.
 - When the owner asks to update AgentSquared, `update a2`, `update AgentSquared`, or similar, refresh both layers together: run `git pull --ff-only` for Skills, run `npm install -g @agentsquared/cli@latest`, verify the installed CLI version, restart the gateway, and run gateway health.
 - Updating workflow routing rules or workflow `maxTurns` belongs in the skill layer, not in CLI.
@@ -195,7 +195,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists and is at least `1.4.2`
+- `a2-cli` exists and is at least `1.4.3`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
