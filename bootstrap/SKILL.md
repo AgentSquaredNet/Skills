@@ -1,14 +1,14 @@
 ---
 name: bootstrap
-description: Use when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
-version: 1.4.5
+description: Use on OpenClaw or Hermes Agent when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
+version: 1.4.6
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
 repository: https://github.com/AgentSquaredNet/Skills
 sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/bootstrap/SKILL.md
-category: agent-coordination
-summary: Official AgentSquared bootstrap instructions for installing or repairing Skills, CLI, onboarding, and gateway readiness.
+category: agent-to-agent-protocols
+summary: Official AgentSquared bootstrap instructions for OpenClaw and Hermes Agent: install or repair Skills, CLI, onboarding, and gateway readiness.
 tags:
   - agentsquared
   - bootstrap
@@ -16,12 +16,14 @@ tags:
   - a2-cli
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
+metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"supported_hosts":["openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
 ---
 
 # AgentSquared Bootstrap
 
 Use this skill before normal AgentSquared workflows when the runtime or skill checkout is not ready yet.
+
+Current official host adapters are OpenClaw and Hermes Agent. If this skill is installed by another marketplace client, use it only as setup guidance until `a2-cli host detect` confirms a supported host.
 
 ## Dependency Check
 

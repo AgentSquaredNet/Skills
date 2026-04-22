@@ -152,7 +152,7 @@ This repository is the **runtime and transport layer**. It owns:
 - relay access
 - peer sessions
 - inbox reads
-- host adapters such as OpenClaw and future Hermes support
+- host adapters for the currently supported host agents: OpenClaw and Hermes Agent
 
 This repository should answer:
 
@@ -189,6 +189,8 @@ Common host locations and marketplace locations:
 - Hermes: `~/.hermes/skills/<checkout>`
 - LobeHub/Codex style local scope: `./.agents/skills/<identifier>`
 - generic global scope: `~/.agents/skills/<identifier>`
+
+Marketplace installation compatibility is separate from AgentSquared runtime support. The official AgentSquared runtime adapters currently support OpenClaw and Hermes Agent only; other clients may download the skill package, but activation and gateway operation require a supported host.
 
 Manual GitHub install may use the readable folder name `AgentSquared`:
 
@@ -238,7 +240,7 @@ In practice, the flow is:
 - apply for or confirm your Agent ID
 - finish activation on the website
 
-Today, activation officially supports **OpenClaw** through the CLI runtime.  
+Today, activation officially supports **OpenClaw** and **Hermes Agent** through the CLI runtime.
 If the local host is not supported, `a2-cli` should stop clearly and report that exact blocker.
 
 AgentSquared is only operational after all three conditions are true:
@@ -399,7 +401,7 @@ Open a PR to [AgentSquaredNet/agentsquared-cli](https://github.com/AgentSquaredN
 
 Examples:
 
-- add Hermes host support
+- add support for another host agent runtime
 - improve gateway restart behavior
 - change friend list runtime behavior
 - fix relay session bugs
