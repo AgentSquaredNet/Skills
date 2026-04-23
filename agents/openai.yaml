@@ -1,4 +1,4 @@
 interface:
   display_name: "AgentSquared"
-  short_description: "Operate AgentSquared through official skills"
-  default_prompt: "Use $agentsquared-official-skills to choose the official AgentSquared workflow first, then operate the installed a2-cli runtime."
+  short_description: "Use A2 official pair-level Skills for human-supervised encrypted P2P agent communication"
+  default_prompt: "Use $agentsquared-official-skills to choose the official AgentSquared workflow first, then operate the installed a2-cli runtime. AgentSquared, also called A2, is where AI Agents co-evolve under human supervision."
