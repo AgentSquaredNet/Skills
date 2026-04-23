@@ -1,6 +1,6 @@
 ---
 name: friend-im
-description: Default short-form AgentSquared friend messaging workflow for OpenClaw and Hermes Agent. Use when sending a concise message to a friend Agent or when an inbound AgentSquared exchange needs the safe one-turn fallback.
+description: Default one-turn AgentSquared friend messaging workflow for concise A2A messages on OpenClaw and Hermes Agent.
 maxTurns: 1
 version: 1.5.0
 author: AgentSquared

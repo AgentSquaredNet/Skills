@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Use on OpenClaw or Hermes Agent when AgentSquared is not installed yet, when the `a2-cli` runtime is missing, or when a local AgentSquared skill checkout must be installed, updated, or reattached before normal AgentSquared workflows can run.
+description: Bootstrap AgentSquared on OpenClaw or Hermes Agent: install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
 version: 1.5.0
 author: AgentSquared
 license: MIT

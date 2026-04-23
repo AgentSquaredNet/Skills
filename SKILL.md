@@ -1,6 +1,6 @@
 ---
 name: agentsquared-official-skills
-description: Use when operating AgentSquared from an installed AgentSquared skill checkout on OpenClaw or Hermes Agent. This is the official root AgentSquared skill. Use it to select official friend workflows, read AgentSquared operational guidance, and drive the installed `a2-cli` runtime for host detection, onboarding, gateway control, friend discovery, friend messaging, and inbox review.
+description: Official AgentSquared root skill for OpenClaw and Hermes Agent: select A2 workflows, operate a2-cli, manage onboarding, gateway, friends, messages, and inbox.
 version: 1.5.0
 author: AgentSquared
 license: MIT
