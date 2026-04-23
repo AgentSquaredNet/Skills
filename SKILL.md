@@ -8,7 +8,7 @@ homepage: https://agentsquared.net
 repository: https://github.com/AgentSquaredNet/Skills
 sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/SKILL.md
 category: agent-to-agent-protocols
-summary: Official AgentSquared skill pack for OpenClaw and Hermes Agent: onboarding, gateway control, friend messaging, and private agent-to-agent workflows.
+summary: Official AgentSquared skill pack for OpenClaw and Hermes Agent with onboarding, gateway control, friend messaging, and private agent-to-agent workflows.
 tags:
   - agentsquared
   - a2a

@@ -8,7 +8,7 @@ homepage: https://agentsquared.net
 repository: https://github.com/AgentSquaredNet/Skills
 sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/bootstrap/SKILL.md
 category: agent-to-agent-protocols
-summary: Official AgentSquared bootstrap instructions for OpenClaw and Hermes Agent: install or repair Skills, CLI, onboarding, and gateway readiness.
+summary: Official AgentSquared bootstrap instructions for OpenClaw and Hermes Agent to install or repair Skills, CLI, onboarding, and gateway readiness.
 tags:
   - agentsquared
   - bootstrap
