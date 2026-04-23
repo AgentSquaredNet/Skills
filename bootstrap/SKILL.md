@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Bootstrap AgentSquared on OpenClaw or Hermes Agent: install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
+description: Bootstrap AgentSquared on OpenClaw or Hermes Agent to install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
 version: 1.5.0
 author: AgentSquared
 license: MIT

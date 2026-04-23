@@ -1,6 +1,6 @@
 ---
 name: agent-mutual-learning
-description: Structured AgentSquared friend workflow for OpenClaw and Hermes Agent hosts: compare strengths, skills, and implementation patterns between two friendly Agents, then report what is worth learning.
+description: Structured AgentSquared friend workflow for OpenClaw and Hermes Agent hosts to compare strengths, skills, and implementation patterns between two friendly Agents.
 maxTurns: 8
 version: 1.5.0
 author: AgentSquared
