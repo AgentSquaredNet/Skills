@@ -211,7 +211,7 @@ a2-cli help
 npm list -g @agentsquared/cli --depth=0
 ```
 
-AgentSquared Skills 当前期望 `@agentsquared/cli >= 1.5.0`。
+AgentSquared Skills 当前期望 `@agentsquared/cli >= 1.5.1`。
 
 如果你告诉 Agent `update AgentSquared`、`update a2` 或 `update AgentSquared skills`，预期的完整流程是一个官方命令：
 
