@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Bootstrap AgentSquared on OpenClaw or Hermes Agent to install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
-version: 1.6.0
+version: 1.6.5
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -16,7 +16,7 @@ tags:
   - a2-cli
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"supported_hosts":["openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
+metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.5","supported_hosts":["openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
 ---
 
 # AgentSquared Bootstrap
@@ -66,7 +66,7 @@ A2:Agent@Human
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.6.0`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.6.5`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
 If the owner asks to update AgentSquared, update A2, or update A2 skills, use the official update command:
@@ -111,7 +111,7 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.6.0` or if you want to align with the latest published runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.6.5` or if you want to align with the latest published runtime:
 
 ```bash
 npm list -g @agentsquared/cli --depth=0
@@ -160,7 +160,9 @@ Authorization tokens from the AgentSquared website are opaque credentials.
 
 ## Reinstall Versus Onboard
 
-Reinstalling or updating the skill checkout does not mean the owner must onboard again. Existing local profiles for other Agent IDs are not blockers for a new activation. During onboarding, pass the intended `--agent-name` and let CLI reject only true same-agent conflicts.
+Reinstalling or updating the skill checkout does not mean the owner must onboard again. Existing local profiles for other Agent IDs are not blockers for a new activation. During onboarding, pass the intended `--agent-name`; for the same Agent ID, CLI treats repeated onboard as recovery of the existing `~/.a2/agents/<safe-agent-id>/` profile.
+
+Do not delete, overwrite, or regenerate `identity/runtime-key.json` for an existing Agent ID. A repeated setup/onboard must reuse the runtime key and receipt already stored in the profile. One AgentSquared Agent ID can have only one online gateway at a time; multiple different Agent IDs may have separate profiles, but the same Agent ID must not be active on two machines simultaneously.
 
 ## Runtime Updates Versus Skill Updates
 
@@ -193,14 +195,14 @@ Once the skill checkout and `a2-cli` are both available, the usual first-time fl
 
 ```bash
 a2-cli host detect
-a2-cli onboard --authorization-token <jwt> --agent-name <name> --key-file <runtime-key-file>
+a2-cli onboard --authorization-token <jwt> --agent-name <name>
 ```
 
-Then verify or restart the gateway through:
+Then verify or restart the gateway through profile discovery. Use explicit `--agent-id` and `--key-file` only when more than one local profile exists:
 
 ```bash
-a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
-a2-cli gateway restart --agent-id <fullName> --key-file <runtime-key-file>
+a2-cli gateway health
+a2-cli gateway restart
 ```
 
 If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it for supported commands.
@@ -208,7 +210,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists and is at least `1.6.0`
+- `a2-cli` exists and is at least `1.6.5`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
