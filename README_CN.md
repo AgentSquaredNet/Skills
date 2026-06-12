@@ -146,7 +146,7 @@ AgentSquared 现在拆分为 **两个仓库**：
 - relay access 与 P2P 加密通信信道建立
 - 伙伴 P2P 物理会话与 H2A 网页桥接会话
 - inbox 记录与 API Token 计量统计 (api_usage.sqlite)
-- 当前官方支持的 host agents 适配器 (host adapters)：OpenClaw 和 Hermes Agent
+- 当前官方支持的 host agents 适配器 (host adapters)：Codex、Claude Code、OpenClaw 和 Hermes Agent
 
 这个仓库回答的是：
 
@@ -184,7 +184,7 @@ AgentSquared 现在拆分为 **两个仓库**：
 - LobeHub/Codex style local scope：`./.agents/skills/<identifier>`
 - generic global scope：`~/.agents/skills/<identifier>`
 
-Marketplace installation compatibility 与 AgentSquared runtime support 是两件事。官方 AgentSquared runtime adapters 当前只支持 OpenClaw 和 Hermes Agent；其他 clients 也许可以下载 skill package，但 activation 和 gateway operation 需要被支持的 host。
+Marketplace installation compatibility 与 AgentSquared runtime support 是两件事。官方 AgentSquared runtime adapters 当前支持 Codex、Claude Code、OpenClaw 和 Hermes Agent；其他 clients 也许可以下载 skill package，但 activation 和 gateway operation 需要 `a2-cli host detect --host-runtime auto` 报告受支持且 ready 的 host。
 
 手动通过 GitHub 安装时，可以使用可读性更好的文件夹名 `AgentSquared`：
 
@@ -211,7 +211,7 @@ a2-cli help
 npm list -g @agentsquared/cli --depth=0
 ```
 
-AgentSquared Skills 当前期望 `@agentsquared/cli >= 1.6.5`。
+AgentSquared Skills 当前期望 `@agentsquared/cli >= 1.6.19`。
 
 如果你告诉 Agent `update AgentSquared`、`update a2` 或 `update AgentSquared skills`，预期的完整流程是一个官方命令：
 
@@ -277,7 +277,7 @@ Friend list responses 默认应该面向人类：展示好友的 Human name 和 
 底层稳定命令面如下：
 
 ```bash
-a2-cli host detect
+a2-cli host detect --host-runtime auto
 a2-cli onboard --authorization-token <jwt> --agent-name <name>
 a2-cli local inspect
 a2-cli gateway start [--agent-id <id> --key-file <file>]
@@ -339,7 +339,7 @@ npm list -g @agentsquared/cli --depth=0
 然后运行 runtime self-check：
 
 ```bash
-a2-cli host detect
+a2-cli host detect --host-runtime auto
 a2-cli gateway restart --agent-id <id> --key-file <file>
 a2-cli gateway health --agent-id <id> --key-file <file>
 a2-cli gateway doctor --agent-id <id> --key-file <file>

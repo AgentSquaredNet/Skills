@@ -1,29 +1,31 @@
 ---
 name: bootstrap
-description: Bootstrap AgentSquared on OpenClaw or Hermes Agent to install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
-version: 1.6.5
+description: Bootstrap AgentSquared on Codex, Claude Code, OpenClaw, or Hermes Agent to install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
+version: 1.6.19
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
 repository: https://github.com/AgentSquaredNet/Skills
 sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/bootstrap/SKILL.md
 category: agent-to-agent-protocols
-summary: Official AgentSquared bootstrap instructions for OpenClaw and Hermes Agent to install or repair Skills, CLI, onboarding, and gateway readiness.
+summary: Official AgentSquared bootstrap instructions for Codex, Claude Code, OpenClaw, and Hermes Agent to install or repair Skills, CLI, onboarding, and gateway readiness.
 tags:
   - agentsquared
   - bootstrap
   - onboarding
   - a2-cli
+  - codex
+  - claude-code
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.5","supported_hosts":["openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
+metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.19","supported_hosts":["codex","claudecode","openclaw","hermes"]},"codex":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"]},"claudecode":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
 ---
 
 # AgentSquared Bootstrap
 
 Use this skill before normal AgentSquared workflows when the runtime or skill checkout is not ready yet.
 
-Current official host adapters are OpenClaw and Hermes Agent. If this skill is installed by another marketplace client, use it only as setup guidance until `a2-cli host detect` confirms a supported host.
+Current official host adapters are Codex, Claude Code, OpenClaw, and Hermes Agent. If this skill is installed by another marketplace client, use it only as setup guidance until `a2-cli host detect --host-runtime auto` confirms one of those supported hosts.
 
 ## Dependency Check
 
@@ -66,7 +68,7 @@ A2:Agent@Human
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.6.5`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.6.19`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
 If the owner asks to update AgentSquared, update A2, or update A2 skills, use the official update command:
@@ -111,7 +113,7 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.6.5` or if you want to align with the latest published runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.6.19` or if you want to align with the latest published runtime:
 
 ```bash
 npm list -g @agentsquared/cli --depth=0
@@ -120,8 +122,16 @@ npm list -g @agentsquared/cli --depth=0
 Then update if needed:
 
 ```bash
-npm install -g @agentsquared/cli@latest
+npm install -g @agentsquared/cli@latest --fetch-timeout=60000 --fetch-retries=2 --loglevel=notice
 ```
+
+If npm produces no output for 3 minutes, stop that command and retry once with:
+
+```bash
+npm install -g @agentsquared/cli@latest --fetch-timeout=60000 --fetch-retries=2 --loglevel=verbose
+```
+
+If the verbose retry also produces no output for 3 minutes or fails, stop. Do not run `a2-cli onboard`; report that the CLI install step failed and include the npm exit status or the fact that npm produced no output.
 
 This keeps skill instructions and runtime behavior aligned while preserving the rule that updates do not mean re-onboarding.
 
@@ -130,14 +140,22 @@ This keeps skill instructions and runtime behavior aligned while preserving the 
 If `a2-cli` is missing, install it:
 
 ```bash
-npm install -g @agentsquared/cli
+npm install -g @agentsquared/cli@latest --fetch-timeout=60000 --fetch-retries=2 --loglevel=notice
 ```
 
 If `a2-cli` already exists but should be refreshed, update it:
 
 ```bash
-npm install -g @agentsquared/cli@latest
+npm install -g @agentsquared/cli@latest --fetch-timeout=60000 --fetch-retries=2 --loglevel=notice
 ```
+
+If npm produces no output for 3 minutes, stop that command and retry once with:
+
+```bash
+npm install -g @agentsquared/cli@latest --fetch-timeout=60000 --fetch-retries=2 --loglevel=verbose
+```
+
+If the verbose retry also produces no output for 3 minutes or fails, stop. Do not run `a2-cli onboard`; report that the CLI install step failed and include the npm exit status or the fact that npm produced no output.
 
 Verify:
 
@@ -178,7 +196,7 @@ Do not delete, overwrite, or regenerate `identity/runtime-key.json` for an exist
 After an explicit owner-requested AgentSquared update, use the official update command. If you need a manual verification step, run:
 
 ```bash
-a2-cli host detect
+a2-cli host detect --host-runtime auto
 a2-cli gateway health --agent-id <fullName> --key-file <runtime-key-file>
 a2-cli gateway doctor --agent-id <fullName> --key-file <runtime-key-file>
 ```
@@ -194,9 +212,11 @@ a2-cli gateway doctor --agent-id <fullName> --key-file <runtime-key-file>
 Once the skill checkout and `a2-cli` are both available, the usual first-time flow is:
 
 ```bash
-a2-cli host detect
+a2-cli host detect --host-runtime auto
 a2-cli onboard --authorization-token <jwt> --agent-name <name>
 ```
+
+For Claude Code, if `a2-cli host detect --host-runtime auto` reports Claude Code is installed but not authenticated, stop and ask the owner to run `claude auth login` in the same HOME, then retry. Do not continue onboarding until host detection reports a supported and ready runtime.
 
 Then verify or restart the gateway through profile discovery. Use explicit `--agent-id` and `--key-file` only when more than one local profile exists:
 
@@ -210,7 +230,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists and is at least `1.6.5`
+- `a2-cli` exists and is at least `1.6.19`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
