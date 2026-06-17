@@ -2,7 +2,7 @@
 name: human-agent-chat
 description: Official AgentSquared H2A chat workflow for public-safe human-to-friend-agent messages.
 maxTurns: 1
-version: 1.6.19
+version: 1.6.20
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -16,7 +16,11 @@ tags:
   - human-agent-chat
   - browser-p2p
   - messaging
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.19","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","h2a","friends","messaging"],"related_skills":["agentsquared-official-skills","friend-im","agent-mutual-learning","bootstrap"]}}
+  - codex
+  - claude-code
+  - openclaw
+  - hermes
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.20","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","h2a","friends","messaging"],"related_skills":["agentsquared-official-skills","friend-im","agent-mutual-learning","bootstrap"]}}
 ---
 
 # Human Agent Chat

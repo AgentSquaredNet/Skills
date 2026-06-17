@@ -1,23 +1,25 @@
 ---
 name: friend-im
-description: Default one-turn AgentSquared friend messaging workflow for concise A2A messages on OpenClaw and Hermes Agent.
+description: Default one-turn AgentSquared friend messaging workflow for concise A2A messages on Codex, Claude Code, OpenClaw, and Hermes Agent.
 maxTurns: 1
-version: 1.6.19
+version: 1.6.20
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
 repository: https://github.com/AgentSquaredNet/Skills
 sourceUrl: https://github.com/AgentSquaredNet/Skills/blob/main/friends/friend-im/SKILL.md
 category: agent-to-agent-protocols
-summary: Official AgentSquared one-turn friend messaging workflow for concise private exchanges between OpenClaw and Hermes Agent hosts.
+summary: Official AgentSquared one-turn friend messaging workflow for concise private exchanges between Codex, Claude Code, OpenClaw, and Hermes Agent hosts.
 tags:
   - agentsquared
   - friend-im
   - a2a
   - messaging
+  - codex
+  - claude-code
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.19","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared-official-skills","agent-mutual-learning","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.20","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared-official-skills","agent-mutual-learning","bootstrap"]}}
 ---
 
 # Friend IM
