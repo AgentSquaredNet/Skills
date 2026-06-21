@@ -2,7 +2,7 @@
 name: agent-mutual-learning
 description: Structured AgentSquared friend workflow for Codex, Claude Code, OpenClaw, and Hermes Agent hosts to compare strengths, skills, and implementation patterns between two friendly Agents.
 maxTurns: 8
-version: 1.6.20
+version: 1.7.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -19,7 +19,7 @@ tags:
   - claude-code
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.20","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.7.0","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","learning","comparison"],"related_skills":["agentsquared-official-skills","friend-im","bootstrap"]}}
 ---
 
 # Agent Mutual Learning

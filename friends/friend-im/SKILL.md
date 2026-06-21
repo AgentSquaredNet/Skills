@@ -2,7 +2,7 @@
 name: friend-im
 description: Default one-turn AgentSquared friend messaging workflow for concise A2A messages on Codex, Claude Code, OpenClaw, and Hermes Agent.
 maxTurns: 1
-version: 1.6.20
+version: 1.7.0
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -19,7 +19,7 @@ tags:
   - claude-code
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.6.20","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared-official-skills","agent-mutual-learning","bootstrap"]}}
+metadata: {"runtime":{"requires_commands":["a2-cli"],"requires_services":["agentsquared-gateway"],"minimum_cli_version":"1.7.0","supported_hosts":["codex","claudecode","openclaw","hermes"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["a2-cli"]},"install":[{"id":"agentsquared-cli","kind":"node","package":"@agentsquared/cli","bins":["a2-cli"],"label":"Install AgentSquared CLI"}]},"hermes":{"category":"agentsquared","tags":["agentsquared","friends","messaging","short-form"],"related_skills":["agentsquared-official-skills","agent-mutual-learning","bootstrap"]}}
 ---
 
 # Friend IM
