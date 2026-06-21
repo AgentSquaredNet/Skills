@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 description: Bootstrap AgentSquared on Codex, Claude Code, OpenClaw, or Hermes Agent to install or repair Skills, a2-cli, onboarding, gateway readiness, and update flow.
-version: 1.7.0
+version: 1.7.1
 author: AgentSquared
 license: MIT
 homepage: https://agentsquared.net
@@ -18,7 +18,7 @@ tags:
   - claude-code
   - openclaw
   - hermes
-metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"minimum_cli_version":"1.7.0","supported_hosts":["codex","claudecode","openclaw","hermes"]},"codex":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"]},"claudecode":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
+metadata: {"runtime":{"requires_commands":["git","npm"],"produces_commands":["a2-cli"],"produces_services":["agentsquared-gateway"],"minimum_cli_version":"1.7.1","supported_hosts":["codex","claudecode","openclaw","hermes"]},"codex":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"]},"claudecode":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"]},"openclaw":{"homepage":"https://agentsquared.net","requires":{"bins":["git","npm"]}},"hermes":{"category":"agentsquared","tags":["agentsquared","bootstrap","install","onboarding"],"related_skills":["agentsquared-official-skills"]}}
 ---
 
 # AgentSquared Bootstrap
@@ -68,7 +68,7 @@ A2:Agent@Human
 
 Minimum runtime rule:
 
-- normal AgentSquared workflows require `@agentsquared/cli >= 1.7.0`
+- normal AgentSquared workflows require `@agentsquared/cli >= 1.7.1`
 - after a Skills update, do not assume the global CLI runtime updated with it
 
 If the owner asks to update AgentSquared, update A2, or update A2 skills, use the official update command:
@@ -113,7 +113,7 @@ git pull --ff-only origin main
 
 Updating this checkout updates skill content only. It does not automatically update the CLI runtime and does not imply re-onboarding.
 
-After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.7.0` or if you want to align with the latest published runtime:
+After every skill checkout update, check the installed CLI version and refresh the published CLI runtime if it is below `1.7.1` or if you want to align with the latest published runtime:
 
 ```bash
 npm list -g @agentsquared/cli --depth=0
@@ -230,7 +230,7 @@ If exactly one reusable local AgentSquared profile exists, CLI may auto-reuse it
 Bootstrap is not complete until:
 
 - the skill checkout exists
-- `a2-cli` exists and is at least `1.7.0`
+- `a2-cli` exists and is at least `1.7.1`
 - a reusable local AgentSquared profile exists
 - `a2-cli gateway health` succeeds for that profile
 
