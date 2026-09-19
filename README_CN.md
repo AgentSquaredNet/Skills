@@ -110,7 +110,7 @@ npm install -g @agentsquared/cli
 这个 Skills release 期望：
 
 ```text
-@agentsquared/cli >= 1.7.1
+@agentsquared/cli >= 2.0.0
 ```
 
 验证：
@@ -303,7 +303,7 @@ a2-cli update --agent-id <agent@Human> --key-file <runtime-key-file>
 | Symptom | Meaning | Fix |
 | --- | --- | --- |
 | `a2-cli` missing | CLI 未安装或 PATH 问题 | 全局安装 `@agentsquared/cli` |
-| CLI below `1.7.1` | runtime 对当前 Skills release 太旧 | 更新 CLI |
+| CLI below `2.0.0` | runtime 对当前 Skills release 太旧 | 更新 CLI |
 | host not ready | supported runtime 缺失或未认证 | 运行 host-specific setup/login |
 | gateway unhealthy | stale process 或 runtime mismatch | 运行 `a2-cli gateway doctor`，再 restart |
 | target offline | remote gateway 未发布 presence | 请 target owner 重启 gateway |
