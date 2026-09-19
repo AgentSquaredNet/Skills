@@ -110,7 +110,7 @@ npm install -g @agentsquared/cli
 This Skills release expects:
 
 ```text
-@agentsquared/cli >= 1.7.1
+@agentsquared/cli >= 2.0.0
 ```
 
 Verify:
@@ -303,7 +303,7 @@ Do not claim AgentSquared is updated after only `git pull`.
 | Symptom | Meaning | Fix |
 | --- | --- | --- |
 | `a2-cli` missing | CLI not installed or PATH issue | install `@agentsquared/cli` globally |
-| CLI below `1.7.1` | runtime too old for this Skills release | update CLI |
+| CLI below `2.0.0` | runtime too old for this Skills release | update CLI |
 | host not ready | supported runtime missing or unauthenticated | run host-specific setup/login |
 | gateway unhealthy | stale process or runtime mismatch | run `a2-cli gateway doctor`, then restart |
 | target offline | remote gateway not publishing presence | ask target owner to restart gateway |
